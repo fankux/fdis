@@ -3,6 +3,12 @@
 #include "fmem.h"
 #include "fqueue.h"
 
+inline void fqueue_free(struct fqueue *queue) {
+    if (queue == NULL) return;
+    flist_free(queue->data);
+    ffree(queue);
+}
+
 inline struct fqueue *fqueue_create() {
     return fqueue_create_fixed(0);
 }
@@ -12,7 +18,8 @@ inline struct fqueue *fqueue_create_fixed(const size_t size) {
     if (queue == NULL) return NULL;
 
     if ((queue->data = flist_create()) == NULL) return NULL;
-    queue->max_size = size;
+
+    queue->max_size = size == 0 ? SIZE_MAX : size;
 
     return queue;
 }

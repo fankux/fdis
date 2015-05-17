@@ -3,33 +3,65 @@
 
 #include <pthread.h>
 #include <time.h>
-#include "fqueue.h"
+#include "common/fqueue.h"
 
-typedef pthread_mutex_t mutex_lock;
+typedef pthread_mutex_t mutex;
+typedef pthread_cond_t cond_lock;
+typedef pthread_attr_t thread_attr;
 
-struct thread_pool {
-    int idle;
-    int min;
-    int max;
-    int extra;
+typedef void *(*thread_rountine)(void *);
 
-    mutex_lock * lock;
-    struct fqueue * tasks;
+#define THREAD_RUN 1
+#define THREAD_END 2
+
+#define TASK_RUN_IMMEDIATELY    0
+#define TASK_RUN_DELAY          1
+#define TASK_STATUS_READY       0
+#define TASK_STATUS_RUNNING     1
+#define TASK_STATUS_DONE        2
+
+struct thread_item {
+    int status;
+    int handle;
+    pthread_t tid;
+
+    mutex task_lock;
+    cond_lock task_cond;
+    struct fqueue *task_list;
+
+    thread_rountine rountine;
 };
 
-#define TASK_STATUS_READY  0
-#define TASK_STATUS_RUNNING     1
-#define TASK_STATUS_DONE 2
+struct thread_arg {
+    struct thread_pool *pool;
+    struct thread_item *thread;
+};
 
-struct task{
+typedef struct thread_pool {
+    int min;
+    int max;
+    int active;
+    int task_num;
+
+    /* queue array */
+    struct fqueue *tasks;
+    struct thread_arg *args;
+    struct thread_item *threads;
+
+} thread_pool_t;
+
+typedef void *(*thread_func_t)(void *args);
+
+typedef struct thread_task {
     int id;
-    int status;
+    int run_type;
     time_t start_time;
     time_t end_time;
 
-    void * (*run)(void * arg1, void * arg2, void * arg3);
-    void * (*success)(void * arg1, void * arg2, void * arg3);
-    void * (*faild)(void * arg1, void * arg2, void * arg3);
-};
+    thread_func_t routine;
+    void *arg;
+    void *extra;
+
+} thread_task_t;
 
 #endif /* THREADPOOL_H */

@@ -1,7 +1,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define DEBUG_FCONF
+#define DEBUG_THREAD_POOL
+#define LOG_CLI
 
 #include <stdio.h>
 
@@ -25,11 +26,6 @@
 			typeof(y) _max2 = (y);				\
 			(void) (&_max1 == &_max2);			\
 			_max1 > _max2 ? _max1 : _max2; })
-
-#define cpystr(dest, org, len) ({				\
-			memcpy((dest), (org), (len));		\
-			(dest)[(len)] = '\0';				\
-		})
 
 int keysplit(char * buf, size_t * sec_len,
 		char ** start, char ** next);

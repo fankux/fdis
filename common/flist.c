@@ -345,7 +345,7 @@ int flist_remove_value(struct flist *list, void *value, void **out_val) {
 
 void flist_info(struct flist *p) {
     if (p == NULL) {
-        printf("null\n");
+        log("null");
         return;
     }
     struct flist_node *iter = p->head;

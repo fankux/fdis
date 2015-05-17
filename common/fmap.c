@@ -287,11 +287,11 @@ static int _expand(struct fmap * dict, const size_t len)
 }
 
 /* find the key, the "hash" stores the key hash value */
-static struct fmap_node * _find(struct fmap * dict, void * key, unsigned int * hash)
+static struct fmap_node * _find(struct fmap *map, void * key, unsigned int * hash)
 {
-    struct fmap_header * h = &dict->header[0];
+    struct fmap_header * h = &map->header[0];
     struct fmap_node * p;
-    unsigned int result;
+    unsigned int hash_code;
     int flag, hflag = 1;
 
     /* fisrt memeroy allocation */
@@ -303,19 +303,19 @@ static struct fmap_node * _find(struct fmap * dict, void * key, unsigned int * h
         h->size_mask = h->size - 1;
     }
 
-    result = fmap_hash(dict, key);
-    if (hash) *hash = result;
+    hash_code = fmap_hash(map, key);
+    if (hash) *hash = hash_code;
 
     do {
-        p = h->map[(unsigned int) (h->size_mask & result)];
+        p = h->map[(unsigned int) (h->size_mask & hash_code)];
         while (p) {
-            if (0 == fmap_cmpkey(dict, p->key, key))
+            if (0 == fmap_cmpkey(map, p->key, key))
                 return p;
             p = p->next;
         }
         flag = 0;
-        if (fmap_isrehash(dict) && hflag) {
-            h = &dict->header[1];
+        if (fmap_isrehash(map) && hflag) {
+            h = &map->header[1];
             flag = 1;
             hflag = 0;
         }
@@ -390,13 +390,21 @@ struct fmap_node * fmap_getrand(struct fmap * hash)
     return NULL;//fhash_getat(hash, rand() % real_size);
 }
 
-void * fmap_getvalue(struct fmap * hash, void * key)
+void * fmap_getvalue(struct fmap *map, void * key)
 {
-    struct fmap_node * node = _find(hash, key, NULL);
+    struct fmap_node * node = _find(map, key, NULL);
     if(!node) return NULL;
     return node->value;
 }
 
+struct fmap_node * fmap_getslot(struct fmap * map, void * key)
+{
+    struct fmap_header *h = &map->header[0];
+
+    unsigned int hash_code = fmap_hash(map, key);
+
+    return h->map[h->size_mask & hash_code];
+}
 
 int fmap_replace(struct fmap * dict, void * key, void * value)
 {

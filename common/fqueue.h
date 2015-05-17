@@ -23,6 +23,8 @@ struct fqueue {
 /************* API *************/
 struct fqueue *fqueue_create();
 
+void fqueue_free(struct fqueue *queue);
+
 struct fqueue *fqueue_create_fixed(const size_t size);
 
 int fqueue_add(struct fqueue *queue, void *val);

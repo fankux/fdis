@@ -13,6 +13,7 @@
 
 #define fmemcpy memcpy
 
+#define fcalloc calloc
 
 #define cpystr(dst, org, bytes) do{ \
     fmemcpy((dst), (org), (bytes)); \
