@@ -26,4 +26,4 @@ set(SOURCE_FILES common/common.h
                  )
 
 include_directories(${SOURCE_DIR} common)
-add_executable(flog ${SOURCE_FILES} common/fqueue.h common/fqueue.c)
+add_executable(flog ${SOURCE_FILES} common/fqueue.h common/fqueue.c common/fbit.h common/fbit.c)

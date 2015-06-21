@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <string.h>
 #include "common.h"
 
 /* parse key, syntax: key:[num_index]:2nd level key,
@@ -11,7 +13,7 @@
 ** return -2, number index that should be in [ ] is not number */
 int keysplit(char *buf, size_t *sec_len,
              char **start, char **next) {
-    int len = 0;
+    size_t len = 0;
     char end;
 
     while (*buf == ' ') ++buf;/* skip spaces */
@@ -63,7 +65,7 @@ int valuesplit(char *buf, size_t *sec_len,
                char **start, char **next) {
     char *s;
     char end;
-    int len = 0, num_flag = 1;
+    size_t len = 0, num_flag = 1;
 
     while (*buf == ' ') ++buf; /* skip spaces */
 
@@ -91,4 +93,13 @@ int valuesplit(char *buf, size_t *sec_len,
     if (num_flag) return 2;
 
     return 1;
+}
+
+void test_equal_str(char *expect, char *test, int skip) {
+    if (strcmp(expect, test) != 0) {
+        printf("!!!test faild!!! expect :%s , but occur: %s\n", expect, test);
+        if (!skip) exit(0);
+    } else {
+        printf("passed, result:%s\n", test);
+    }
 }

@@ -21,6 +21,7 @@ typedef void *(*thread_rountine)(void *);
 #define TASK_STATUS_DONE        2
 
 struct thread_item {
+    int id;
     int status;
     int handle;
     pthread_t tid;
@@ -39,12 +40,14 @@ struct thread_arg {
 
 typedef struct thread_pool {
     int min;
-    int max;
-    int active;
+    size_t max;
+    int act_thread_num;
     int task_num;
 
+    /* left to right active thread bitmap */
+    fbits_t * bits;
     /* queue array */
-    struct fqueue *tasks;
+    struct fqueue **tasks;
     struct thread_arg *args;
     struct thread_item *threads;
 

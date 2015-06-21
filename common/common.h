@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define DEBUG_THREAD_POOL
+#define DEBUG_FBIT
 #define LOG_CLI
 
 #include <stdio.h>
@@ -31,5 +31,8 @@ int keysplit(char * buf, size_t * sec_len,
 		char ** start, char ** next);
 int valuesplit(char * buf, size_t * sec_len,
 		char ** start, char ** next);
+
+/* UNIT test */
+void test_equal_str(char *expect, char *test, int skip);
 
 #endif /* COMMON_H */

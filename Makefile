@@ -1,5 +1,5 @@
 target=threadpool
-objs=common.o flog.o fstr.o fmap.o flist.o fqueue.o
+objs=common.o flog.o fstr.o fmap.o flist.o fqueue.o fbit.o
 cc=gcc
 ccflags= -m32 -std=c99 -g
 
@@ -23,6 +23,10 @@ flist.o:common.o
 
 fqueue.o:common.o
 	${cc} ${ccflags} -c ./common/fqueue.c
+
+
+fbit.o:common.o
+	${cc} ${ccflags} -c ./common/fbit.c
 
 .PHONY:clean
 clean:
