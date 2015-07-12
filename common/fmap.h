@@ -77,7 +77,7 @@ typedef struct fmap_iter {
 #define fmap_hash(h, key) ((h)->type->hash_func(key))
 #define fmap_isrehash(h) ((h)->rehash_idx != -1)
 #define fmap_isempty(h) ((h)->header[0].used + (h)->header[1].used == 0)
-#define fmap_len(h) ((h)->header[0].used + (h)->header[1].used)
+#define fmap_size(h) ((h)->header[0].used + (h)->header[1].used)
 
 /******************** API ****************************/
 struct fmap * fmap_create();

@@ -82,7 +82,6 @@ char *fbit_info(struct fbits *bits, int is_test) {
     return base;
 }
 
-#define DEBUG_FBIT
 #ifdef DEBUG_FBIT
 
 int main(void) {

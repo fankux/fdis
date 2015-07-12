@@ -1,10 +1,11 @@
 #include <time.h>
-#include <unistd.h>
+#include <pthread.h>
 
 #include "common/common.h"
 #include "common/fmem.h"
 #include "common/flog.h"
 #include "common/fbit.h"
+#include "common/fqueue.h"
 #include "webc.h"
 #include "threadpool.h"
 
@@ -114,7 +115,7 @@ int thread_pool_init(thread_pool_t *pool) {
     }
 
     fbit_set_all(pool->bits, 0);
-    fbit_move_left(pool->bits, THREAD_POOL_MAX);
+//    fbit_move_left(pool->bits, THREAD_POOL_MAX);
     return 0;
 }
 

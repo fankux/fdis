@@ -13,7 +13,7 @@ typedef struct fconf {
 
     size_t size;
     ssize_t idx;
-    struct fhash * data;
+    struct fmap * data;
 } fconf_t;
 
 

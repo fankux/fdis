@@ -313,7 +313,6 @@ void fstr_squeeze(struct fstr * a)
 
         }
     }
-
 }
 
 int fstr_compare(struct fstr * a, struct fstr * b)

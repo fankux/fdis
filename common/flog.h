@@ -1,5 +1,5 @@
-#ifndef LOG_H
-#define LOG_H
+#ifndef FLOG_H
+#define FLOG_H
 
 #include <stdio.h>
 
@@ -61,4 +61,4 @@
 #define fatal(fromat, ...)
 #endif
 
-#endif /* LOG_H */
+#endif /* FLOG_H */

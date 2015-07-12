@@ -95,6 +95,8 @@ int valuesplit(char *buf, size_t *sec_len,
     return 1;
 }
 
+
+// TODO...specify file to implment this check routine whth flog..
 void test_equal_str(char *expect, char *test, int skip) {
     if (strcmp(expect, test) != 0) {
         printf("!!!test faild!!! expect :%s , but occur: %s\n", expect, test);
