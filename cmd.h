@@ -25,6 +25,10 @@ struct webc_mutation {
 
 extern struct fmap *cmd_dict;
 
-struct webc_mutation *mutation_create(struct webc_cmd *cmd);
+struct webc_mutation *cmd_parse(char *buf);
+
+char *cmd_serialize(struct webc_mutation *mutation);
+
+struct webc_mutation *cmd_unserialize(char *buf);
 
 #endif //WEBC_CMD_H

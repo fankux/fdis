@@ -1,3 +1,4 @@
+#include <common/fstr.h>
 #include "arranger.h"
 
 #include "common/common.h"
@@ -7,6 +8,7 @@
 #include "common/flist.h"
 
 #include "cmd.h"
+#include "net.h"
 
 #define ARRANGER_DEFAULT_TOKEN_NUM 32
 #define ARRANGER_DEFAULT_WORKER_NUM 3
@@ -22,9 +24,9 @@ struct webc_token {
     struct webc_worker *worker;
 };
 
-#define WOKER_OFFLINE   0
-#define WOKER_LOADING   1
-#define WOKER_OK        2
+#define WORKER_OFFLINE   0
+#define WORKER_LOADING   1
+#define WORKER_OK        2
 struct webc_worker {
     void *id;
     struct flist *tokens;
@@ -51,7 +53,14 @@ struct webc_arranger {
 
 struct webc_worker *worker_create_array(size_t len) {
     struct webc_worker *worker = fcalloc(len, sizeof(struct webc_worker));
-    // TODO.. field
+
+    for (size_t i = 0; i < len; ++i) {
+        fmemset(worker + i, 0, sizeof(struct webc_worker));
+        worker[i].tokens = flist_create();
+        worker[i].status = WORKER_OK;
+        // TODO.. field
+    }
+
     return worker;
 }
 
@@ -65,7 +74,8 @@ struct webc_arranger *arranger_create() {
     struct webc_arranger *ager = fmalloc(sizeof(struct webc_arranger));
     if (ager == NULL) return NULL;
 
-    // TODO.. null check
+    // TODO... null check,
+    // TODO... worker should be created when heartbeat registering event dynamicly
     ager->token_num = ARRANGER_DEFAULT_TOKEN_NUM;
     ager->tokens = token_create_array(ager->token_num);
     ager->worker_num = ARRANGER_DEFAULT_WORKER_NUM;
@@ -76,20 +86,26 @@ struct webc_arranger *arranger_create() {
 
 
 ///////////////// Implement ///////////////////////////////////////////////////////////////////
-static struct webc_token *match_token(struct webc_arranger *ager, const char *key) {
+static struct webc_token *match_token(struct webc_arranger *ager,
+                                      const char *key) {
     unsigned int hash = str_hash_func(key);
     return &ager->tokens[hash % ager->token_num];
 }
 
+/*
+ * sort worker by numbers of token in ascending order.
+ */
 static void sort_worker(struct webc_worker *workers, size_t len) {
     struct webc_worker tmp;
     int sweap;
     for (size_t i = 0; i < len - 1; ++i) {
         sweap = 0;
         for (size_t j = i + 1; j < len - 1; ++j) {
-            if (flist_len(workers[j].tokens) > flist_len(workers[j + i].tokens)) {
+            if (flist_len(workers[j].tokens) >
+                flist_len(workers[j + i].tokens)) {
                 fmemcpy(&tmp, &workers[j], sizeof(struct webc_worker));
-                fmemcpy(&workers[j], &workers[j + 1], sizeof(struct webc_worker));
+                fmemcpy(&workers[j], &workers[j + 1],
+                        sizeof(struct webc_worker));
                 fmemcpy(&workers[j + 1], &tmp, sizeof(struct webc_worker));
                 sweap = 1;
             }
@@ -107,12 +123,12 @@ static void load_balance(struct webc_arranger *ager, struct flist *tokens) {
     struct flist_node *node = NULL;
     while ((node = flist_pop_head(tokens))) {
         int delta = flist_len(ager->workers[ager->worker_num - 1].tokens) -
-                    flist_len(ager->workers[i].tokens);
+                    flist_len(ager->workers[i % ager->worker_num].tokens);
         if (delta == 0) delta = 1;
 
         for (int k = 0; k < delta; ++k) {
             struct webc_worker *worker = &ager->workers[i % ager->worker_num];
-            if (worker->status != WOKER_OK) {
+            if (worker->status != WORKER_OK) {
                 //TODO..while there're no workers in good status....
                 ++i;
                 continue;
@@ -149,9 +165,10 @@ static void failover(struct webc_arranger *ager, struct webc_worker *worker) {
     load_balance(ager, token_list);
 }
 
-int arrager_handle(struct webc_arranger *ager, struct webc_cmd * cmd) {
-    unsigned int hash = str_hash_func(cmd->key);
-    log("key:[%s] to hash value: %u", cmd->key, hash);
+static int arranger_handle(struct webc_arranger *ager,
+                    struct webc_mutation *mutation) {
+    unsigned int hash = str_hash_func(mutation->key);
+    log("key:[%s] to hash value: %u", mutation->key, hash);
     struct webc_token *token = &ager->tokens[hash % ager->token_num];
 
     int retry = 0;
@@ -160,22 +177,36 @@ int arrager_handle(struct webc_arranger *ager, struct webc_cmd * cmd) {
         struct webc_worker *worker = token->worker;
 
         //节点加载状态
-        if (worker->status == WOKER_LOADING) {
+        if (worker->status == WORKER_LOADING) {
             // TODO..还没想好怎么实现这个状态的failover
             ++retry;
         }
 
         // 节点状态下线, 进行故障转移, token迁移
-        if (worker->status == WOKER_OFFLINE) {
+        if (worker->status == WORKER_OFFLINE) {
             failover(ager, worker);
             ++retry;
         }
 
+        char *mu_serialized = cmd_serialize(mutation);
+        if (mu_serialized == NULL) {
+            log("mutation serialized faild, stop action");
+            return -1;
+        }
+        struct fstr *smu = fstr_getpt(mu_serialized);
+
+        // start arranging job to worker
 
 
+        fstr_free(smu);
 
         break;
     }
+
+    return 0;
+}
+
+int action_set(char * cmd) {
 
 }
 
@@ -184,6 +215,9 @@ int arrager_handle(struct webc_arranger *ager, struct webc_cmd * cmd) {
 int main(void) {
     struct webc_arranger *ager = arranger_create();
     arranger_init(ager);
+
+    struct webc_mutation * mutation = cmd_parse("LSET a aa");
+    arranger_handle(ager, mutation);
 
     return 0;
 }

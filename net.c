@@ -3,11 +3,11 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "net.h"
 
-int set_nonblocking(int fd)
-{
+int set_nonblocking(int fd) {
     int sock_opts;
     if (-1 == (sock_opts = fcntl(fd, F_GETFL))) {
         return -1;
@@ -19,8 +19,19 @@ int set_nonblocking(int fd)
     return 0;
 }
 
-int create_tcpsocket(int port)
-{
+inline int create_tcpsocket() {
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1) return -1;
+
+    int reuse = 1;
+    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(&reuse));
+
+    set_nonblocking(sockfd);
+
+    return sockfd;
+}
+
+int create_tcpsocket_listen(int port) {
     struct sockaddr_in addr_in;
     memset(&addr_in, 0, sizeof(addr_in));
     addr_in.sin_family = AF_INET;
@@ -29,35 +40,66 @@ int create_tcpsocket(int port)
 
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (-1 == bind(sockfd, (struct sockaddr *) &addr_in, sizeof(addr_in)))
+    if (bind(sockfd, (struct sockaddr *) &addr_in, sizeof(addr_in)) == -1)
         return -1;
 
-    if (-1 == listen(sockfd, 10))
+    if (listen(sockfd, 10) == -1)
         return -1;
 
 
     int reuse = 1;
-    setsockopt(sockfd, SOL_SOCKET,SO_REUSEADDR, &reuse, sizeof(&reuse));
+    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(&reuse));
 
     return sockfd;
 }
 
 struct sock_info {
-    struct sockaddr_in * addr;
-    void * data;
+    struct sockaddr_in *addr;
+    void *data;
 };
 
-int accept_tcp(int fd, struct sock_info * info)
-{
+int accept_tcp(int fd, struct sock_info *info) {
     int conn_sock;
     if (info == NULL)
         conn_sock = accept(fd, NULL, 0);
     else
-        conn_sock = accept(fd, (struct sockaddr *) info->addr, (socklen_t *) sizeof(info->addr));
+        conn_sock = accept(fd, (struct sockaddr *) info->addr,
+                           (socklen_t *) sizeof(info->addr));
 
     if (conn_sock == -1) {
-        if (errno != EAGAIN && errno != ECONNABORTED && errno != EPROTO && errno != EINTR)
+        if (errno != EAGAIN && errno != ECONNABORTED && errno != EPROTO &&
+            errno != EINTR)
             return -1;
     }
     return conn_sock;
+}
+
+int read_tcp(int fd, char *buf, size_t buflen, size_t *readlen) {
+    size_t n = 0;
+    ssize_t nread;
+    while ((nread = read(fd, buf + n, buflen - 1)) > 0) {
+        n += nread;
+    }
+    if (nread == -1 && errno != EAGAIN) {
+        return -1;
+    }
+    if (readlen) *readlen = (size_t) nread;
+    return 0;
+}
+
+int write_tcp(int fd, char *buf, size_t buflen, size_t *writelen) {
+    int nwrite;
+    size_t n = buflen;
+    while (n > 0) {
+        nwrite = write(fd, buf + buflen - n, n);
+        if (nwrite < n) {
+            if (nwrite == -1 && errno != EAGAIN) {
+                return -1;
+            }
+            break;
+        }
+        n -= nwrite;
+    }
+    if (writelen) *writelen = n;
+    return 0;
 }

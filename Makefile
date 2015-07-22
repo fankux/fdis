@@ -1,10 +1,10 @@
-target=threadpool
-objs=common.o flog.o fstr.o fmap.o flist.o fqueue.o fbit.o
+target=event
+objs=common.o flog.o fstr.o fmap.o flist.o fqueue.o fbit.o net.o webc.o
 cc=gcc
 ccflags= -m32 -std=c99 -g
 
 target:${objs}
-	${cc} ${ccflags} -o ${target} threadpool.c ${objs} -lpthread
+	${cc} ${ccflags} -o ${target} event.c ${objs} -lpthread
 
 common.o:./common/common.h
 	${cc} ${ccflags} -c ./common/common.c
@@ -27,6 +27,12 @@ fqueue.o:common.o
 
 fbit.o:common.o
 	${cc} ${ccflags} -c ./common/fbit.c
+
+net.o: net.h
+	${cc} ${ccflags} -c ./net.c
+
+webc.o: webc.h
+	${cc} ${ccflags} -c ./webc.c
 
 .PHONY:clean
 clean:

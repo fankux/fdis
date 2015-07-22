@@ -5,7 +5,7 @@
 
 #ifdef LOG_CLI
 #define debug(format, ...) do { \
-    log("debug:", ##__VA_ARGS__);   \
+    log("debug:"format, ##__VA_ARGS__);   \
 } while(0)
 #define log(format, ...) do { \
     printf("[%s:%d]"format"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
@@ -14,17 +14,17 @@
     printf("[%s:%d]warning:"format"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
 } while(0)
 #define error(format, ...) do { \
-    log("error:", ##__VA_ARGS__);   \
+    log("error:"format, ##__VA_ARGS__);   \
 } while(0)
 #define fatal(format, ...) do { \
-    log("!!!fatal error:", ##__VA_ARGS__);  \
+    log("!!!fatal error:"format, ##__VA_ARGS__);  \
     exit(EXIT_FAILURE); \
 } while(0)
 #endif
 
 #ifdef LOG_BOTH
 #define debug(format, ...) do { \
-    log("debug:", ##__VA_ARGS__);   \
+    log("debug:"format, ##__VA_ARGS__);   \
 } while(0)
 #define log(format, ...) do { \
     printf("[%s:%d]"format"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
@@ -33,10 +33,10 @@
     printf("[%s:%d]warning:"format"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
 } while(0)
 #define error(format, ...) do { \
-    log("error:", ##__VA_ARGS__);   \
+    log("error:"format, ##__VA_ARGS__);   \
 } while(0)
 #define fatal(format, ...) do { \
-    log("!!!fatal error:", ##__VA_ARGS__);  \
+    log("!!!fatal error:"format, ##__VA_ARGS__);  \
     exit(EXIT_FAILURE); \
 } while(0)
 #endif

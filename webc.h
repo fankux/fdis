@@ -5,4 +5,6 @@
 #define THREAD_POOL_MIN 2
 #define THREAD_POOL_MAX 10
 
+extern int event_active;
+
 #endif //WEBC_H

@@ -25,6 +25,10 @@ set(SOURCE_FILES common/common.h
                  arranger.c
                  cmd.h
                  cmd.c
+                 net.h
+                 net.c
+                 event.h
+                 event.c
                  )
 
 include_directories(${SOURCE_DIR} common)

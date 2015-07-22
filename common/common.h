@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define DEBUG_ARRANGER
+#define DEBUG_EVENT
 #define LOG_CLI
 
 #include <stdio.h>
@@ -21,80 +21,39 @@
 
 #define check_null_ret(var, ret, log, ...)      \
 if((var) == NULL) {                                \
-    printf(#(log), ##__VA_ARGS__);                \
+    printf((log), ##__VA_ARGS__);                \
     return (ret);                               \
 }
 
 #define check_null_goto(var, to, log, ...)      \
 if((var) == NULL) {                                \
-    printf(#(log), ##__VA_ARGS__);                \
-    goto (to);                               \
+    printf((log), ##__VA_ARGS__);                \
+    goto to;                               \
 }
 
 #define check_null_ret_oom(var, ret, log, ...)              \
 if((var) == NULL) {                                         \
-    printf("!!!OUT OF MEMORY!!!"#(log), ##__VA_ARGS__);     \
+    printf("!!!OUT OF MEMORY!!!"#log, ##__VA_ARGS__);     \
     return (ret);                                           \
 }
 
 #define check_null_goto_oom(var, to, log, ...)              \
 if((var) == NULL) {                                         \
-    printf("!!!OUT OF MEMORY!!!"#(log), ##__VA_ARGS__);     \
-    goto (to);                                              \
+    printf("!!!OUT OF MEMORY!!!"#log"memory allocate faild!", ##__VA_ARGS__);     \
+    goto to;                                              \
 }
 
 #define check_cond_ret(condition, ret, log, ...)      \
     if(!(condition)) {                                \
-        printf(#(log), ##__VA_ARGS__);                \
+        printf((log), ##__VA_ARGS__);                \
         return (ret);                               \
 }                                                   \
 
 #define check_cond_goto(condition, to, log, ...)      \
     if(!(condition)) {                                \
-        printf(#(log), ##__VA_ARGS__);                \
-        return (to);                               \
+        printf((log), ##__VA_ARGS__);                \
+        return to;                               \
 }                                                   \
-
-#define AssertResultReturn(client, obj, value, err_name)    \
-    if(obj == value){                                        \
-        SetResultStr(client, server.share->err_name);        \
-        return 0;                                            \
-    }
-#define AssertResultGoto(client, obj, value, err_name, dest)    \
-    if(obj == value){                                            \
-        SetResultStr(client, server.share->err_name);            \
-        goto dest;                                                \
-    }
-#define AssertUResultReturn(client, obj, value, err_name)    \
-    if(obj != value){                                        \
-        SetResultStr(client, server.share->err_name);        \
-        return 0;                                            \
-    }
-#define AssertUResultGoto(client, obj, value, err_name, dest)    \
-    if(obj != value){                                            \
-        SetResultStr(client, server.share->err_name);            \
-        goto dest;                                                \
-    }
-#define AssertSEResultReturn(client, obj, value, err_name) \
-    if(obj <= value){                                       \
-        SetResultStr(client, server.share->err_name);       \
-        return 0;                                           \
-    }
-#define AssertSEResultGoto(client, obj, value, err_name, dest)    \
-    if(obj <= value){                                            \
-        SetResultStr(client, server.share->err_name);            \
-        goto dest;                                                \
-    }
-#define AssertSResultReturn(client, obj, value, err_name)  \
-    if(obj < value){                                       \
-        SetResultStr(client, server.share->err_name);       \
-        return 0;                                           \
-    }
-#define AssertSResultGoto(client, obj, value, err_name, dest)   \
-    if(obj < value){                                            \
-        SetResultStr(client, server.share->err_name);            \
-        goto dest;                                                \
-    }
 
 int keysplit(char *buf, size_t *sec_len,
              char **start, char **next);

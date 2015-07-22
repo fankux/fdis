@@ -1,7 +1,8 @@
 #ifndef FSTR_H
 #define FSTR_H
 
-#include <inttypes.h>
+#include <stdio.h>
+#include <stdint.h>
 
 struct fstr { //string
     int len;
