@@ -25,7 +25,6 @@ inline int create_tcpsocket() {
 
     int reuse = 1;
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(&reuse));
-
     set_nonblocking(sockfd);
 
     return sockfd;
@@ -46,9 +45,9 @@ int create_tcpsocket_listen(int port) {
     if (listen(sockfd, 10) == -1)
         return -1;
 
-
     int reuse = 1;
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(&reuse));
+    set_nonblocking(sockfd);
 
     return sockfd;
 }
@@ -100,6 +99,6 @@ int write_tcp(int fd, char *buf, size_t buflen, size_t *writelen) {
         }
         n -= nwrite;
     }
-    if (writelen) *writelen = n;
+    if (writelen) *writelen = buflen - n;
     return 0;
 }

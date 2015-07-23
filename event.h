@@ -4,8 +4,9 @@
 #include <sys/epoll.h>
 
 #define EVENT_LIST_MAX  65535
-#define EVENT_READ      1
-#define EVENT_WRITE     2
+#define EVENT_ACCEPT    1
+#define EVENT_READ      2
+#define EVENT_WRITE     4
 
 #define EVENT_STATUS_ERR 0
 #define EVENT_STATUS_OK 1
@@ -14,7 +15,9 @@ struct webc_event;
 
 struct webc_event_send_param {
     struct webc_event *event;
-    void *args;
+    void *arg;
+
+    void (*arg_free_func)(void *arg);
 };
 
 struct webc_event {
@@ -46,9 +49,13 @@ struct webc_netinf {
     int list_num;
 };
 
-struct webc_event *event_create(int fd);
+struct webc_event *event_info_create(int fd);
 
-void event_free(struct webc_event *event);
+void event_info_free(struct webc_event *event);
+
+void netinfo_free(struct webc_netinf *netinf);
+
+struct webc_netinf *event_create(size_t event_size);
 
 int event_poll(struct webc_netinf *netinfo);
 
