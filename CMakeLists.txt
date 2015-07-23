@@ -29,6 +29,8 @@ set(SOURCE_FILES common/common.h
                  net.c
                  event.h
                  event.c
+                 threadpool.h
+                 threadpool.c
                  )
 
 include_directories(${SOURCE_DIR} common)

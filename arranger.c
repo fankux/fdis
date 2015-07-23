@@ -8,7 +8,6 @@
 #include "common/flist.h"
 
 #include "cmd.h"
-#include "net.h"
 
 #define ARRANGER_DEFAULT_TOKEN_NUM 32
 #define ARRANGER_DEFAULT_WORKER_NUM 3

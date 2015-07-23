@@ -1,4 +1,5 @@
 #include <time.h>
+#include <unistd.h>
 #include <pthread.h>
 
 #include "common/common.h"
@@ -24,18 +25,18 @@ static void *thread_proc(void *arg) {
     while (thread->status == THREAD_RUN) {
         /* fetch task */
         struct thread_task *task;
-//        log("thread[%d] try to accquire lock...", tid);
+        debug("thread[%d] try to accquire lock...", tid);
         pthread_mutex_lock(&thread->task_lock);
-//        log("thread[%d] success accquire lock...", tid);
+        debug("thread[%d] success accquire lock...", tid);
         task = fqueue_pop(thread->task_list);
         if (task == NULL) {
-            log("thread[%d] pedding", tid);
+            debug("thread[%d] pedding", tid);
             pthread_cond_wait(&thread->task_cond, &thread->task_lock);
-            log("thread[%d] wakeup", tid);
+            debug("thread[%d] wakeup", tid);
 
-//            log("thread[%d] try to unlock...", tid);
+            debug("thread[%d] try to unlock...", tid);
             pthread_mutex_unlock(&thread->task_lock);
-//            log("thread[%d] success unlock...", tid);
+            debug("thread[%d] success unlock...", tid);
             continue;
         }
 
@@ -55,7 +56,7 @@ static void *thread_proc(void *arg) {
 /* TODO..thread detach */
 thread_pool_t *thread_pool_create() {
     struct thread_pool *pool = fmalloc(sizeof(struct thread_pool));
-    if (pool == NULL) return NULL;
+    check_null_ret_oom(pool, NULL, "thread pool");
 
     fmemset(pool, 0, sizeof(struct thread_pool));
 
@@ -63,20 +64,20 @@ thread_pool_t *thread_pool_create() {
     pool->max = THREAD_POOL_MAX;
     pool->act_thread_num = pool->min;
     pool->task_num = 0;
-    if ((pool->bits = fbit_create(THREAD_POOL_MAX)) == NULL)
-        goto faild;
-    if ((pool->threads = fcalloc(pool->max, sizeof(struct thread_item))) == NULL)
-        goto faild;
+    pool->bits = fbit_create(THREAD_POOL_MAX);
+    check_null_goto_oom(pool->bits, faild, "threadpool bitmap");
+    pool->threads = fcalloc(pool->max, sizeof(struct thread_item));
+    check_null_goto_oom(pool->threads, faild, "threadpool thread list");
     for (int i = 0; i < THREAD_POOL_MAX; ++i) {
         pool->threads[i].id = i;
     }
-    if ((pool->tasks = fcalloc(pool->max, sizeof(struct fqueue *))) == NULL)
-        goto faild;
-    if ((pool->args = fcalloc(pool->max, sizeof(struct thread_arg))) == NULL)
-        goto faild;
+    pool->args = fcalloc(pool->max, sizeof(struct thread_arg));
+    check_null_goto_oom(pool->args, faild, "threadpool args list");
+    pool->tasks = fcalloc(pool->max, sizeof(struct fqueue *));
+    check_null_goto_oom(pool->tasks, faild, "threadpool task queue list");
     for (int i = 0; i < THREAD_POOL_MAX; ++i) {
-        if ((pool->tasks[i] = fqueue_create()) == NULL)
-            goto faild;
+        pool->tasks[i] = fqueue_create();
+        check_null_goto_oom(pool->tasks[i], faild, "threadpool task queue");
     }
 
     return pool;
@@ -111,15 +112,15 @@ int thread_pool_init(thread_pool_t *pool) {
         thread->rountine = thread_proc;
         thread->task_list = pool->tasks[i];
         thread->status = THREAD_RUN;
-        thread->handle = pthread_create(&threads[i].tid, NULL, thread->rountine, &pool->args[i]);
+        thread->handle = pthread_create(&threads[i].tid, NULL, thread->rountine,
+                                        &pool->args[i]);
     }
-
     fbit_set_all(pool->bits, 0);
-//    fbit_move_left(pool->bits, THREAD_POOL_MAX);
     return 0;
 }
 
-thread_task_t *thread_task_create(thread_func_t func, void *arg, int run_type, void *extra) {
+thread_task_t *thread_task_create(thread_func_t func, void *arg, int run_type,
+                                  void *extra) {
     struct thread_task *task = fmalloc(sizeof(struct thread_task));
     if (task == NULL) return NULL;
 
@@ -144,7 +145,8 @@ struct thread_item *_init_thread(thread_pool_t *pool) {
     thread->status = THREAD_RUN;
     if (pthread_mutex_init(&thread->task_lock, NULL) == -1) goto faild;
     if (pthread_cond_init(&thread->task_cond, NULL) == -1) goto faild;
-    thread->handle = pthread_create(&thread->tid, NULL, thread->rountine, &pool->args[active_num]);
+    thread->handle = pthread_create(&thread->tid, NULL, thread->rountine,
+                                    &pool->args[active_num]);
 
     return thread;
 
@@ -166,23 +168,23 @@ int thread_pool_add_task(thread_pool_t *pool, thread_task_t *task) {
             __sync_add_and_fetch(&pool->task_num, -1);
         }
     } else {
-        worker_idx = task_num % pool->act_thread_num;
         /* round robin strategy */
-        log("round robin strategy, %d", worker_idx);
+        worker_idx = task_num % pool->act_thread_num;
+        debug("round robin strategy, %d", worker_idx);
         thread = &pool->threads[worker_idx];
     }
 
     pthread_mutex_lock(&thread->task_lock);
     fqueue_add(thread->task_list, task);
     flist_info(thread->task_list->data);
-    log("task added, signal thread : %d", worker_idx);
+    debug("task added, signal thread : %d", worker_idx);
     pthread_cond_signal(&thread->task_cond);
     pthread_mutex_unlock(&thread->task_lock);
 
     return 1;
 }
 
-#ifdef DEBUG_THREAD_POOL
+#ifdef DEBUG_THREADPOOL
 
 void *test_run(void *arg) {
     log("task...%d", (int) arg);
@@ -196,8 +198,9 @@ int main(void) {
 
     sleep(2);
 
-    for (int i = 0; i < 15; ++i) {
-        thread_task_t *task = thread_task_create(test_run, (void *) i, TASK_RUN_IMMEDIATELY, NULL);
+    for (int i = 0; i < 1; ++i) {
+        thread_task_t *task = thread_task_create(test_run, (void *) i,
+                                                 TASK_RUN_IMMEDIATELY, NULL);
         thread_pool_add_task(pool, task);
     }
 
@@ -206,4 +209,4 @@ int main(void) {
     return 0;
 }
 
-#endif /* DEBUG_THREAD_POOL */
+#endif /* DEBUG_THREADPOOL */

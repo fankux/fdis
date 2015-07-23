@@ -15,7 +15,6 @@
 #include "common/flog.h"
 #include "net.h"
 #include "webc.h"
-#include "event.h"
 
 //void release(int signal_num) {
 //    if (listen_sock != -1 && listen_sock != 0) {
@@ -24,7 +23,7 @@
 //}
 
 inline struct webc_event *event_info_create(int fd) {
-    struct webc_event *ev = malloc(sizeof(struct webc_event));
+    struct webc_event *ev = fmalloc(sizeof(struct webc_event));
     if (ev == NULL) return NULL;
 
     ev->fd = fd;

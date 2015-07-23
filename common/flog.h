@@ -2,16 +2,17 @@
 #define FLOG_H
 
 #include <stdio.h>
+#include <time.h>
 
 #ifdef LOG_CLI
 #define debug(format, ...) do { \
     log("debug:"format, ##__VA_ARGS__);   \
 } while(0)
 #define log(format, ...) do { \
-    printf("[%s:%d]"format"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+    printf("(%s)[%s:%d]"format"\n", ctime(time(0)), __FILE__, __LINE__, ##__VA_ARGS__); \
 } while(0)
 #define warn(format, ...) do { \
-    printf("[%s:%d]warning:"format"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+    printf("(%s)[%s:%d]warning:"format"\n", ctime(time(0)), __FILE__, __LINE__, ##__VA_ARGS__); \
 } while(0)
 #define error(format, ...) do { \
     log("error:"format, ##__VA_ARGS__);   \
@@ -27,10 +28,10 @@
     log("debug:"format, ##__VA_ARGS__);   \
 } while(0)
 #define log(format, ...) do { \
-    printf("[%s:%d]"format"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+    printf("(%s)[%s:%d]"format"\n", ctime(time(0)), __FILE__, __LINE__, ##__VA_ARGS__); \
 } while(0)
 #define warn(format, ...) do { \
-    printf("[%s:%d]warning:"format"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+    printf("(%s)[%s:%d]warning:"format"\n", ctime(time(0)), __FILE__, __LINE__, ##__VA_ARGS__); \
 } while(0)
 #define error(format, ...) do { \
     log("error:"format, ##__VA_ARGS__);   \
