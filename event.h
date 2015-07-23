@@ -4,9 +4,9 @@
 #include <sys/epoll.h>
 
 #define EVENT_LIST_MAX  65535
-#define EVENT_ACCEPT    1
-#define EVENT_READ      2
-#define EVENT_WRITE     4
+#define EVENT_READ      1
+#define EVENT_WRITE     2
+#define EVENT_ACCEPT    4
 
 #define EVENT_STATUS_ERR 0
 #define EVENT_STATUS_OK 1

@@ -48,16 +48,20 @@ inline void event_info_free(struct webc_event *event) {
     ffree(event);
 }
 
-#define epoll_add(epfd, flags, ev) do {                     \
-    (ev)->epev.events = (flags);                            \
+#define epoll_add(epfd, ev) do {                            \
+    (ev)->epev.events = EPOLLET |                           \
+            ((ev)->flags & EVENT_READ ? EPOLLIN : 0) |      \
+            ((ev)->flags & EVENT_WRITE ? EPOLLOUT : 0);     \
     (ev)->epev.data.ptr = (ev);                             \
-    if (epoll_ctl((epfd), EPOLL_CTL_ADD, (ev)->fd, &(ev)->epev) == -1) {   \
+    if (epoll_ctl((epfd), EPOLL_CTL_ADD, (ev)->fd, &(ev)->epev) == -1) {       \
         error("epoll add faild, errno:%d, error:%s", errno, strerror(errno));  \
     }                                                       \
 } while(0)
 
-#define epoll_mod(epfd, flags, ev) do {                     \
-    (ev)->epev.events = (flags);                            \
+#define epoll_mod(epfd, ev) do {                            \
+    (ev)->epev.events = EPOLLET |                           \
+            ((ev)->flags & EVENT_READ ? EPOLLIN : 0) |      \
+            ((ev)->flags & EVENT_WRITE ? EPOLLOUT : 0);     \
     (ev)->epev.data.ptr = (ev);                             \
     if (epoll_ctl((epfd), EPOLL_CTL_MOD, (ev)->fd, &(ev)->epev) == -1) {       \
         error("epoll mod faild, errno:%d, error:%s", errno, strerror(errno));  \
@@ -111,7 +115,6 @@ static int event_accept_handle(struct webc_netinf *netinf) {
     struct epoll_event *eplist = netinf->eplist;
     struct webc_event *ev, *conn_ev;
     int fire_sock, conn_sock, n = 0, epfd = netinf->epfd;
-    int flags;
 
     for (int i = 0; i < netinf->list_num; ++i) {
         ev = eplist[i].data.ptr;
@@ -134,10 +137,7 @@ static int event_accept_handle(struct webc_netinf *netinf) {
             conn_ev->send_func = ev->send_func;
             conn_ev->send_param = ev->send_param;
 
-//            epoll_del(epfd, ev);
-            flags = EPOLLET | (conn_ev->flags & EVENT_READ ? EPOLLIN : 0) |
-                    (conn_ev->flags & EVENT_WRITE ? EPOLLOUT : 0);
-            epoll_add(epfd, flags, conn_ev);
+            epoll_add(epfd, conn_ev);
 
             //TODO...job after connection
             ++n;
@@ -150,7 +150,7 @@ static int event_accept_handle(struct webc_netinf *netinf) {
 static int event_read_handle(struct webc_netinf *netinf) {
     struct epoll_event *eplist = netinf->eplist;
     struct webc_event *ev;
-    int fire_sock, status, flags, sockerr, n = 0, epfd = netinf->epfd;
+    int fire_sock, status, sockerr, n = 0, epfd = netinf->epfd;
     char recvbuf[BUFSIZ] = "\0";
     socklen_t socklen = sizeof(int);
     size_t recvlen = 0;
@@ -168,7 +168,6 @@ static int event_read_handle(struct webc_netinf *netinf) {
         }
 
         debug("EPOLLIN fired, fd: %d", fire_sock);
-
         getsockopt(fire_sock, SOL_SOCKET, SO_ERROR, &sockerr, &socklen);
         if (sockerr != 0) {
             debug("socket error, fd: %d, sockerror: %d, error: %s", fire_sock,
@@ -191,15 +190,7 @@ static int event_read_handle(struct webc_netinf *netinf) {
             }
         }
 
-        /*TODO...job after reading,
-         * some worker join to thread pool,
-         * it would be register a callback in webc_event,
-         * then threadpoll's callback would call it and change the event mask of epoll
-         */
-
-        flags = EPOLLET | (ev->flags & EVENT_READ ? EPOLLIN : 0) |
-                (ev->flags & EVENT_WRITE ? EPOLLOUT : 0);
-        epoll_mod(epfd, flags, ev);
+        epoll_mod(epfd, ev);
         ++n;
     }
 
@@ -260,7 +251,8 @@ static int event_write_handle(struct webc_netinf *netinf) {
         }
 
         if (ev->keepalive) {
-            epoll_mod(epfd, EPOLLET | EPOLLIN, ev);
+            ev->flags = EVENT_READ;
+            epoll_mod(epfd, ev);
         } else {
             epoll_del(epfd, ev);
         }
@@ -355,11 +347,7 @@ int event_connect(struct webc_netinf *netinf, struct webc_event *ev,
     if (errno == EINPROGRESS)
         log("connect in progress");
 
-    // add to poll
-    int flags = EPOLLET;
-    flags |= ev->flags & EVENT_READ ? EPOLLIN : 0;
-    flags |= ev->flags & EVENT_WRITE ? EPOLLOUT : 0;
-    epoll_add(netinf->epfd, flags, ev);
+    epoll_add(netinf->epfd, ev);
 
     return 0;
 }
@@ -398,7 +386,7 @@ static inline void *test_send(struct webc_event_send_param *param) {
 
 static void *poll_routine(void *arg) {
     struct webc_netinf *netinf = arg;
-    int listenfd = create_tcpsocket_listen(TCP_PORT);
+    int listenfd = create_tcpsocket();
     log("listen fd: %d", listenfd);
 
     netinf->listenfd = listenfd;
@@ -408,12 +396,10 @@ static void *poll_routine(void *arg) {
     event->recv_func = test_recv;
     event->send_func = test_send;
     event->send_param.arg = fstr_create("heheda")->buf;
-    epoll_add(netinf->epfd, EPOLLET | EPOLLIN, event);
+    epoll_add(netinf->epfd, event);
 
     event_loop(netinf);
 
-    fstr_free(event->send_param.arg);
-    event_info_free(event);
     return (void *) 0;
 }
 
@@ -430,6 +416,7 @@ int main(int argc, char **argv) {
     event->flags = EVENT_READ | EVENT_WRITE;
     event->recv_func = test_recv;
     event->send_func = test_send;
+    event->keepalive = 0;
     event->send_param.arg = fstr_create("heheda")->buf;
 
     struct sockaddr_in addr_in;
@@ -439,8 +426,7 @@ int main(int argc, char **argv) {
     }
     addr_in.sin_addr.s_addr = inet_addr("127.0.0.1");
     addr_in.sin_family = AF_INET;
-//    event_connect(&netinf, event, &addr_in);
-
+    event_connect(netinf, event, &addr_in);
 
     log("peer info : addr:%s, port:%d",
         inet_ntoa(addr_in.sin_addr),
