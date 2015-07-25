@@ -1,10 +1,9 @@
 #include "common.h"
 #include "fbit.h"
 #include "fmem.h"
+#include "check.h"
 
 /* LITTLE END support only */
-
-static int char_bit_len = sizeof(char *) * 8;
 
 fbits_t *fbit_create(size_t size) {
     if (size <= 0) return NULL;
@@ -35,9 +34,37 @@ void fbit_set(struct fbits *bits, size_t offset, int bit) {
     else
         section &= ~(1 << offset);
 
-    printf("section : %d, offset:%d\n", section, offset);
-
     bits->bits[idx] = section;
+}
+
+int fbit_get_val_at_round(struct fbits *bits, int val, size_t npos,
+                          size_t *offset) {
+    size_t idx = -1, i = 0;
+    int flag = 0;
+
+    if (npos == 0) return -1;
+
+    val == 0 ? 0 : 1;
+    while (npos >= 0) {
+        idx = ++idx >= bits->size ? 0 : idx;
+        char section = bits->bits[idx];
+
+        for (i = 0; i < 8; ++i) {
+            if ((section & (1 << i)) && val) {
+                flag = 1;
+                if (--npos == 0) {
+                    *offset = (idx << 3) + i; /* idx * 8 + i */
+                    return 0;
+                }
+            }
+        }
+
+        if (idx == bits->size - 1 && flag == 0)
+            return -1;
+    }
+
+    *offset = (idx << 3) + i;
+    return 0;
 }
 
 //void fbit_move_left(struct fbits *bits, int len) {
@@ -67,11 +94,13 @@ char *fbit_info(struct fbits *bits, int is_test) {
     char *base = str = malloc(sizeof(char) * 1000);
 
     if (!is_test)
-        str += sprintf(str, "size: %zd, compute bit size: %zd\n", bits->size, compute_size);
+        str += sprintf(str, "size: %zd, compute bit size: %zd\n", bits->size,
+                       compute_size);
 
     for (int i = 0; i < bits->size; ++i) {
         for (int j = 0; j < 8; ++j) {
-            str += sprintf(str, "%s", (bits->bits[i] & (1 << j)) == 0 ? "0" : "1");
+            str += sprintf(str, "%s",
+                           (bits->bits[i] & (1 << j)) == 0 ? "0" : "1");
         }
         if (i != bits->size - 1)
             str += sprintf(str, " ");
@@ -87,6 +116,7 @@ char *fbit_info(struct fbits *bits, int is_test) {
 int main(void) {
     size_t bit_len = 16;
     char *run_info;
+    int result;
 
     fbits_t *bits = fbit_create(bit_len);
     fbit_set_all(bits, 1);
@@ -106,7 +136,7 @@ int main(void) {
         run_info = fbit_info(bits, 1);
 
         for (size_t j = 0; j < 8 * bits->size; ++j) {
-            if (j >=8 && j % 8 == 0) idx += sprintf(idx, " ");
+            if (j >= 8 && j % 8 == 0) idx += sprintf(idx, " ");
             if (i == j)
                 idx += sprintf(idx, "1");
             else
@@ -117,6 +147,32 @@ int main(void) {
 
         idx = buffer;
         fbit_set(bits, i, 0);
+    }
+
+    fbit_set_all(bits, 0);
+
+    for (size_t i = 0; i < bit_len; ++i) {
+        size_t offset;
+        result = fbit_get_val_at_round(bits, 1, i + 1, &offset);
+        test_equal_int_arg(result, -1, 0, ", args: pos:%d", i + 1);
+
+        for (size_t j = 0; j < bit_len; ++j) {
+            for (size_t k = 0; k <= j; ++k) {
+                fbit_set(bits, k, 1);
+            }
+
+            run_info = fbit_info(bits, 0);
+            log("%s", run_info);
+            free(run_info);
+
+            for (size_t k = 0; k <= j; ++k) {
+                result = fbit_get_val_at_round(bits, 1, k + 1, &offset);
+                test_equal_int(result, 0, 0);
+                test_equal_int_arg(offset, k, 0, ", args: pos:%d", k + 1);
+            }
+        }
+
+        fbit_set_all(bits, 0);
     }
 
     return 0;

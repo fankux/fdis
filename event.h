@@ -2,6 +2,7 @@
 #define EVENT_H
 
 #include <sys/epoll.h>
+#include <netinet/in.h>
 
 #define EVENT_LIST_MAX  65535
 #define EVENT_READ      1

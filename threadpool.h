@@ -9,10 +9,13 @@ typedef pthread_mutex_t mutex;
 typedef pthread_cond_t cond_lock;
 typedef pthread_attr_t thread_attr;
 
-typedef void *(*thread_rountine)(void *);
+typedef void *(*thread_routine)(void *);
 
-#define THREAD_RUN 1
-#define THREAD_END 2
+#define THREAD_IDLE_TIME 60
+
+#define THREAD_READY 1
+#define THREAD_RUN 2
+#define THREAD_END 3
 
 #define TASK_RUN_IMMEDIATELY    0
 #define TASK_RUN_DELAY          1
@@ -20,8 +23,8 @@ typedef void *(*thread_rountine)(void *);
 #define TASK_STATUS_RUNNING     1
 #define TASK_STATUS_DONE        2
 
-struct thread_item {
-    int id;
+struct threaditem {
+    int no;
     int status;
     int handle;
     pthread_t tid;
@@ -30,41 +33,43 @@ struct thread_item {
     cond_lock task_cond;
     struct fqueue *task_list;
 
-    thread_rountine rountine;
+    thread_routine routine;
 };
 
-struct thread_arg {
-    struct thread_pool *pool;
-    struct thread_item *thread;
+struct threadarg {
+    struct threadpool *pool;
+    struct threaditem *thread;
 };
 
-typedef struct thread_pool {
-    int min;
+typedef struct threadpool {
+    size_t min;
     size_t max;
-    int act_thread_num;
+    int act_num;
     int task_num;
 
+    mutex lock;
+
     /* left to right active thread bitmap */
-    fbits_t * bits;
+    fbits_t *bits;
     /* queue array */
     struct fqueue **tasks;
-    struct thread_arg *args;
-    struct thread_item *threads;
+    struct threadarg *args;
+    struct threaditem *threads;
 
-} thread_pool_t;
+} threadpool_t;
 
 typedef void *(*thread_func_t)(void *args);
 
-typedef struct thread_task {
+typedef struct threadtask {
     int id;
     int run_type;
     time_t start_time;
     time_t end_time;
 
-    thread_func_t routine;
+    thread_func_t call;
     void *arg;
     void *extra;
 
-} thread_task_t;
+} threadtask_t;
 
 #endif /* THREADPOOL_H */

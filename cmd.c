@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "common.h"
+#include "common/common.h"
 #include "common/fmem.h"
 #include "common/fstr.h"
 #include "common/fmap.h"
+#include "common/check.h"
 #include "cmd.h"
 
 static struct webc_mutation *mutation_create(struct webc_cmd *cmd) {

@@ -19,6 +19,7 @@ set(SOURCE_FILES common/common.h
                  common/fbit.c
                  common/fqueue.h
                  common/fqueue.c
+                 common/check.h
                  webc.h
                  webc.c
                  arranger.h
@@ -33,5 +34,5 @@ set(SOURCE_FILES common/common.h
                  threadpool.c
                  )
 
-include_directories(${SOURCE_DIR} common)
+include_directories(${SOURCE_DIR})
 add_executable(webc ${SOURCE_FILES})

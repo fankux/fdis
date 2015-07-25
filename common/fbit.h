@@ -4,7 +4,7 @@
 #include <stddef.h>
 
 typedef struct fbits {
-    size_t size;
+    size_t size; /* number of char in bits array */
     char bits[];
 } fbits_t;
 

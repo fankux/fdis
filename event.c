@@ -1,18 +1,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <errno.h>
 #include <stdlib.h>
-#include <arpa/inet.h>
 #include <unistd.h>
-#include <pthread.h>
 #include <signal.h>
 
-#include "common/common.h"
+#include "common/flog.h"
 #include "common/fstr.h"
 #include "common/fmem.h"
-#include "common/flog.h"
+#include "common/check.h"
 #include "net.h"
 #include "webc.h"
 
