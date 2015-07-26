@@ -1,5 +1,7 @@
 #include <time.h>
 #include <pthread.h>
+#include <unistd.h>
+#include <errno.h>
 
 #include "common/common.h"
 #include "common/fmem.h"
@@ -10,7 +12,10 @@
 #include "webc.h"
 #include "threadpool.h"
 
+// FIXME..repeat creating thread
+
 //TODO..futex replace mutex
+
 
 /* TODO..thread detach */
 threadpool_t *threadpool_create() {
@@ -77,37 +82,48 @@ static void *thread_proc(void *arg) {
     struct threadpool *pool = ((struct threadarg *) arg)->pool;
     struct threaditem *thread = ((struct threadarg *) arg)->thread;
 
-    int tid = (int) thread->tid;
+    int tno = thread->no;
 
     pthread_mutex_lock(&pool->lock);
-    __sync_add_and_fetch(&pool->act_num, -1);
+//    ++pool->act_num;
     fbit_set(pool->bits, (size_t) thread->no, 1);
+    char *bit_info = fbit_info(pool->bits, 1);
+    log("pool bits:%s", bit_info);
+    ffree(bit_info);
     pthread_mutex_unlock(&pool->lock);
 
+    thread->status = THREAD_RUN;
+
     /* TODO..exit after max idle time  */
-    log("thread[%d] thread create", tid);
+    log("thread[%d] thread create", tno);
     while (thread->status == THREAD_RUN) {
+//        sleep(1);
         /* fetch task */
         struct threadtask *task;
-        debug("thread[%d] try to accquire lock...", tid);
+//        debug("thread[%d] try to accquire lock...", tno);
         pthread_mutex_lock(&thread->task_lock);
-        debug("thread[%d] success accquire lock...", tid);
-        task = fqueue_pop(thread->task_list);
-        if (task == NULL) {
-            debug("thread[%d] pedding", tid);
+//        debug("thread[%d] success accquire lock...", tno);
+        while ((task = fqueue_pop(thread->task_list)) == NULL) {
+            debug("thread[%d] pedding", tno);
             pthread_cond_wait(&thread->task_cond, &thread->task_lock);
-            debug("thread[%d] wakeup", tid);
+            debug("thread[%d] wakeup", tno);
 
-            debug("thread[%d] try to unlock...", tid);
+//            debug("thread[%d] try to unlock...", tno);
             pthread_mutex_unlock(&thread->task_lock);
-            debug("thread[%d] success unlock...", tid);
-            continue;
+//            debug("thread[%d] success unlock...", tno);
         }
 
-        log("thread[%d] executing", tid);
+//        debug("thread[%d] try to unlock...", tno);
+        pthread_mutex_unlock(&thread->task_lock);
+//        debug("thread[%d] success unlock...", tno);
+
+        log("thread[%d] executing", tno);
         task->call(task->arg);
         ffree(task);
-        __sync_add_and_fetch(&pool->task_num, -1);
+
+        pthread_mutex_lock(&pool->lock);
+        --pool->task_num;
+        pthread_mutex_unlock(&pool->lock);
     }
 
     pthread_mutex_lock(&pool->lock);
@@ -116,7 +132,8 @@ static void *thread_proc(void *arg) {
     pthread_mutex_unlock(&pool->lock);
 
     //TODO..free threaditem mem
-    ffree(arg);
+    thread->tid = 0;
+    thread->status = THREAD_READY;
 
     return (void *) 0;
 }
@@ -124,32 +141,44 @@ static void *thread_proc(void *arg) {
 /* initiate new thread which memory had allocated already */
 static struct threaditem *_thread_init(threadpool_t *pool, int tno) {
     struct threaditem *thread = &pool->threads[tno];
+    int status;
+
     pool->args[tno].pool = pool;
     pool->args[tno].thread = thread;
 
+    thread->no = tno;
     thread->routine = thread_proc;
     thread->task_list = pool->tasks[tno];
-    pthread_mutex_init(&thread->task_lock, NULL);
-    pthread_cond_init(&thread->task_cond, NULL);
     thread->status = THREAD_READY;
+    status = pthread_mutex_init(&thread->task_lock, NULL);
+    check_cond_goto(status == 0, faild,
+                    "faild to init task lock, tno:%d, errno:%d, error:%s",
+                    tno, errno, strerror(errno));
+    status = pthread_cond_init(&thread->task_cond, NULL);
+    check_cond_goto(status == 0, faild,
+                    "faild to init task cond, tno:%d, errno:%d, error:%s",
+                    tno, errno, strerror(errno));
+    status = pthread_create(&thread->tid, NULL, thread->routine,
+                            &pool->args[tno]);
+    check_cond_goto(status == 0, faild,
+                    "faild to create thread, tno:%d, errno:%d, error:%s",
+                    tno, errno, strerror(errno));
 
-    thread->handle = pthread_create(&thread->tid, NULL, thread->routine,
-                                    &pool->args[tno]);
-    check_cond_goto(thread->handle == -1, faild,
-                    "faild to create thread, tno:%d", tno);
+    fbit_set(pool->bits, tno, 1);
 
     return thread;
 
     faild:
+    thread->tid = 0;
     return NULL;
 }
 
 int threadpool_init(threadpool_t *pool) {
     /* init minimum number of threads */
+    fbit_set_all(pool->bits, 0);
     for (int i = 0; i < pool->min; ++i) {
         _thread_init(pool, i);
     }
-    fbit_set_all(pool->bits, 0);
     return 0;
 }
 
@@ -158,29 +187,43 @@ int threadpool_init(threadpool_t *pool) {
  * if there still thread creating spaces available, create a new thread to execute,
  * else using round robin strategy to chose a thread,
  * then queuing task to that thread
+ *
+ * TODO..lock free, atomic
  */
 int threadpool_add_task(threadpool_t *pool, threadtask_t *task) {
-    int task_num = __sync_add_and_fetch(&pool->task_num, 1);
-
-    int worker_idx = 0;
+    size_t worker_idx;
     struct threaditem *thread;
 
-    if (task_num > pool->min && task_num < pool->max) { /* init new thread */
-        if ((thread = _thread_init(pool, task_num - 1)) == NULL) {
-            __sync_add_and_fetch(&pool->task_num, -1);
-        }
-    } else {
-        /* TODO..round robin strategy base on bitmap,
-         * TODO..find next available thread) */
-        worker_idx = task_num % pool->act_num;
-        debug("round robin strategy, %d", worker_idx);
+    pthread_mutex_lock(&pool->lock);
+
+    int task_num = ++(pool->task_num);
+    debug("task number: %d", task_num);
+    if (task_num > pool->min && task_num <= pool->max) { /* init new thread */
+
+        fbit_get_val_at_round(pool->bits, 0, 1, &worker_idx);
+        fbit_set(pool->bits, worker_idx, 1);
+
+        debug("would create new thread, tno: %d", worker_idx);
+        thread = _thread_init(pool, worker_idx);
+//        if (thread == NULL) {
+//            __sync_add_and_fetch(&pool->task_num, -1);
+//        }
+    } else { /* round robin strategy */
+
+        fbit_get_val_at_round(pool->bits, 1, task_num, &worker_idx);
+
+        debug("thread[%d] round robin strategy", worker_idx);
         thread = &pool->threads[worker_idx];
     }
 
+    pthread_mutex_unlock(&pool->lock);
+
     pthread_mutex_lock(&thread->task_lock);
     fqueue_add(thread->task_list, task);
-    flist_info(thread->task_list->data);
-    debug("task added, signal thread : %d", worker_idx);
+    char *list_info = flist_info(thread->task_list->data, 1);
+//    debug("thread[%zu] list_info:%s", worker_idx, list_info);
+    ffree(list_info);
+//    debug("thread[%zu] task added", worker_idx);
     pthread_cond_signal(&thread->task_cond);
     pthread_mutex_unlock(&thread->task_lock);
 
@@ -191,7 +234,6 @@ int threadpool_add_task(threadpool_t *pool, threadtask_t *task) {
 
 void *test_run(void *arg) {
     log("task...%d", (int) arg);
-
     return (void *) 0;
 }
 
@@ -201,14 +243,13 @@ int main(void) {
 
     sleep(2);
 
-    for (int i = 0; i < 1; ++i) {
+    for (int i = 0; i < 10; ++i) {
         threadtask_t *task = threadtask_create(test_run, (void *) i,
                                                TASK_RUN_IMMEDIATELY, NULL);
         threadpool_add_task(pool, task);
     }
 
-    sleep(3);
-
+    while (1) { sleep(3); };
     return 0;
 }
 

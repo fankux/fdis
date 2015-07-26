@@ -32,7 +32,8 @@ void flist_free(struct flist *list) {
 ** FLIST_FAILD, usually caused by mem error,
 ** FLIST_NONE, pivot not exist,
 ** FLIST_OK, action done */
-int flist_insert(struct flist *list, void *value, void *pivot, const uint8_t aorb) {
+int flist_insert(struct flist *list, void *value, void *pivot,
+                 const uint8_t aorb) {
     int flag = 0;
     struct flist_node *p = list->head;
     struct flist_node *new;
@@ -93,10 +94,11 @@ int flist_get(struct flist *list, void *value, struct flist_node **p) {
 
 /* add node at header */
 int flist_add_head(struct flist *p, void *data) {
-    if(flist_isfull(p)) return FLIST_FAILD;
+    if (flist_isfull(p)) return FLIST_FAILD;
 
     struct flist_node *new;
-    if (NULL == (new = (struct flist_node *) fmalloc(sizeof(struct flist_node))))
+    if (NULL ==
+        (new = (struct flist_node *) fmalloc(sizeof(struct flist_node))))
         return FLIST_FAILD;
 
     new->data = flist_dup_val(p, data);
@@ -116,7 +118,7 @@ int flist_add_head(struct flist *p, void *data) {
 
 /* add node at tail */
 int flist_add_tail(struct flist *p, void *data) {
-    if(flist_isfull(p)) return FLIST_FAILD;
+    if (flist_isfull(p)) return FLIST_FAILD;
 
     struct flist_node *new;
     if (!(new = (struct flist_node *) fmalloc(sizeof(struct flist_node))))
@@ -343,31 +345,36 @@ int flist_remove_value(struct flist *list, void *value, void **out_val) {
     return FLIST_OK;
 }
 
-void flist_info(struct flist *p) {
+char *flist_info(struct flist *p, int simplify) {
+    char *buf, *s;
+    s = buf = fmalloc(1000);
+
     if (p == NULL) {
-        log("null");
-        return;
+        sprintf(buf, "null");
+        return buf;
     }
     struct flist_node *iter = p->head;
-    log("next:");
+    if (!simplify) buf += sprintf(buf, "next:");
     while (iter) {
-        /* printf("%d->", (int)iter->data); */
-        log("%d->", *(int *) iter->data);
+        buf += sprintf(buf, "%d->", *(int *) iter->data);
         iter = iter->next;
     }
-    /* printf("null\n"); */
-    log("null;\nprev:");
-    iter = p->tail;
-    while (iter) {
-        log("%d->", *((int *) (iter->data)));
-        iter = iter->prev;
+    buf += sprintf(buf, "null");
+    if (!simplify) {
+        buf += sprintf(buf, "prev:");
+        iter = p->tail;
+        while (iter) {
+            buf += sprintf(buf, "%d->", *((int *) (iter->data)));
+            iter = iter->prev;
+        }
+        buf += sprintf(buf, "null;length:%u\n", p->len);
     }
-    log("null;length:%u\n", p->len);
-    log("length:%u\n", p->len);
+    return s;
 }
 
 /********** iterator implements, pos is 0 base TODO..to be redesign **********/
-struct flist_iter *flist_iter_create(struct flist *list, const uint8_t direct, const size_t pos) {
+struct flist_iter *flist_iter_create(struct flist *list, const uint8_t direct,
+                                     const size_t pos) {
     struct flist_iter *iter;
     size_t i;
 

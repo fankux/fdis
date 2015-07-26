@@ -5,7 +5,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
+#include <pthread.h>
+#include <arpa/inet.h>
 
+#include "common/common.h"
 #include "common/flog.h"
 #include "common/fstr.h"
 #include "common/fmem.h"
@@ -382,7 +385,7 @@ static inline void *test_send(struct webc_event_send_param *param) {
 
 static void *poll_routine(void *arg) {
     struct webc_netinf *netinf = arg;
-    int listenfd = create_tcpsocket();
+    int listenfd = create_tcpsocket_listen(TCP_PORT);
     log("listen fd: %d", listenfd);
 
     netinf->listenfd = listenfd;

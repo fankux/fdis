@@ -5,12 +5,13 @@
 
 /* LITTLE END support only */
 
-fbits_t *fbit_create(size_t size) {
-    if (size <= 0) return NULL;
+fbits_t *fbit_create(size_t len) {
+    if (len <= 0) return NULL;
 
-    size_t real_size = (size - 1) / 8 + 1;
+    size_t real_size = (len - 1) / 8 + 1;
     struct fbits *bits = fmalloc(sizeof(struct fbits) + real_size);
     bits->size = real_size;
+    bits->len = len;
 
     return bits;
 }
@@ -25,6 +26,8 @@ void fbit_set_all(struct fbits *bits, int val) {
 }
 
 void fbit_set(struct fbits *bits, size_t offset, int bit) {
+    if (offset >= bits->len) return;
+
     int idx = offset / 8;
     char section = bits->bits[idx];
     offset %= 8;
@@ -50,7 +53,10 @@ int fbit_get_val_at_round(struct fbits *bits, int val, size_t npos,
         char section = bits->bits[idx];
 
         for (i = 0; i < 8; ++i) {
-            if ((section & (1 << i)) && val) {
+            if ((idx << 3) + i >= bits->len) break;
+
+            if ((val && (section & (1 << i))) ||
+                (!val && !(section & (1 << i)))) {
                 flag = 1;
                 if (--npos == 0) {
                     *offset = (idx << 3) + i; /* idx * 8 + i */

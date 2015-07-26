@@ -26,7 +26,6 @@ typedef void *(*thread_routine)(void *);
 struct threaditem {
     int no;
     int status;
-    int handle;
     pthread_t tid;
 
     mutex task_lock;
@@ -45,7 +44,7 @@ typedef struct threadpool {
     size_t min;
     size_t max;
     int act_num;
-    int task_num;
+    volatile int task_num;
 
     mutex lock;
 

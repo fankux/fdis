@@ -63,7 +63,8 @@ void flist_free(struct flist *list);
 
 int flist_set(struct flist *list, const size_t index, void *value);
 
-int flist_insert(struct flist *list, void *value, void *pivot, const uint8_t aorb);
+int flist_insert(struct flist *list, void *value, void *pivot,
+                 const uint8_t aorb);
 
 int flist_get(struct flist *list, void *value, struct flist_node **p);
 
@@ -94,7 +95,7 @@ void flist_iter_cancel(struct flist_iter *iter);
 
 void flist_iter_rewind(struct flist *list, struct flist_iter *iter);
 
-void flist_info(struct flist *list);
+char *flist_info(struct flist *list, int simplify);
 
 /**** function type ****/
 extern int flist_cmp_int_func(void *a, void *b);

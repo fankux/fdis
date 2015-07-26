@@ -10,10 +10,10 @@
     log("debug:"format, ##__VA_ARGS__);   \
 } while(0)
 #define log(format, ...) do { \
-    printf("[%s:%d]"format"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+    printf("[%s:%4d]"format"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
 } while(0)
 #define warn(format, ...) do { \
-    printf("[%s:%d]warning:"format"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+    printf("[%s:%4d]warning:"format"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
 } while(0)
 #define error(format, ...) do { \
     log("error:"format, ##__VA_ARGS__);   \
@@ -29,10 +29,10 @@
     log("debug:"format, ##__VA_ARGS__);   \
 } while(0)
 #define log(format, ...) do { \
-    printf("[%s:%d]"format"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+    printf("[%s:%4d]"format"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
 } while(0)
 #define warn(format, ...) do { \
-    printf("[%s:%d]warning:"format"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+    printf("[%s:%4d]warning:"format"\n", __FILE__, __LINE__, ##__VA_ARGS__); \
 } while(0)
 #define error(format, ...) do { \
     log("error:"format, ##__VA_ARGS__);   \
