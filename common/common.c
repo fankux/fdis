@@ -1,5 +1,3 @@
-#include <stdlib.h>
-#include <string.h>
 #include "common.h"
 
 /* parse key, syntax: key:[num_index]:2nd level key,
@@ -93,4 +91,23 @@ int valuesplit(char *buf, size_t *sec_len,
     if (num_flag) return 2;
 
     return 1;
+}
+
+int timeval_subtract(struct timeval *result, struct timeval *x,
+                     struct timeval *y) {
+    if (x->tv_sec > y->tv_sec)
+        return -1;
+
+    if ((x->tv_sec == y->tv_sec) && (x->tv_usec > y->tv_usec))
+        return -1;
+
+    result->tv_sec = (y->tv_sec - x->tv_sec);
+    result->tv_usec = (y->tv_usec - x->tv_usec);
+
+    if (result->tv_usec < 0) {
+        result->tv_sec--;
+        result->tv_usec += 1000000;
+    }
+
+    return 0;
 }

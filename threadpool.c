@@ -241,11 +241,16 @@ void *queue_consumer(void *arg) {
     struct fqueue *queue = (struct fqueue *) arg;
     pthread_t tid = pthread_self();
 
+    struct timeval start, stop, delta;
     log("[%ld]fetching from queue, pedding...", tid);
+    gettimeofday(&start, NULL);
+
 
     fqueue_node_t *node = fqueue_pop(queue);
 
-    log("[%ld]got a queue node", tid);
+    gettimeofday(&stop, NULL);
+    timeval_subtract(&delta, &start, &stop);
+    log("[%ld]got a queue node, time(us): %ld", tid, delta.tv_usec);
 
     return (void *) 0;
 }
@@ -254,11 +259,15 @@ void *queue_provider(void *arg) {
     struct fqueue *queue = (struct fqueue *) arg;
     pthread_t tid = pthread_self();
 
+    struct timeval start, stop, delta;
     log("[%ld]adding queue, pedding...", tid);
+    gettimeofday(&start, NULL);
 
     fqueue_add(queue, NULL);
 
-    log("[%ld]added a queue node", tid);
+    gettimeofday(&stop, NULL);
+    timeval_subtract(&delta, &start, &stop);
+    log("[%ld]added a queue node, time(us): %ld", tid, delta.tv_usec);
 
     return (void *) 0;
 }
@@ -280,16 +289,16 @@ int main(void) {
 
     struct fqueue *queue = fqueue_create_fixed(1, 1);
 
-
     for (int i = 0; i < thread_num; ++i) {
         pthread_t tid;
         pthread_create(&tid, NULL, queue_provider, queue);
+        pthread_create(&tid, NULL, queue_consumer, queue);
     }
 
-    sleep(5);
+    /*sleep(5);
     fqueue_pop(queue);
     sleep(5);
-    fqueue_pop(queue);
+    fqueue_pop(queue);*/
 
     while (1) { sleep(3); };
     return 0;

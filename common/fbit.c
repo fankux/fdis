@@ -1,7 +1,6 @@
 #include "common.h"
 #include "fbit.h"
 #include "fmem.h"
-#include "check.h"
 
 /* LITTLE END support only */
 
