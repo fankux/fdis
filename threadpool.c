@@ -45,7 +45,7 @@ threadpool_t *threadpool_create() {
     pool->tasks = fcalloc(pool->max, sizeof(struct fqueue *));
     check_null_goto_oom(pool->tasks, faild, "threadpool task queue list");
     for (int i = 0; i < THREAD_POOL_MAX; ++i) {
-        pool->tasks[i] = fqueue_create();
+        pool->tasks[i] = fqueue_create(1);
         check_null_goto_oom(pool->tasks[i], faild, "threadpool task queue");
     }
 
@@ -237,8 +237,37 @@ void *test_run(void *arg) {
     return (void *) 0;
 }
 
+void *queue_consumer(void *arg) {
+    struct fqueue *queue = (struct fqueue *) arg;
+    pthread_t tid = pthread_self();
+
+    log("[%ld]fetching from queue, pedding...", tid);
+
+    fqueue_node_t *node = fqueue_pop(queue);
+
+    log("[%ld]got a queue node", tid);
+
+    return (void *) 0;
+}
+
+void *queue_provider(void *arg) {
+    struct fqueue *queue = (struct fqueue *) arg;
+    pthread_t tid = pthread_self();
+
+    log("[%ld]adding queue, pedding...", tid);
+
+    fqueue_add(queue, NULL);
+
+    log("[%ld]added a queue node", tid);
+
+    return (void *) 0;
+}
+
+#define thread_num 3
+
 int main(void) {
-    threadpool_t *pool = threadpool_create();
+
+    /*threadpool_t *pool = threadpool_create();
     threadpool_init(pool);
 
     sleep(2);
@@ -247,7 +276,20 @@ int main(void) {
         threadtask_t *task = threadtask_create(test_run, (void *) i,
                                                TASK_RUN_IMMEDIATELY, NULL);
         threadpool_add_task(pool, task);
+    }*/
+
+    struct fqueue *queue = fqueue_create_fixed(1, 1);
+
+
+    for (int i = 0; i < thread_num; ++i) {
+        pthread_t tid;
+        pthread_create(&tid, NULL, queue_provider, queue);
     }
+
+    sleep(5);
+    fqueue_pop(queue);
+    sleep(5);
+    fqueue_pop(queue);
 
     while (1) { sleep(3); };
     return 0;
