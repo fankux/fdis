@@ -28,9 +28,7 @@ struct threaditem {
     int status;
     pthread_t tid;
 
-    mutex task_lock;
-    cond_lock task_cond;
-    struct fqueue *task_list;
+    struct fqueue *task_queue;
 
     thread_routine routine;
 };

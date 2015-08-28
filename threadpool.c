@@ -97,25 +97,9 @@ static void *thread_proc(void *arg) {
     /* TODO..exit after max idle time  */
     log("thread[%d] thread create", tno);
     while (thread->status == THREAD_RUN) {
-//        sleep(1);
-        /* fetch task */
-        struct threadtask *task;
-//        debug("thread[%d] try to accquire lock...", tno);
-        pthread_mutex_lock(&thread->task_lock);
-//        debug("thread[%d] success accquire lock...", tno);
-        while ((task = fqueue_pop(thread->task_list)) == NULL) {
-            debug("thread[%d] pedding", tno);
-            pthread_cond_wait(&thread->task_cond, &thread->task_lock);
-            debug("thread[%d] wakeup", tno);
-
-//            debug("thread[%d] try to unlock...", tno);
-            pthread_mutex_unlock(&thread->task_lock);
-//            debug("thread[%d] success unlock...", tno);
-        }
-
-//        debug("thread[%d] try to unlock...", tno);
-        pthread_mutex_unlock(&thread->task_lock);
-//        debug("thread[%d] success unlock...", tno);
+        debug("thread[%d] pedding", tno);
+        struct threadtask *task = fqueue_pop(thread->task_queue);
+        debug("thread[%d] got task", tno);
 
         log("thread[%d] executing", tno);
         task->call(task->arg);
@@ -148,16 +132,8 @@ static struct threaditem *_thread_init(threadpool_t *pool, int tno) {
 
     thread->no = tno;
     thread->routine = thread_proc;
-    thread->task_list = pool->tasks[tno];
+    thread->task_queue = pool->tasks[tno];
     thread->status = THREAD_READY;
-    status = pthread_mutex_init(&thread->task_lock, NULL);
-    check_cond_goto(status == 0, faild,
-                    "faild to init task lock, tno:%d, errno:%d, error:%s",
-                    tno, errno, strerror(errno));
-    status = pthread_cond_init(&thread->task_cond, NULL);
-    check_cond_goto(status == 0, faild,
-                    "faild to init task cond, tno:%d, errno:%d, error:%s",
-                    tno, errno, strerror(errno));
     status = pthread_create(&thread->tid, NULL, thread->routine,
                             &pool->args[tno]);
     check_cond_goto(status == 0, faild,
@@ -218,14 +194,11 @@ int threadpool_add_task(threadpool_t *pool, threadtask_t *task) {
 
     pthread_mutex_unlock(&pool->lock);
 
-    pthread_mutex_lock(&thread->task_lock);
-    fqueue_add(thread->task_list, task);
-    char *list_info = flist_info(thread->task_list->data, 1);
+    fqueue_add(thread->task_queue, task);
+    char *list_info = flist_info(thread->task_queue->data, 1);
 //    debug("thread[%zu] list_info:%s", worker_idx, list_info);
     ffree(list_info);
 //    debug("thread[%zu] task added", worker_idx);
-    pthread_cond_signal(&thread->task_cond);
-    pthread_mutex_unlock(&thread->task_lock);
 
     return 1;
 }
@@ -276,7 +249,7 @@ void *queue_provider(void *arg) {
 
 int main(void) {
 
-    /*threadpool_t *pool = threadpool_create();
+    threadpool_t *pool = threadpool_create();
     threadpool_init(pool);
 
     sleep(2);
@@ -285,15 +258,15 @@ int main(void) {
         threadtask_t *task = threadtask_create(test_run, (void *) i,
                                                TASK_RUN_IMMEDIATELY, NULL);
         threadpool_add_task(pool, task);
-    }*/
+    }
 
-    struct fqueue *queue = fqueue_create_fixed(1, 1);
+    /*struct fqueue *queue = fqueue_create_fixed(1, 1);
 
     for (int i = 0; i < thread_num; ++i) {
         pthread_t tid;
         pthread_create(&tid, NULL, queue_provider, queue);
         pthread_create(&tid, NULL, queue_consumer, queue);
-    }
+    }*/
 
     /*sleep(5);
     fqueue_pop(queue);
