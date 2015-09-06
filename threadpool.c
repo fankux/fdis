@@ -140,8 +140,6 @@ static struct threaditem *_thread_init(threadpool_t *pool, int tno) {
                     "faild to create thread, tno:%d, errno:%d, error:%s",
                     tno, errno, strerror(errno));
 
-    fbit_set(pool->bits, tno, 1);
-
     return thread;
 
     faild:
@@ -181,9 +179,7 @@ int threadpool_add_task(threadpool_t *pool, threadtask_t *task) {
 
         debug("would create new thread, tno: %d", worker_idx);
         thread = _thread_init(pool, worker_idx);
-//        if (thread == NULL) {
-//            __sync_add_and_fetch(&pool->task_num, -1);
-//        }
+
     } else { /* round robin strategy */
 
         fbit_get_val_at_round(pool->bits, 1, task_num, &worker_idx);
@@ -254,8 +250,8 @@ int main(void) {
 
     sleep(2);
 
-    for (int i = 0; i < 10; ++i) {
-        threadtask_t *task = threadtask_create(test_run, (void *) i,
+    for (int i = 0; i < 15; ++i) {
+        threadtask_t *task = threadtask_create(test_run, (void *) (i + 1),
                                                TASK_RUN_IMMEDIATELY, NULL);
         threadpool_add_task(pool, task);
     }
