@@ -1,7 +1,10 @@
 #include <time.h>
 #include <pthread.h>
-#include <unistd.h>
 #include <errno.h>
+
+#define __USE_XOPEN_EXTENDED
+
+#include <unistd.h>
 
 #include "common/common.h"
 #include "common/fmem.h"
@@ -12,11 +15,7 @@
 #include "webc.h"
 #include "threadpool.h"
 
-// FIXME..repeat creating thread
-
-//TODO..futex replace mutex
-
-
+/* TODO..futex replace mutex */
 /* TODO..thread detach */
 threadpool_t *threadpool_create() {
     struct threadpool *pool = fmalloc(sizeof(struct threadpool));
@@ -66,15 +65,15 @@ threadpool_t *threadpool_create() {
 }
 
 threadtask_t *threadtask_create(thread_func_t func, void *arg, int run_type,
-                                void *extra) {
+                                __useconds_t delay) {
     struct threadtask *task = fmalloc(sizeof(struct threadtask));
     if (task == NULL) return NULL;
 
     task->run_type = run_type;
+    task->run_delay = delay;
     task->call = func;
-    task->start_time = time(NULL);
     task->arg = arg;
-    task->extra = extra;
+    gettimeofday(&task->start_time, NULL);
     return task;
 }
 
@@ -85,11 +84,8 @@ static void *thread_proc(void *arg) {
     int tno = thread->no;
 
     pthread_mutex_lock(&pool->lock);
-//    ++pool->act_num;
+    __sync_add_and_fetch(&pool->act_num, 1);
     fbit_set(pool->bits, (size_t) thread->no, 1);
-    char *bit_info = fbit_info(pool->bits, 1);
-    log("pool bits:%s", bit_info);
-    ffree(bit_info);
     pthread_mutex_unlock(&pool->lock);
 
     thread->status = THREAD_RUN;
@@ -102,7 +98,18 @@ static void *thread_proc(void *arg) {
         debug("thread[%d] got task", tno);
 
         log("thread[%d] executing", tno);
-        task->call(task->arg);
+
+        switch (task->run_type) {
+            case TASK_RUN_IMMEDIATELY:
+                task->call(task->arg);
+                break;
+            case TASK_RUN_DELAY:
+                usleep(task->run_delay);
+                task->call(task->arg);
+                break;
+            default:
+                break;
+        }
         ffree(task);
 
         pthread_mutex_lock(&pool->lock);
@@ -111,19 +118,18 @@ static void *thread_proc(void *arg) {
     }
 
     pthread_mutex_lock(&pool->lock);
+    thread->tid = 0;
+    thread->status = THREAD_END;
     __sync_add_and_fetch(&pool->act_num, -1);
     fbit_set(pool->bits, (size_t) thread->no, 0);
     pthread_mutex_unlock(&pool->lock);
 
-    //TODO..free threaditem mem
-    thread->tid = 0;
-    thread->status = THREAD_READY;
 
     return (void *) 0;
 }
 
 /* initiate new thread which memory had allocated already */
-static struct threaditem *_thread_init(threadpool_t *pool, int tno) {
+static inline struct threaditem *_thread_init(threadpool_t *pool, int tno) {
     struct threaditem *thread = &pool->threads[tno];
     int status;
 
@@ -161,8 +167,6 @@ int threadpool_init(threadpool_t *pool) {
  * if there still thread creating spaces available, create a new thread to execute,
  * else using round robin strategy to chose a thread,
  * then queuing task to that thread
- *
- * TODO..lock free, atomic
  */
 int threadpool_add_task(threadpool_t *pool, threadtask_t *task) {
     size_t worker_idx;
@@ -182,7 +186,7 @@ int threadpool_add_task(threadpool_t *pool, threadtask_t *task) {
 
     } else { /* round robin strategy */
 
-        fbit_get_val_at_round(pool->bits, 1, task_num, &worker_idx);
+        fbit_get_val_at_round(pool->bits, 1, (size_t) task_num, &worker_idx);
 
         debug("thread[%d] round robin strategy", worker_idx);
         thread = &pool->threads[worker_idx];
@@ -191,10 +195,6 @@ int threadpool_add_task(threadpool_t *pool, threadtask_t *task) {
     pthread_mutex_unlock(&pool->lock);
 
     fqueue_add(thread->task_queue, task);
-    char *list_info = flist_info(thread->task_queue->data, 1);
-//    debug("thread[%zu] list_info:%s", worker_idx, list_info);
-    ffree(list_info);
-//    debug("thread[%zu] task added", worker_idx);
 
     return 1;
 }
@@ -250,9 +250,12 @@ int main(void) {
 
     sleep(2);
 
-    for (int i = 0; i < 15; ++i) {
-        threadtask_t *task = threadtask_create(test_run, (void *) (i + 1),
-                                               TASK_RUN_IMMEDIATELY, NULL);
+    for (int i = 0; i < 4; ++i) {
+        threadtask_t *task;
+
+        task = threadtask_create(test_run, (void *) i,
+                                 (i % 3) ? TASK_RUN_IMMEDIATELY
+                                         : TASK_RUN_DELAY, 3000000);
         threadpool_add_task(pool, task);
     }
 

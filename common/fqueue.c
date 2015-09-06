@@ -63,10 +63,16 @@ inline int fqueue_add(struct fqueue *queue, void *val) {
 }
 
 inline void *fqueue_pop(struct fqueue *queue) {
+    fqueue_node_t *n;
     if (queue->blocked) {
-        return fqueue_pop_block(queue)->data;
+        n = fqueue_pop_block(queue);
+    } else {
+        n = flist_pop_head(queue->data);
     }
-    fqueue_node_t *n = flist_pop_head(queue->data);
-    if (n) return n->data;
+    if (n) {
+        void *data = n->data;
+        ffree(n);
+        return data;
+    }
     return NULL;
 }

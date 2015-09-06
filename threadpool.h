@@ -19,18 +19,13 @@ typedef void *(*thread_routine)(void *);
 
 #define TASK_RUN_IMMEDIATELY    0
 #define TASK_RUN_DELAY          1
-#define TASK_STATUS_READY       0
-#define TASK_STATUS_RUNNING     1
-#define TASK_STATUS_DONE        2
 
 struct threaditem {
     int no;
     int status;
     pthread_t tid;
-
-    struct fqueue *task_queue;
-
     thread_routine routine;
+    struct fqueue *task_queue;
 };
 
 struct threadarg {
@@ -41,7 +36,7 @@ struct threadarg {
 typedef struct threadpool {
     size_t min;
     size_t max;
-    int act_num;
+    volatile int act_num;
     volatile int task_num;
 
     mutex lock;
@@ -60,12 +55,12 @@ typedef void *(*thread_func_t)(void *args);
 typedef struct threadtask {
     int id;
     int run_type;
-    time_t start_time;
-    time_t end_time;
+    __useconds_t run_delay;
+    struct timeval start_time;
+    struct timeval end_time;
 
     thread_func_t call;
     void *arg;
-    void *extra;
 
 } threadtask_t;
 
