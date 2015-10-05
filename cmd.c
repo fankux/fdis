@@ -95,7 +95,7 @@ struct webc_mutation *cmd_parse(char *buf) {
     int re;
 
     re = valuesplit(buf, &sec_len, &start, &next);
-    check_cond_ret(re == 1, NULL, "command parse fiald, re:%d", re);
+    check_cond(re == 1, return NULL, "command parse fiald, re:%d", re);
 
     cpystr(key_buf, start, sec_len);
 
@@ -105,21 +105,21 @@ struct webc_mutation *cmd_parse(char *buf) {
     struct webc_cmd *cmd;
 
     cmd_node = fmap_get(cmd_dict, (void *) key_buf);
-    check_null_ret(cmd_node, NULL, "command not found: %s", key_buf);
+    check_null(cmd_node, return NULL, "command not found: %s", key_buf);
 
     cmd = (struct webc_cmd *) cmd_node->value;
-    check_null_ret_oom((mutation = mutation_create(cmd)), NULL, "mutation");
+    mutation = mutation_create(cmd);
+    check_null_oom(mutation, return NULL, "mutation");
 //    check_null_ret((mutation->argv = malloc(sizeof(char *) * cmd->arity)), NULL,
 //                   CONST_STR_OOM"mutation argv");
 
     buf = next;
     /* get key */
-    check_null_ret((re = valuesplit(buf, &sec_len, &start, &next) <= 0), NULL,
-                   "command syntax error, %s", s);
+    re = valuesplit(buf, &sec_len, &start, &next);
+    check_null(re <= 0, return NULL, "command syntax error, %s", s);
 
-    struct fstr *str;
-    check_null_ret_oom((str = fstr_createlen(start, sec_len)), NULL,
-                       "mutation key");
+    struct fstr *str = fstr_createlen(start, sec_len);
+    check_null_oom(str, return NULL, "mutation key");
     mutation->key = str->buf;
     mutation->value = *next ? next + 1 : NULL;
 
@@ -132,7 +132,7 @@ char *cmd_serialize(struct webc_mutation *mutation) {
                                             fstr_getpt(mutation->key)->len + 8 +
                                             fstr_getpt(mutation->value)->len +
                                             8);
-    check_null_ret_oom(buf, NULL, "command serialize faild");
+    check_null_oom(buf, return NULL, "command serialize faild");
     sprintf(buf->buf, "%s\r\n%s\r\n%s\r\n",
             mutation->cmd->name, mutation->key, mutation->value);
 
@@ -147,31 +147,31 @@ struct webc_mutation *cmd_unserialize(char *buf) {
     char *idx;
 
     mutation = malloc(sizeof(struct webc_mutation));
-    check_null_goto_oom(mutation, faild, "command mutation");
+    check_null_oom(mutation, goto faild, "command mutation");
 
     //cmd
     idx = strstr(buf, "\r\n");
-    check_null_goto(idx, faild, "command not found");
+    check_null(idx, goto faild, "command not found");
     cmd_str = fstr_createlen(buf, idx - buf);
-    check_null_goto_oom(cmd_str, faild, "mutation cmd memory");
+    check_null_oom(cmd_str, goto faild, "mutation cmd memory");
     struct fmap_node *cmd_node = fmap_get(cmd_dict, cmd_str->buf);
-    check_null_goto(cmd_node, faild, "command %s unsupport", cmd_str->buf);
+    check_null(cmd_node, goto faild, "command %s unsupport", cmd_str->buf);
     mutation->cmd = cmd_node->value;
     buf = idx;
 
     //key
     idx = strstr(buf, "\r\n");
-    check_null_goto(idx, faild, "key not found");
+    check_null(idx, goto faild, "key not found");
     key_str = fstr_createlen(buf, idx - buf);
-    check_null_goto_oom(cmd_str, faild, "mutation key");
+    check_null_oom(cmd_str, goto faild, "mutation key");
     mutation->key = key_str->buf;
     buf = idx;
 
     //value
     idx = strstr(buf, "\r\n");
-    check_null_goto(idx, faild, "value not found");
+    check_null(idx, goto faild, "value not found");
     value_str = fstr_createlen(buf, idx - buf);
-    check_null_goto_oom(cmd_str, faild, "mutation value ");
+    check_null_oom(cmd_str, goto faild, "mutation value ");
     mutation->value = value_str->buf;
 
     return mutation;

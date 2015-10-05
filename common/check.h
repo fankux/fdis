@@ -4,41 +4,23 @@
 #include "flog.h"
 
 #define typeof __typeof__
-#define check_null_ret(var, ret, format, ...)               \
+#define check_null(var, action, format, ...)                \
 if((var) == (typeof(var))NULL) {                            \
     error(#format, ##__VA_ARGS__);                          \
-    return (ret);                                           \
+    action;                                                 \
 }
 
-#define check_null_goto(var, to, format, ...)               \
-if((var) == (typeof(var))NULL) {                            \
-    error(#format, ##__VA_ARGS__);                          \
-    goto to;                                                \
-}
-
-#define check_null_ret_oom(var, ret, format, ...)           \
+#define check_null_oom(var, action, format, ...)           \
 if((var) == (typeof(var))NULL) {                            \
     error("!!!OUT OF MEMORY!!!"#format"memory allocate faild!", ##__VA_ARGS__);  \
-    return (ret);                                           \
+    action;                                                \
 }
 
-#define check_null_goto_oom(var, to, format, ...)           \
-if((var) == (typeof(var))NULL) {                            \
-    error("!!!OUT OF MEMORY!!!"#format"memory allocate faild!", ##__VA_ARGS__);  \
-    goto to;                                                \
-}
-
-#define check_cond_ret(condition, ret, format, ...)         \
+#define check_cond(condition, action, format, ...)          \
 if(!(condition)) {                                          \
     error(#format, ##__VA_ARGS__);                          \
-    return (ret);                                           \
+    action;                                                 \
 }                                                           \
-
-#define check_cond_goto(condition, to, format, ...)         \
-if(!(condition)) {                                          \
-    error(#format, ##__VA_ARGS__);                          \
-    goto to;                                                \
-}
 
 /* !!!DO NOT use function call as args!!! */
 

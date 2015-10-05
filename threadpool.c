@@ -19,7 +19,7 @@
 /* TODO..thread detach */
 threadpool_t *threadpool_create() {
     struct threadpool *pool = fmalloc(sizeof(struct threadpool));
-    check_null_ret_oom(pool, NULL, "thread pool");
+    check_null_oom(pool, return NULL, "thread pool");
 
     fmemset(pool, 0, sizeof(struct threadpool));
 
@@ -30,22 +30,22 @@ threadpool_t *threadpool_create() {
     pthread_mutex_init(&pool->lock, NULL);
 
     pool->bits = fbit_create(THREAD_POOL_MAX);
-    check_null_goto_oom(pool->bits, faild, "threadpool bitmap");
+    check_null_oom(pool->bits, goto faild, "threadpool bitmap");
 
     pool->threads = fcalloc(pool->max, sizeof(struct threaditem));
-    check_null_goto_oom(pool->threads, faild, "threadpool thread list");
+    check_null_oom(pool->threads, goto faild, "threadpool thread list");
     for (int i = 0; i < THREAD_POOL_MAX; ++i) {
         pool->threads[i].no = i;
     }
 
     pool->args = fcalloc(pool->max, sizeof(struct threadarg));
-    check_null_goto_oom(pool->args, faild, "threadpool args list");
+    check_null_oom(pool->args, goto faild, "threadpool args list");
 
     pool->tasks = fcalloc(pool->max, sizeof(struct fqueue *));
-    check_null_goto_oom(pool->tasks, faild, "threadpool task queue list");
+    check_null_oom(pool->tasks, goto faild, "threadpool task queue list");
     for (int i = 0; i < THREAD_POOL_MAX; ++i) {
         pool->tasks[i] = fqueue_create(1);
-        check_null_goto_oom(pool->tasks[i], faild, "threadpool task queue");
+        check_null_oom(pool->tasks[i], goto faild, "threadpool task queue");
     }
 
     return pool;
@@ -142,9 +142,9 @@ static inline struct threaditem *_thread_init(threadpool_t *pool, int tno) {
     thread->status = THREAD_READY;
     status = pthread_create(&thread->tid, NULL, thread->routine,
                             &pool->args[tno]);
-    check_cond_goto(status == 0, faild,
-                    "faild to create thread, tno:%d, errno:%d, error:%s",
-                    tno, errno, strerror(errno));
+    check_cond(status == 0, goto faild,
+               "faild to create thread, tno:%d, errno:%d, error:%s",
+               tno, errno, strerror(errno));
 
     return thread;
 

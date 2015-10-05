@@ -300,7 +300,7 @@ struct webc_netinf *event_create(size_t event_size) {
     netinf->epfd = epfd;
     netinf->list_num = 0;
     netinf->eplist = fcalloc(event_size, sizeof(struct epoll_event));
-    check_null_goto_oom(netinf->eplist, faild, "netinf eplist");
+    check_null_oom(netinf->eplist, goto faild, "netinf eplist");
 
     return netinf;
 
