@@ -1,10 +1,7 @@
-#include <common/fstr.h>
-#include "arranger.h"
-
-#include "common/common.h"
 #include "common/flog.h"
-#include "common/fmap.h"
 #include "common/fmem.h"
+#include "common/fmap.h"
+#include "common/fstr.h"
 #include "common/flist.h"
 
 #include "cmd.h"
@@ -18,17 +15,17 @@ struct webc_worker;
 
 struct webc_token {
     int id;
-    void *key;
+    void* key;
 
-    struct webc_worker *worker;
+    struct webc_worker* worker;
 };
 
 #define WORKER_OFFLINE   0
 #define WORKER_LOADING   1
 #define WORKER_OK        2
 struct webc_worker {
-    void *id;
-    struct flist *tokens;
+    void* id;
+    struct flist* tokens;
 
     // server related
     int status;
@@ -43,15 +40,15 @@ struct webc_worker {
  * center schelder for requests
  */
 struct webc_arranger {
-    struct webc_token *tokens;
+    struct webc_token* tokens;
     size_t token_num; //not changed at runtime
 
-    struct webc_worker *workers;
+    struct webc_worker* workers;
     size_t worker_num;
 };
 
-struct webc_worker *worker_create_array(size_t len) {
-    struct webc_worker *worker = fcalloc(len, sizeof(struct webc_worker));
+struct webc_worker* worker_create_array(size_t len) {
+    struct webc_worker* worker = fcalloc(len, sizeof(struct webc_worker));
 
     for (size_t i = 0; i < len; ++i) {
         fmemset(worker + i, 0, sizeof(struct webc_worker));
@@ -63,14 +60,14 @@ struct webc_worker *worker_create_array(size_t len) {
     return worker;
 }
 
-struct webc_token *token_create_array(size_t len) {
-    struct webc_token *token = fcalloc(len, sizeof(struct webc_token));
+struct webc_token* token_create_array(size_t len) {
+    struct webc_token* token = fcalloc(len, sizeof(struct webc_token));
     // TODO.. field
     return token;
 }
 
-struct webc_arranger *arranger_create() {
-    struct webc_arranger *ager = fmalloc(sizeof(struct webc_arranger));
+struct webc_arranger* arranger_create() {
+    struct webc_arranger* ager = fmalloc(sizeof(struct webc_arranger));
     if (ager == NULL) return NULL;
 
     // TODO... null check,
@@ -85,8 +82,8 @@ struct webc_arranger *arranger_create() {
 
 
 ///////////////// Implement ///////////////////////////////////////////////////////////////////
-static struct webc_token *match_token(struct webc_arranger *ager,
-                                      const char *key) {
+static struct webc_token* match_token(struct webc_arranger* ager,
+                                      const char* key) {
     unsigned int hash = str_hash_func(key);
     return &ager->tokens[hash % ager->token_num];
 }
@@ -94,7 +91,7 @@ static struct webc_token *match_token(struct webc_arranger *ager,
 /*
  * sort worker by numbers of token in ascending order.
  */
-static void sort_worker(struct webc_worker *workers, size_t len) {
+static void sort_worker(struct webc_worker* workers, size_t len) {
     struct webc_worker tmp;
     int sweap;
     for (size_t i = 0; i < len - 1; ++i) {
@@ -113,27 +110,27 @@ static void sort_worker(struct webc_worker *workers, size_t len) {
     }
 }
 
-static void load_balance(struct webc_arranger *ager, struct flist *tokens) {
+static void load_balance(struct webc_arranger* ager, struct flist* tokens) {
     if (tokens == NULL) return;
 
     sort_worker(ager->workers, ager->worker_num);
 
     int i = 0;
-    struct flist_node *node = NULL;
+    struct flist_node* node = NULL;
     while ((node = flist_pop_head(tokens))) {
         int delta = flist_len(ager->workers[ager->worker_num - 1].tokens) -
                     flist_len(ager->workers[i % ager->worker_num].tokens);
         if (delta == 0) delta = 1;
 
         for (int k = 0; k < delta; ++k) {
-            struct webc_worker *worker = &ager->workers[i % ager->worker_num];
+            struct webc_worker* worker = &ager->workers[i % ager->worker_num];
             if (worker->status != WORKER_OK) {
                 //TODO..while there're no workers in good status....
                 ++i;
                 continue;
             }
 
-            ((struct webc_token *) node->data)->worker = worker;
+            ((struct webc_token*) node->data)->worker = worker;
             flist_add_head(worker->tokens, node->data);
 
             node = flist_pop_head(tokens);
@@ -145,35 +142,35 @@ static void load_balance(struct webc_arranger *ager, struct flist *tokens) {
     }
 }
 
-void arranger_init(struct webc_arranger *ager) {
+void arranger_init(struct webc_arranger* ager) {
     // TODO...local var token_list mem release
-    struct flist *token_list = flist_create();
+    struct flist* token_list = flist_create();
 
     for (size_t i = 0; i < ager->token_num; ++i) {
-        flist_add_head(token_list, (void *) &ager->tokens[i]);
+        flist_add_head(token_list, (void*) &ager->tokens[i]);
     }
     load_balance(ager, token_list);
 }
 
-static void failover(struct webc_arranger *ager, struct webc_worker *worker) {
+static void failover(struct webc_arranger* ager, struct webc_worker* worker) {
     //TODO.. find the best worker
 
-    struct flist *token_list = worker->tokens;
+    struct flist* token_list = worker->tokens;
     worker->tokens = NULL;
 
     load_balance(ager, token_list);
 }
 
-static int arranger_handle(struct webc_arranger *ager,
-                    struct webc_mutation *mutation) {
+static int arranger_handle(struct webc_arranger* ager,
+                           struct webc_mutation* mutation) {
     unsigned int hash = str_hash_func(mutation->key);
-    log("key:[%s] to hash value: %u", mutation->key, hash);
-    struct webc_token *token = &ager->tokens[hash % ager->token_num];
+    info("key:[%s] to hash value: %u", mutation->key, hash);
+    struct webc_token* token = &ager->tokens[hash % ager->token_num];
 
     int retry = 0;
     while (retry < ARRANGER_HANDLE_RETRY) {
         // after failover, worker could be changed.
-        struct webc_worker *worker = token->worker;
+        struct webc_worker* worker = token->worker;
 
         //节点加载状态
         if (worker->status == WORKER_LOADING) {
@@ -187,12 +184,12 @@ static int arranger_handle(struct webc_arranger *ager,
             ++retry;
         }
 
-        char *mu_serialized = cmd_serialize(mutation);
+        char* mu_serialized = cmd_serialize(mutation);
         if (mu_serialized == NULL) {
-            log("mutation serialized faild, stop action");
+            info("mutation serialized faild, stop action");
             return -1;
         }
-        struct fstr *smu = fstr_getpt(mu_serialized);
+        struct fstr* smu = fstr_getpt(mu_serialized);
 
         // start arranging job to worker
 
@@ -205,7 +202,7 @@ static int arranger_handle(struct webc_arranger *ager,
     return 0;
 }
 
-int action_set(char * cmd) {
+int action_set(char* cmd) {
 
 }
 

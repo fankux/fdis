@@ -4,6 +4,7 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #include "net.h"
 
@@ -39,7 +40,7 @@ int create_tcpsocket_listen(int port) {
 
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (bind(sockfd, (struct sockaddr *) &addr_in, sizeof(addr_in)) == -1)
+    if (bind(sockfd, (struct sockaddr*) &addr_in, sizeof(addr_in)) == -1)
         return -1;
 
     if (listen(sockfd, 10) == -1)
@@ -53,52 +54,58 @@ int create_tcpsocket_listen(int port) {
 }
 
 struct sock_info {
-    struct sockaddr_in *addr;
-    void *data;
+    struct sockaddr_in* addr;
+    void* data;
 };
 
-int accept_tcp(int fd, struct sock_info *info) {
+int accept_tcp(int fd, struct sock_info* info) {
     int conn_sock;
-    if (info == NULL)
+    if (info == NULL) {
         conn_sock = accept(fd, NULL, 0);
-    else
-        conn_sock = accept(fd, (struct sockaddr *) info->addr,
-                           (socklen_t *) sizeof(info->addr));
-
+    } else {
+        conn_sock = accept(fd, (struct sockaddr*) info->addr, (socklen_t*) sizeof(info->addr));
+    }
     if (conn_sock == -1) {
-        if (errno != EAGAIN && errno != ECONNABORTED && errno != EPROTO &&
-            errno != EINTR)
+        if (errno != EAGAIN && errno != ECONNABORTED && errno != EPROTO && errno != EINTR)
             return -1;
     }
     return conn_sock;
 }
 
-int read_tcp(int fd, char *buf, size_t buflen, size_t *readlen) {
-    size_t n = 0;
+ssize_t read_tcp(int fd, char* buf, size_t buflen) {
+    ssize_t n = 0;
     ssize_t nread;
     while ((nread = read(fd, buf + n, buflen - 1)) > 0) {
         n += nread;
     }
-    if (nread == -1 && errno != EAGAIN) {
+    if (nread == -1) {
+        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            return -1;
+        }
+        return n;
+    }
+    if (nread == 0) {
         return -1;
     }
-    if (readlen) *readlen = (size_t) nread;
-    return 0;
+    return n;
 }
 
-int write_tcp(int fd, char *buf, size_t buflen, size_t *writelen) {
-    int nwrite;
+ssize_t write_tcp(int fd, const char* buf, size_t buflen) {
+    ssize_t nwrite;
     size_t n = buflen;
     while (n > 0) {
         nwrite = write(fd, buf + buflen - n, n);
+
+        if (nwrite == 0) {
+            return -1;
+        }
         if (nwrite < n) {
-            if (nwrite == -1 && errno != EAGAIN) {
+            if (nwrite == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
                 return -1;
             }
             break;
         }
         n -= nwrite;
     }
-    if (writelen) *writelen = buflen - n;
-    return 0;
+    return buflen - n;
 }

@@ -5,16 +5,17 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
-#include <pthread.h>
 #include <arpa/inet.h>
 
-#include "common/common.h"
-#include "common/flog.h"
-#include "common/fstr.h"
 #include "common/fmem.h"
+#include "common/flog.h"
 #include "common/check.h"
 #include "net.h"
-#include "webc.h"
+#include "event.h"
+
+#ifdef __cplusplus
+namespace fankux{
+#endif
 
 //void release(int signal_num) {
 //    if (listen_sock != -1 && listen_sock != 0) {
@@ -22,8 +23,10 @@
 //    }
 //}
 
-inline struct webc_event *event_info_create(int fd) {
-    struct webc_event *ev = fmalloc(sizeof(struct webc_event));
+int event_active;
+
+inline struct event* event_info_create(int fd) {
+    struct event* ev = fmalloc(sizeof(struct event));
     if (ev == NULL) return NULL;
 
     ev->fd = fd;
@@ -33,17 +36,25 @@ inline struct webc_event *event_info_create(int fd) {
     ev->keepalive = 1;
     ev->recv_func = NULL;
     ev->send_func = NULL;
-
+    ev->recv_param = NULL;
+    ev->send_param = NULL;
     return ev;
 }
 
-inline void event_info_free(struct webc_event *event) {
+inline void event_info_init(struct event* ev) {
+    ev->fd = 0;
+    ev->status = EVENT_STATUS_OK;
+    ev->flags = EVENT_READ;
+    ev->async = 0;
+    ev->keepalive = 1;
+    ev->recv_func = NULL;
+    ev->send_func = NULL;
+    ev->recv_param = NULL;
+    ev->send_param = NULL;
+}
+
+inline void event_info_free(struct event* event) {
     if (event == NULL) return;
-
-    if (event->send_param.arg_free_func)
-        event->send_param.arg_free_func(event->send_param.arg);
-    event->send_param.arg = NULL;
-
     ffree(event);
 }
 
@@ -76,12 +87,14 @@ as NULL when using EPOLL_CTL_DEL.  Applications that need to be portable to kern
     if (epoll_ctl((epfd), EPOLL_CTL_DEL, (ev)->fd, &(ev)->epev) == -1) {       \
         error("epoll del faild, errno:%d, error:%s", errno, strerror(errno));  \
     }                                                       \
+    close((ev)->fd);                                        \
 } while(0)
 
-static int event_err_handle(struct webc_netinf *netinf) {
-    struct epoll_event *eplist = netinf->eplist;
-    struct webc_event *ev;
-    int n = 0, epfd = netinf->epfd;
+static int event_err_handle(struct netinf* netinf) {
+    struct epoll_event* eplist = netinf->eplist;
+    struct event* ev;
+    int epfd = netinf->epfd;
+    int n = 0;
 
     for (int i = 0; i < netinf->list_num; ++i) {
         uint32_t fire_event = eplist[i].events;
@@ -98,8 +111,8 @@ static int event_err_handle(struct webc_netinf *netinf) {
         if (fire_event & EPOLLERR || fire_event & EPOLLHUP) {
             if (errno == 0) continue;
 
-            error("epoll error occured, errno:%d, error:%s",
-                  errno, strerror(errno));
+            error("epoll error occured, fire_event:%d, errno:%d, error:%s",
+                  fire_event, errno, strerror(errno));
 
             //TODO...error handling
             epoll_del(epfd, ev);
@@ -110,10 +123,14 @@ static int event_err_handle(struct webc_netinf *netinf) {
     return n;
 }
 
-static int event_accept_handle(struct webc_netinf *netinf) {
-    struct epoll_event *eplist = netinf->eplist;
-    struct webc_event *ev, *conn_ev;
-    int fire_sock, conn_sock, n = 0, epfd = netinf->epfd;
+static int event_accept_handle(struct netinf* netinf) {
+    struct epoll_event* eplist = netinf->eplist;
+    struct event* ev;
+    struct event* conn_ev;
+    int fire_sock;
+    int conn_sock;
+    int epfd = netinf->epfd;
+    int n = 0;
 
     for (int i = 0; i < netinf->list_num; ++i) {
         ev = eplist[i].data.ptr;
@@ -121,20 +138,20 @@ static int event_accept_handle(struct webc_netinf *netinf) {
         if (fire_sock != netinf->listenfd) continue;
 
         while ((conn_sock = accept_tcp(netinf->listenfd, NULL)) != -1) {
-            debug("accept fired, fd: %d", conn_sock);
+            debug("accept fired, listen fd: %d, conn fd: %d", fire_sock, conn_sock);
 
             if (conn_sock == -1) {
                 error("accept, fd:%d", fire_sock);
             }
 
-            set_nonblocking(conn_sock);
+            info("set noblocking.ret: %d", set_nonblocking(conn_sock));
             conn_ev = event_info_create(conn_sock);
             conn_ev->flags = (ev->flags & EVENT_READ ? EVENT_READ : 0) |
                              (ev->flags & EVENT_WRITE ? EVENT_WRITE : 0);
             conn_ev->async = ev->async;
             conn_ev->recv_func = ev->recv_func;
             conn_ev->send_func = ev->send_func;
-            conn_ev->send_param = ev->send_param;
+            conn_ev->keepalive = ev->keepalive;
 
             epoll_add(epfd, conn_ev);
 
@@ -146,13 +163,14 @@ static int event_accept_handle(struct webc_netinf *netinf) {
     return n;
 }
 
-static int event_read_handle(struct webc_netinf *netinf) {
-    struct epoll_event *eplist = netinf->eplist;
-    struct webc_event *ev;
-    int fire_sock, status, sockerr, n = 0, epfd = netinf->epfd;
-    char recvbuf[BUFSIZ] = "\0";
+static int event_read_handle(struct netinf* netinf) {
+    struct epoll_event* eplist = netinf->eplist;
+    struct event* ev;
+    int fire_sock;
+    int sockerr;
+    int n = 0;
+    int epfd = netinf->epfd;
     socklen_t socklen = sizeof(int);
-    size_t recvlen = 0;
 
     for (int i = 0; i < netinf->list_num; ++i) {
         uint32_t fire_event = eplist[i].events;
@@ -169,39 +187,40 @@ static int event_read_handle(struct webc_netinf *netinf) {
         debug("EPOLLIN fired, fd: %d", fire_sock);
         getsockopt(fire_sock, SOL_SOCKET, SO_ERROR, &sockerr, &socklen);
         if (sockerr != 0) {
-            debug("socket error, fd: %d, sockerror: %d, error: %s", fire_sock,
-                  sockerr, strerror(sockerr));
+            debug("socket error, fd: %d, sockerror: %d, error: %s",
+                  fire_sock, sockerr, strerror(sockerr));
             epoll_del(epfd, ev);
             continue;
         }
 
-        status = read_tcp(fire_sock, recvbuf, BUFSIZ, &recvlen);
-        if (status == -1) {
-            epoll_del(epfd, ev);
-            continue;
-        }
         if (ev->async) {
             //TODO...call function async, call by threadpoll
-        } else {
-            if (ev->recv_func) {
-                struct fstr *frecv = fstr_createlen(recvbuf, recvlen);
-                ev->recv_func(frecv->buf, ev);
-            }
+            ++n;
+            continue;
         }
 
-        epoll_mod(epfd, ev);
+        if (ev->recv_func) {
+            if (ev->recv_func(ev) != 0) {
+                error("EPOLLIN handler invoke error, fd: %d", fire_sock);
+                epoll_del(epfd, ev);
+            }
+            epoll_mod(epfd, ev);
+        }
+
         ++n;
     }
 
     return n;
 }
 
-static int event_write_handle(struct webc_netinf *netinf) {
-    struct epoll_event *eplist = netinf->eplist;
-    struct webc_event *ev;
-    int fire_sock, status, sockerr, n = 0, epfd = netinf->epfd;
+static int event_write_handle(struct netinf* netinf) {
+    struct epoll_event* eplist = netinf->eplist;
+    struct event* ev;
+    int fire_sock;
+    int sockerr;
+    int n = 0;
+    int epfd = netinf->epfd;
     socklen_t socklen = sizeof(int);
-    size_t writelen = 0;
 
     for (int i = 0; i < netinf->list_num; ++i) {
         uint32_t fire_event = eplist[i].events;
@@ -216,7 +235,6 @@ static int event_write_handle(struct webc_netinf *netinf) {
         }
 
         debug("EPOLLOUT fired, fd: %d", fire_sock);
-
         getsockopt(fire_sock, SOL_SOCKET, SO_ERROR, &sockerr, &socklen);
         if (sockerr != 0) {
             debug("socket error, fd: %d, sockerror: %d, error: %s", fire_sock,
@@ -227,43 +245,32 @@ static int event_write_handle(struct webc_netinf *netinf) {
 
         if (ev->async) {
             //TODO... call function async, call by threadpoll
-        } else {
-            if (ev->send_func) {
-                ev->send_param.event = ev;
-                ev->send_func(&ev->send_param);
-            }
+            ++n;
+            continue;
         }
 
-        //send_func could produce retbuf which is fstr
-        if (ev->retbuf) {
-            struct fstr *ssend = fstr_getpt(ev->retbuf);
-            status = write_tcp(ev->fd, ssend->buf, (size_t) ssend->len,
-                               &writelen);
-            ffree(ssend);
-            ev->retbuf = NULL;
-            if (status == -1) {
-                error("write_tcp faild, fd:%d, errno: %d, error:%s",
-                      ev->fd, errno, strerror(errno));
+        if (ev->send_func) {
+            if (ev->send_func(ev) != 0) {
+                error("EPOLLOUT handler invok error, fd: %d", fire_sock);
                 epoll_del(epfd, ev);
-                continue;
             }
         }
 
         if (ev->keepalive) {
-            ev->flags = EVENT_READ;
+//            ev->flags = EVENT_READ;
+//            debug("event keepalive, write finish, modify to read");
             epoll_mod(epfd, ev);
         } else {
             epoll_del(epfd, ev);
         }
         ++n;
     }
-
     return n;
 }
 
-static int event_clear_handle(struct webc_netinf *netinf) {
-    struct epoll_event *eplist = netinf->eplist;
-    struct webc_event *ev;
+static int event_clear_handle(struct netinf* netinf) {
+    struct epoll_event* eplist = netinf->eplist;
+    struct event* ev;
     int n = 0;
     for (int i = 0; i < netinf->list_num; ++i) {
         ev = eplist[i].data.ptr;
@@ -277,7 +284,7 @@ static int event_clear_handle(struct webc_netinf *netinf) {
     return n;
 }
 
-inline int event_poll(struct webc_netinf *netinfo) {
+inline int event_poll(struct netinf* netinfo) {
     int n = epoll_wait(netinfo->epfd, netinfo->eplist, EVENT_LIST_MAX, 500);
     if (n == -1) {
         fatal("epoll_wait error, errno:%d, error:%s", errno, strerror(errno));
@@ -287,8 +294,8 @@ inline int event_poll(struct webc_netinf *netinfo) {
     return n;
 }
 
-struct webc_netinf *event_create(size_t event_size) {
-    struct webc_netinf *netinf = fmalloc(sizeof(struct webc_netinf));
+struct netinf* event_create(size_t event_size) {
+    struct netinf* netinf = fmalloc(sizeof(struct netinf));
     if (netinf == NULL) return NULL;
 
     int epfd = epoll_create(10);
@@ -300,7 +307,8 @@ struct webc_netinf *event_create(size_t event_size) {
     netinf->epfd = epfd;
     netinf->list_num = 0;
     netinf->eplist = fcalloc(event_size, sizeof(struct epoll_event));
-    check_null_oom(netinf->eplist, goto faild, "netinf eplist");
+    check_null_oom(netinf->eplist,
+                   goto faild, "netinf eplist");
 
     return netinf;
 
@@ -309,14 +317,12 @@ struct webc_netinf *event_create(size_t event_size) {
     return NULL;
 }
 
-void netinfo_free(struct webc_netinf *netinf) {
+void netinfo_free(struct netinf* netinf) {
     ffree(netinf->eplist);
     ffree(netinf);
 }
 
-void event_loop(struct webc_netinf *netinf) {
-//    signal(SIGINT, release);
-//    signal(SIGTERM, release);
+void event_loop(struct netinf* netinf) {
     signal(SIGPIPE, SIG_IGN);
 
     event_active = 1;
@@ -335,104 +341,118 @@ void event_loop(struct webc_netinf *netinf) {
     warn("event loop exit");
 }
 
-int event_connect(struct webc_netinf *netinf, struct webc_event *ev,
-                  struct sockaddr_in *saddr) {
-    int ret = connect(ev->fd, (const struct sockaddr *) saddr,
-                      sizeof(struct sockaddr));
+// TODO..resource clean
+inline void event_stop(struct netinf* netinf) {
+    event_active = 0;
+}
+
+int event_connect(struct netinf* netinf, struct event* ev, struct sockaddr_in* saddr) {
+    int ret = connect(ev->fd, (const struct sockaddr*) saddr, sizeof(struct sockaddr));
     if (ret == -1 && errno != EINPROGRESS) {
         error("connect remote server fail, error:%s", strerror(errno));
         return -1;
     }
     if (errno == EINPROGRESS)
-        log("connect in progress");
+        debug("connect in progress");
 
     epoll_add(netinf->epfd, ev);
 
     return 0;
 }
 
+inline void event_add(struct netinf* netinf, struct event* ev) {
+    epoll_add(netinf->epfd, ev);
+}
+
+inline void event_mod(struct netinf* netinf, struct event* ev) {
+    epoll_mod(netinf->epfd, ev);
+}
+
 #ifdef DEBUG_EVENT
 
-static inline void *test_recv(char *buf, struct webc_event *event) {
+static inline void* test_recv(char* buf, struct event* event) {
     log("request come, sock:%d, content:%s", event->fd, buf);
 
     fstr_free(fstr_getpt(buf));
-    return (void *) 0;
+    return (void*) 0;
 }
 
-static inline void *test_send(struct webc_event_send_param *param) {
+static inline void* test_send(struct event_send_param* param) {
     if (param == NULL) {
         //TODO...global error;
-        return (void *) -1;
+        return (void*) -1;
     }
 
-    struct fstr *sbuf = fstr_createlen(NULL, 200);
-    struct fstr *sargs = fstr_getpt(param->arg);
+    struct fstr* sbuf = fstr_createlen(NULL, 200);
+    struct fstr* sargs = fstr_getpt(param->arg);
     /* TODO..fstr api */
     sbuf->len += sprintf(sbuf->buf, "HTTP/1.1 200 OK\r\n"
             "Content-Type: text/html; charset=utf-8\r\n"
             "Content-Length: 12\r\n\r\n"
             "Hello World!%s", sargs->buf);
     sbuf->free -= sbuf->len;
-    param->event->retbuf = sbuf->buf;
+    flist_add_tail(&param->event->retbuf, sbuf->buf);
 
     if (param->arg_free_func)
         param->arg_free_func(param->arg);
     param->arg = NULL;
 
-    return (void *) 0;
+    return (void*) 0;
 }
 
-static void *poll_routine(void *arg) {
-    struct webc_netinf *netinf = arg;
+static void* poll_routine(void* arg) {
+    struct netinf* netinf = arg;
     int listenfd = create_tcpsocket_listen(TCP_PORT);
     log("listen fd: %d", listenfd);
 
     netinf->listenfd = listenfd;
 
-    struct webc_event *event = event_info_create(listenfd);
+    struct event* event = event_info_create(listenfd);
     event->flags = EVENT_ACCEPT | EVENT_READ | EVENT_WRITE;
     event->recv_func = test_recv;
     event->send_func = test_send;
     event->send_param.arg = fstr_create("heheda")->buf;
-    epoll_add(netinf->epfd, event);
+    event_add(netinf, event);
 
     event_loop(netinf);
 
-    return (void *) 0;
+    return (void*) 0;
 }
 
-int main(int argc, char **argv) {
-    struct webc_netinf *netinf = event_create(EVENT_LIST_MAX);
+int main(int argc, char** argv) {
+    struct netinf* netinf = event_create(EVENT_LIST_MAX);
 
     pthread_t pid;
-    pthread_create(&pid, NULL, poll_routine, (void *) netinf);
+    pthread_create(&pid, NULL, poll_routine, (void*) netinf);
     sleep(1);
 
+//    int sockfd = create_tcpsocket();
+//    struct event *event = event_info_create(sockfd);
+//    event->flags = EVENT_READ | EVENT_WRITE;
+//    event->recv_func = test_recv;
+//    event->send_func = test_send;
+//    event->keepalive = 0;
+//    event->send_param.arg = fstr_create("heheda")->buf;
+//
+//    struct sockaddr_in addr_in;
+//    addr_in.sin_port = htons(TCP_PORT);
+//    if (argc > 1) {
+//        addr_in.sin_port = htons((uint16_t) atoi(argv[1]));
+//    }
+//    addr_in.sin_addr.s_addr = inet_addr("127.0.0.1");
+//    addr_in.sin_family = AF_INET;
+//    event_connect(netinf, event, &addr_in);
 
-    int sockfd = create_tcpsocket();
-    struct webc_event *event = event_info_create(sockfd);
-    event->flags = EVENT_READ | EVENT_WRITE;
-    event->recv_func = test_recv;
-    event->send_func = test_send;
-    event->keepalive = 0;
-    event->send_param.arg = fstr_create("heheda")->buf;
-
-    struct sockaddr_in addr_in;
-    addr_in.sin_port = htons(TCP_PORT);
-    if (argc > 1) {
-        addr_in.sin_port = htons((uint16_t) atoi(argv[1]));
-    }
-    addr_in.sin_addr.s_addr = inet_addr("127.0.0.1");
-    addr_in.sin_family = AF_INET;
-    event_connect(netinf, event, &addr_in);
-
-    log("peer info : addr:%s, port:%d",
-        inet_ntoa(addr_in.sin_addr),
-        ntohs(addr_in.sin_port));
+//    log("peer info : addr:%s, port:%d",
+//        inet_ntoa(addr_in.sin_addr),
+//        ntohs(addr_in.sin_port));
 
     while (1);
     return 0;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* DEBUG_EVENT */

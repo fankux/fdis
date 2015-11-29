@@ -91,13 +91,13 @@ static void *thread_proc(void *arg) {
     thread->status = THREAD_RUN;
 
     /* TODO..exit after max idle time  */
-    log("thread[%d] thread create", tno);
+    info("thread[%d] thread create", tno);
     while (thread->status == THREAD_RUN) {
         debug("thread[%d] pedding", tno);
         struct threadtask *task = fqueue_pop(thread->task_queue);
         debug("thread[%d] got task", tno);
 
-        log("thread[%d] executing", tno);
+        info("thread[%d] executing", tno);
 
         switch (task->run_type) {
             case TASK_RUN_IMMEDIATELY:
@@ -202,7 +202,7 @@ int threadpool_add_task(threadpool_t *pool, threadtask_t *task) {
 #ifdef DEBUG_THREADPOOL
 
 void *test_run(void *arg) {
-    log("task...%d", (int) arg);
+    info("task...%d", (int) arg);
     return (void *) 0;
 }
 
@@ -211,7 +211,7 @@ void *queue_consumer(void *arg) {
     pthread_t tid = pthread_self();
 
     struct timeval start, stop, delta;
-    log("[%ld]fetching from queue, pedding...", tid);
+    info("[%ld]fetching from queue, pedding...", tid);
     gettimeofday(&start, NULL);
 
 
@@ -219,7 +219,7 @@ void *queue_consumer(void *arg) {
 
     gettimeofday(&stop, NULL);
     timeval_subtract(&delta, &start, &stop);
-    log("[%ld]got a queue node, time(us): %ld", tid, delta.tv_usec);
+    info("[%ld]got a queue node, time(us): %ld", tid, delta.tv_usec);
 
     return (void *) 0;
 }
@@ -229,14 +229,14 @@ void *queue_provider(void *arg) {
     pthread_t tid = pthread_self();
 
     struct timeval start, stop, delta;
-    log("[%ld]adding queue, pedding...", tid);
+    info("[%ld]adding queue, pedding...", tid);
     gettimeofday(&start, NULL);
 
     fqueue_add(queue, NULL);
 
     gettimeofday(&stop, NULL);
     timeval_subtract(&delta, &start, &stop);
-    log("[%ld]added a queue node, time(us): %ld", tid, delta.tv_usec);
+    info("[%ld]added a queue node, time(us): %ld", tid, delta.tv_usec);
 
     return (void *) 0;
 }

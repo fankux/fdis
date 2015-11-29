@@ -9,8 +9,8 @@
 ** return 2, number index, there may be still next section
 ** return -1, syntax error,
 ** return -2, number index that should be in [ ] is not number */
-int keysplit(char *buf, size_t *sec_len,
-             char **start, char **next) {
+int keysplit(char* buf, size_t* sec_len,
+             char** start, char** next) {
     size_t len = 0;
     char end;
 
@@ -59,9 +59,9 @@ int keysplit(char *buf, size_t *sec_len,
 ** if success, number section, return 2,
 ** if buf end, return 0;
 ** if syntax error, return -1 */
-int valuesplit(char *buf, size_t *sec_len,
-               char **start, char **next) {
-    char *s;
+int valuesplit(char* buf, size_t* sec_len,
+               char** start, char** next) {
+    char* s;
     char end;
     size_t len = 0, num_flag = 1;
 
@@ -93,8 +93,8 @@ int valuesplit(char *buf, size_t *sec_len,
     return 1;
 }
 
-int timeval_subtract(struct timeval *result, struct timeval *x,
-                     struct timeval *y) {
+inline int timeval_subtract(struct timeval* result, struct timeval* x,
+                            struct timeval* y) {
     if (x->tv_sec > y->tv_sec)
         return -1;
 
@@ -110,4 +110,11 @@ int timeval_subtract(struct timeval *result, struct timeval *x,
     }
 
     return 0;
+}
+
+inline char* time_formate(char* buffer, time_t* ptm) {
+    struct tm* stm = localtime(ptm);
+    sprintf(buffer, "%04d-%02d-%02d %02d:%02d:%02d", stm->tm_year + 1900, stm->tm_mon + 1,
+            stm->tm_mday, stm->tm_hour, stm->tm_min, stm->tm_sec);
+    return buffer;
 }

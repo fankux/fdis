@@ -1,0 +1,20 @@
+package fankux;
+
+option cc_generic_services = true;
+
+message ModelRequest {
+    required int32 seq = 1;
+    required string key = 2;
+}
+
+message ModelResponse {
+    required int32 status = 1;
+    required int32 error = 2;
+    required string msg = 3;
+}
+
+service ModelService {
+    rpc hello (ModelRequest) returns (ModelResponse);
+
+    rpc to_string (ModelRequest) returns (ModelResponse);
+}
