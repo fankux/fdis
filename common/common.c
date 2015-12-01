@@ -1,5 +1,9 @@
 #include "common.h"
 
+#ifdef __cplusplus
+namespace fankux {
+#endif
+
 /* parse key, syntax: key:[num_index]:2nd level key,
 ** key length limited to 128 charactors
 ** "sec_len" is section length,
@@ -10,7 +14,7 @@
 ** return -1, syntax error,
 ** return -2, number index that should be in [ ] is not number */
 int keysplit(char* buf, size_t* sec_len,
-             char** start, char** next) {
+        char** start, char** next) {
     size_t len = 0;
     char end;
 
@@ -60,7 +64,7 @@ int keysplit(char* buf, size_t* sec_len,
 ** if buf end, return 0;
 ** if syntax error, return -1 */
 int valuesplit(char* buf, size_t* sec_len,
-               char** start, char** next) {
+        char** start, char** next) {
     char* s;
     char end;
     size_t len = 0, num_flag = 1;
@@ -93,16 +97,15 @@ int valuesplit(char* buf, size_t* sec_len,
     return 1;
 }
 
-inline int timeval_subtract(struct timeval* result, struct timeval* x,
-                            struct timeval* y) {
-    if (x->tv_sec > y->tv_sec)
+inline int timeval_subtract(struct timeval* result, struct timeval* start, struct timeval* end) {
+    if (start->tv_sec > end->tv_sec)
         return -1;
 
-    if ((x->tv_sec == y->tv_sec) && (x->tv_usec > y->tv_usec))
+    if ((start->tv_sec == end->tv_sec) && (start->tv_usec > end->tv_usec))
         return -1;
 
-    result->tv_sec = (y->tv_sec - x->tv_sec);
-    result->tv_usec = (y->tv_usec - x->tv_usec);
+    result->tv_sec = (end->tv_sec - start->tv_sec);
+    result->tv_usec = (end->tv_usec - start->tv_usec);
 
     if (result->tv_usec < 0) {
         result->tv_sec--;
@@ -118,3 +121,7 @@ inline char* time_formate(char* buffer, time_t* ptm) {
             stm->tm_mday, stm->tm_hour, stm->tm_min, stm->tm_sec);
     return buffer;
 }
+
+#ifdef __cplusplus
+}
+#endif

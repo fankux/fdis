@@ -1,29 +1,39 @@
-#ifndef FHASH_H
-#define FHASH_H
+#ifndef FMAP_H
+#define FMAP_H
 
 #include <inttypes.h>
 #include <sys/types.h>
 
+#ifdef __cplusplus
+extern "C" {
+namespace fankux {
+#endif
+
 struct fmap_node {
-    void * key;
-    void * value;
-    struct fmap_node * next;
+    void* key;
+    void* value;
+    struct fmap_node* next;
 };
 
 struct fmap_header {
-    struct fmap_node ** map;
+    struct fmap_node** map;
     size_t size;
     size_t size_mask;
     size_t used;
 };
 
 typedef struct fmap_type {
-    unsigned int (* hash_func)(const void * key);
-    int    (* cmpkey)(const void * key1, const void * key2);
-    void * (* dupkey)(const void * key);
-    void   (* dupval)(struct fmap_node * n, void * value);
-    void   (* deskey)(void * key);
-    void   (* desval)(void * value);
+    unsigned int (* hash_func)(const void* key);
+
+    int    (* cmpkey)(const void* key1, const void* key2);
+
+    void* (* dupkey)(const void* key);
+
+    void   (* dupval)(struct fmap_node* n, void* value);
+
+    void   (* deskey)(void* key);
+
+    void   (* desval)(void* value);
 } hash_type_t;
 
 /* max size of hash is (SIZE_MAX-1),
@@ -32,11 +42,11 @@ struct fmap {
     struct fmap_header header[2];
     ssize_t rehash_idx;   // if rehash needed */
     size_t iter_num;       // iterators' number */
-    hash_type_t * type;
+    hash_type_t* type;
 };
 
 typedef struct fmap_iter {
-    struct fmap_node * current;
+    struct fmap_node* current;
     size_t no;           //current node's rank
     size_t iter_idx;
 } hash_iter_t;
@@ -80,38 +90,74 @@ typedef struct fmap_iter {
 #define fmap_size(h) ((h)->header[0].used + (h)->header[1].used)
 
 /******************** API ****************************/
-struct fmap * fmap_create();
-struct fmap * fmap_create_dupkey();
-struct fmap * fmap_create_dupboth();
-struct fmap * fmap_create_int();
-struct fmap * fmap_create_dupval();
-void fmap_empty(struct fmap *);
-void fmap_free(struct fmap *);
-int fmap_addraw(struct fmap * hash, const unsigned int hash_code, void * key, void * value);
-int fmap_add(struct fmap * hash, void * key, void * value);
-int fmap_remove(struct fmap * hash, void * key);
-struct fmap_node * fmap_pop(struct fmap * hash, void * key);
-struct fmap_node * fmap_get(struct fmap * hash, void * key);
-void * fmap_getvalue(struct fmap *map, void * key);
-struct fmap_node * fmap_getslot(struct fmap * map, void * key);
-struct fmap_node * fmap_getrand(struct fmap * hash);
-int fmap_set(struct fmap * hash, void * key, void * value);
-int fmap_replace(struct fmap * hash, void * key, void * value);
-hash_iter_t * fmap_iter_create(struct fmap * hash, size_t pos);
-hash_iter_t * fmap_iter_next(struct fmap * hash, hash_iter_t * iter);
-void fmap_iter_cancel(struct fmap * hash, hash_iter_t * iter);
-void fmap_info_str(struct fmap * hash);
-void fmap_info_int(struct fmap * hash);
+void fmap_init(struct fmap* map);
+
+struct fmap* fmap_create();
+
+struct fmap* fmap_create_dupkey();
+
+struct fmap* fmap_create_dupboth();
+
+struct fmap* fmap_create_int();
+
+struct fmap* fmap_create_dupval();
+
+void fmap_empty(struct fmap*);
+
+void fmap_free(struct fmap*);
+
+int fmap_addraw(struct fmap* map, const unsigned int hash_code, const void* key, void* value);
+
+int fmap_add(struct fmap* map, const void* key, void* value);
+
+int fmap_remove(struct fmap* map, const void* key);
+
+struct fmap_node* fmap_pop(struct fmap* map, const void* key);
+
+struct fmap_node* fmap_get(struct fmap* hash, const void* key);
+
+void* fmap_getvalue(struct fmap* map, const void* key);
+
+struct fmap_node* fmap_getslot(struct fmap* map, const void* key);
+
+struct fmap_node* fmap_getrand(struct fmap* map);
+
+int fmap_set(struct fmap* map, void* key, void* value);
+
+int fmap_replace(struct fmap* map, void* key, void* value);
+
+hash_iter_t* fmap_iter_create(struct fmap* map, size_t pos);
+
+hash_iter_t* fmap_iter_next(struct fmap* map, hash_iter_t* iter);
+
+void fmap_iter_cancel(struct fmap* map, hash_iter_t* iter);
+
+void fmap_info_str(struct fmap* map);
+
+void fmap_info_int(struct fmap* map);
 
 /******************* hash type ************************/
-extern unsigned int int_hash_func(const void * x);
-extern unsigned int str_hash_func(const void * x);
-extern unsigned int strcase_hash_func(const void * x);
-extern int int_cmp_func(const void * av, const void * bv);
-extern int str_cmp_func(const void * str1, const void * str2);
-extern int strcase_cmp_func(void * str1, void * str2);
-extern void str_set_func(struct fmap_node * n, void * str);
-extern void * str_dup_func(const void * str);
-extern void str_free_func(void * str);
+extern unsigned int int_hash_func(const void* x);
+
+extern unsigned int str_hash_func(const void* x);
+
+extern unsigned int strcase_hash_func(const void* x);
+
+extern int int_cmp_func(const void* av, const void* bv);
+
+extern int str_cmp_func(const void* str1, const void* str2);
+
+extern int strcase_cmp_func(void* str1, void* str2);
+
+extern void str_set_func(struct fmap_node* n, void* str);
+
+extern void* str_dup_func(const void* str);
+
+extern void str_free_func(void* str);
+
+#ifdef __cplusplus
+}
+};
+#endif
 
 #endif

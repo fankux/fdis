@@ -8,7 +8,6 @@ extern "C" {
 namespace fankux {
 #endif
 
-
 struct sock_info;
 
 int create_tcpsocket();

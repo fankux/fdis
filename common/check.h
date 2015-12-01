@@ -3,6 +3,11 @@
 
 #include "flog.h"
 
+#ifdef __cplusplus
+extern "C" {
+namespace fankux {
+#endif
+
 #define typeof __typeof__
 #define check_null(var, action, format, ...)                \
 if((var) == (typeof(var))NULL) {                            \
@@ -42,5 +47,10 @@ if(!(condition)) {                                          \
 
 #define test_equal_int(expect, test, skip) test_equal_int_arg((expect), (test), (skip), "")
 #define test_equal_str(expect, test, skip) test_equal_str_arg((expect), (test), (skip), "")
+
+#ifdef __cplusplus
+}
+};
+#endif
 
 #endif //UTEST_H

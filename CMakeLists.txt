@@ -16,6 +16,7 @@ set(MODULE_COMMON
         common/flist.h
         common/flist.c
         common/fmap.h
+        common/fmap.hpp
         common/fmap.c
         common/fbit.h
         common/fbit.c
@@ -33,6 +34,10 @@ set(MODULE_COMMON
         event.h
         event.c
 
+        RpcServer.cpp
+
+        proto/meta.pb.h
+        proto/meta.pb.cc
         proto/modelService.pb.h
         proto/modelService.pb.cc
         )
@@ -41,11 +46,14 @@ set(THREADPOOL
         threadpool.c
         )
 set(RPC_CONSUMER
-        rpcConsumer.cpp
+        RpcConsumer.cpp
         )
 set(RPC_PROVIDER
-        rpcProvider.cpp
-        rpcProvider.h
+        RpcServer.h
+        )
+set(WOKER
+        Woker.h
+        Woker.cpp
         )
 
 set(MODULE_COMMON_INC
@@ -63,4 +71,6 @@ link_libraries(${MODULE_COMMON_LIB})
 add_executable(webc ${MODULE_COMMON})
 add_executable(threadpool ${MODULE_COMMON} ${THREADPOOL})
 add_executable(provider ${MODULE_COMMON} ${RPC_PROVIDER})
+set_target_properties(provider PROPERTIES COMPILE_FLAGS "-DDEBUG_RPCPROVIDER")
 add_executable(consumer ${MODULE_COMMON} ${RPC_CONSUMER})
+add_executable(worker ${MODULE_COMMON} ${WOKER})

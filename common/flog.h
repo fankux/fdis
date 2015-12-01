@@ -14,8 +14,8 @@ extern "C" {
 namespace fankux{
 #endif
 
-time_t __now__;
-char __tm_buffer__[20];
+extern time_t __now__;
+extern char __tm_buffer__[20];
 
 #define debug(format, ...) do { \
     __now__ = time(NULL);       \

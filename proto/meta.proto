@@ -1,0 +1,11 @@
+package fankux;
+
+message RequestMeta {
+    required int32 service_id = 1;
+    required int32 method_id = 2;
+}
+
+message ResponseStatus {
+    required int32 status = 1;
+    required string msg = 2;
+}

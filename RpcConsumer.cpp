@@ -45,7 +45,7 @@ public:
     }
 
     void CallMethod(const MethodDescriptor* method, RpcController* controller,
-                    const Message* request, Message* response, Closure* done) {
+            const Message* request, Message* response, Closure* done) {
 
         debug("method: %s_%d", method->full_name(), method->index());
 
@@ -138,6 +138,7 @@ pthread_mutex_t FChannel::_invoke_sync = PTHREAD_MUTEX_INITIALIZER;
 }
 
 using fankux::FChannel;
+using namespace fankux;
 
 int main() {
     RpcChannel* channel = new FChannel("127.0.0.1", 7234);
@@ -148,22 +149,16 @@ int main() {
     ModelRequest request;
     ModelResponse response;
 
-    request.set_key("to_string");
-    request.set_seq(1);
-    model_service->to_string(NULL, &request, &response, NULL);
-    sleep(1);
-    std::cout << "call succ, response:" << response.SerializeAsString() <<
-    std::endl;
-    sleep(5);
-    request.Clear();
-    response.Clear();
-
-    request.set_key("hello");
-    request.set_seq(2);
-    model_service->hello(NULL, &request, &response, NULL);
-    sleep(1);
-    std::cout << "call succ, response:" << response.SerializeAsString() <<
-    std::endl;
+    for (int i = 0; i < 10; ++i) {
+        request.set_key("to_string");
+        request.set_seq(1);
+        model_service->to_string(NULL, &request, &response, NULL);
+        sleep(1);
+        info("call succ, response: %s", response.SerializeAsString().c_str());
+        sleep(5);
+        request.Clear();
+        response.Clear();
+    }
 
     return 0;
 }

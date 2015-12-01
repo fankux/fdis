@@ -38,7 +38,8 @@ void protobuf_AssignDesc_proto_2fmodelService_2eproto() {
       "proto/modelService.proto");
   GOOGLE_CHECK(file != NULL);
   ModelRequest_descriptor_ = file->message_type(0);
-  static const int ModelRequest_offsets_[2] = {
+  static const int ModelRequest_offsets_[3] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ModelRequest, __meta___),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ModelRequest, seq_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ModelRequest, key_),
   };
@@ -55,7 +56,7 @@ void protobuf_AssignDesc_proto_2fmodelService_2eproto() {
       sizeof(ModelRequest));
   ModelResponse_descriptor_ = file->message_type(1);
   static const int ModelResponse_offsets_[3] = {
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ModelResponse, status_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ModelResponse, __status___),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ModelResponse, error_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ModelResponse, msg_),
   };
@@ -104,14 +105,17 @@ void protobuf_AddDesc_proto_2fmodelService_2eproto() {
   already_here = true;
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
+  ::fankux::protobuf_AddDesc_proto_2fmeta_2eproto();
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\030proto/modelService.proto\022\006fankux\"(\n\014Mo"
-    "delRequest\022\013\n\003seq\030\001 \002(\005\022\013\n\003key\030\002 \002(\t\";\n\r"
-    "ModelResponse\022\016\n\006status\030\001 \002(\005\022\r\n\005error\030\002"
-    " \002(\005\022\013\n\003msg\030\003 \002(\t2~\n\014ModelService\0224\n\005hel"
-    "lo\022\024.fankux.ModelRequest\032\025.fankux.ModelR"
-    "esponse\0228\n\tto_string\022\024.fankux.ModelReque"
-    "st\032\025.fankux.ModelResponseB\003\200\001\001", 270);
+    "\n\030proto/modelService.proto\022\006fankux\032\020prot"
+    "o/meta.proto\"O\n\014ModelRequest\022%\n\010__meta__"
+    "\030\001 \002(\0132\023.fankux.RequestMeta\022\013\n\003seq\030\002 \002(\005"
+    "\022\013\n\003key\030\003 \002(\t\"W\n\rModelResponse\022*\n\n__stat"
+    "us__\030\001 \002(\0132\026.fankux.ResponseStatus\022\r\n\005er"
+    "ror\030\002 \002(\005\022\013\n\003msg\030\003 \002(\t2~\n\014ModelService\0224"
+    "\n\005hello\022\024.fankux.ModelRequest\032\025.fankux.M"
+    "odelResponse\0228\n\tto_string\022\024.fankux.Model"
+    "Request\032\025.fankux.ModelResponseB\003\200\001\001P\000", 357);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "proto/modelService.proto", &protobuf_RegisterTypes);
   ModelRequest::default_instance_ = new ModelRequest();
@@ -131,6 +135,7 @@ struct StaticDescriptorInitializer_proto_2fmodelService_2eproto {
 // ===================================================================
 
 #ifndef _MSC_VER
+const int ModelRequest::kMetaFieldNumber;
 const int ModelRequest::kSeqFieldNumber;
 const int ModelRequest::kKeyFieldNumber;
 #endif  // !_MSC_VER
@@ -142,6 +147,7 @@ ModelRequest::ModelRequest()
 }
 
 void ModelRequest::InitAsDefaultInstance() {
+  __meta___ = const_cast< ::fankux::RequestMeta*>(&::fankux::RequestMeta::default_instance());
 }
 
 ModelRequest::ModelRequest(const ModelRequest& from)
@@ -154,6 +160,7 @@ ModelRequest::ModelRequest(const ModelRequest& from)
 void ModelRequest::SharedCtor() {
   ::google::protobuf::internal::GetEmptyString();
   _cached_size_ = 0;
+  __meta___ = NULL;
   seq_ = 0;
   key_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -169,6 +176,7 @@ void ModelRequest::SharedDtor() {
     delete key_;
   }
   if (this != default_instance_) {
+    delete __meta___;
   }
 }
 
@@ -194,7 +202,10 @@ ModelRequest* ModelRequest::New() const {
 }
 
 void ModelRequest::Clear() {
-  if (_has_bits_[0 / 32] & 3) {
+  if (_has_bits_[0 / 32] & 7) {
+    if (has___meta__()) {
+      if (__meta___ != NULL) __meta___->::fankux::RequestMeta::Clear();
+    }
     seq_ = 0;
     if (has_key()) {
       if (key_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
@@ -216,9 +227,22 @@ bool ModelRequest::MergePartialFromCodedStream(
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
-      // required int32 seq = 1;
+      // required .fankux.RequestMeta __meta__ = 1;
       case 1: {
-        if (tag == 8) {
+        if (tag == 10) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+               input, mutable___meta__()));
+        } else {
+          goto handle_unusual;
+        }
+        if (input->ExpectTag(16)) goto parse_seq;
+        break;
+      }
+
+      // required int32 seq = 2;
+      case 2: {
+        if (tag == 16) {
+         parse_seq:
           DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
                    ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
                  input, &seq_)));
@@ -226,13 +250,13 @@ bool ModelRequest::MergePartialFromCodedStream(
         } else {
           goto handle_unusual;
         }
-        if (input->ExpectTag(18)) goto parse_key;
+        if (input->ExpectTag(26)) goto parse_key;
         break;
       }
 
-      // required string key = 2;
-      case 2: {
-        if (tag == 18) {
+      // required string key = 3;
+      case 3: {
+        if (tag == 26) {
          parse_key:
           DO_(::google::protobuf::internal::WireFormatLite::ReadString(
                 input, this->mutable_key()));
@@ -272,19 +296,25 @@ failure:
 void ModelRequest::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
   // @@protoc_insertion_point(serialize_start:fankux.ModelRequest)
-  // required int32 seq = 1;
-  if (has_seq()) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->seq(), output);
+  // required .fankux.RequestMeta __meta__ = 1;
+  if (has___meta__()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      1, this->__meta__(), output);
   }
 
-  // required string key = 2;
+  // required int32 seq = 2;
+  if (has_seq()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(2, this->seq(), output);
+  }
+
+  // required string key = 3;
   if (has_key()) {
     ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
       this->key().data(), this->key().length(),
       ::google::protobuf::internal::WireFormat::SERIALIZE,
       "key");
     ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
-      2, this->key(), output);
+      3, this->key(), output);
   }
 
   if (!unknown_fields().empty()) {
@@ -297,12 +327,19 @@ void ModelRequest::SerializeWithCachedSizes(
 ::google::protobuf::uint8* ModelRequest::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
   // @@protoc_insertion_point(serialize_to_array_start:fankux.ModelRequest)
-  // required int32 seq = 1;
-  if (has_seq()) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->seq(), target);
+  // required .fankux.RequestMeta __meta__ = 1;
+  if (has___meta__()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        1, this->__meta__(), target);
   }
 
-  // required string key = 2;
+  // required int32 seq = 2;
+  if (has_seq()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(2, this->seq(), target);
+  }
+
+  // required string key = 3;
   if (has_key()) {
     ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
       this->key().data(), this->key().length(),
@@ -310,7 +347,7 @@ void ModelRequest::SerializeWithCachedSizes(
       "key");
     target =
       ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
-        2, this->key(), target);
+        3, this->key(), target);
   }
 
   if (!unknown_fields().empty()) {
@@ -325,14 +362,21 @@ int ModelRequest::ByteSize() const {
   int total_size = 0;
 
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required int32 seq = 1;
+    // required .fankux.RequestMeta __meta__ = 1;
+    if (has___meta__()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+          this->__meta__());
+    }
+
+    // required int32 seq = 2;
     if (has_seq()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::Int32Size(
           this->seq());
     }
 
-    // required string key = 2;
+    // required string key = 3;
     if (has_key()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::StringSize(
@@ -366,6 +410,9 @@ void ModelRequest::MergeFrom(const ::google::protobuf::Message& from) {
 void ModelRequest::MergeFrom(const ModelRequest& from) {
   GOOGLE_CHECK_NE(&from, this);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from.has___meta__()) {
+      mutable___meta__()->::fankux::RequestMeta::MergeFrom(from.__meta__());
+    }
     if (from.has_seq()) {
       set_seq(from.seq());
     }
@@ -389,13 +436,17 @@ void ModelRequest::CopyFrom(const ModelRequest& from) {
 }
 
 bool ModelRequest::IsInitialized() const {
-  if ((_has_bits_[0] & 0x00000003) != 0x00000003) return false;
+  if ((_has_bits_[0] & 0x00000007) != 0x00000007) return false;
 
+  if (has___meta__()) {
+    if (!this->__meta__().IsInitialized()) return false;
+  }
   return true;
 }
 
 void ModelRequest::Swap(ModelRequest* other) {
   if (other != this) {
+    std::swap(__meta___, other->__meta___);
     std::swap(seq_, other->seq_);
     std::swap(key_, other->key_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
@@ -428,6 +479,7 @@ ModelResponse::ModelResponse()
 }
 
 void ModelResponse::InitAsDefaultInstance() {
+  __status___ = const_cast< ::fankux::ResponseStatus*>(&::fankux::ResponseStatus::default_instance());
 }
 
 ModelResponse::ModelResponse(const ModelResponse& from)
@@ -440,7 +492,7 @@ ModelResponse::ModelResponse(const ModelResponse& from)
 void ModelResponse::SharedCtor() {
   ::google::protobuf::internal::GetEmptyString();
   _cached_size_ = 0;
-  status_ = 0;
+  __status___ = NULL;
   error_ = 0;
   msg_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -456,6 +508,7 @@ void ModelResponse::SharedDtor() {
     delete msg_;
   }
   if (this != default_instance_) {
+    delete __status___;
   }
 }
 
@@ -481,28 +534,17 @@ ModelResponse* ModelResponse::New() const {
 }
 
 void ModelResponse::Clear() {
-#define OFFSET_OF_FIELD_(f) (reinterpret_cast<char*>(      \
-  &reinterpret_cast<ModelResponse*>(16)->f) - \
-   reinterpret_cast<char*>(16))
-
-#define ZR_(first, last) do {                              \
-    size_t f = OFFSET_OF_FIELD_(first);                    \
-    size_t n = OFFSET_OF_FIELD_(last) - f + sizeof(last);  \
-    ::memset(&first, 0, n);                                \
-  } while (0)
-
   if (_has_bits_[0 / 32] & 7) {
-    ZR_(status_, error_);
+    if (has___status__()) {
+      if (__status___ != NULL) __status___->::fankux::ResponseStatus::Clear();
+    }
+    error_ = 0;
     if (has_msg()) {
       if (msg_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
         msg_->clear();
       }
     }
   }
-
-#undef OFFSET_OF_FIELD_
-#undef ZR_
-
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
 }
@@ -517,13 +559,11 @@ bool ModelResponse::MergePartialFromCodedStream(
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
-      // required int32 status = 1;
+      // required .fankux.ResponseStatus __status__ = 1;
       case 1: {
-        if (tag == 8) {
-          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
-                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
-                 input, &status_)));
-          set_has_status();
+        if (tag == 10) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+               input, mutable___status__()));
         } else {
           goto handle_unusual;
         }
@@ -588,9 +628,10 @@ failure:
 void ModelResponse::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
   // @@protoc_insertion_point(serialize_start:fankux.ModelResponse)
-  // required int32 status = 1;
-  if (has_status()) {
-    ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->status(), output);
+  // required .fankux.ResponseStatus __status__ = 1;
+  if (has___status__()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      1, this->__status__(), output);
   }
 
   // required int32 error = 2;
@@ -618,9 +659,11 @@ void ModelResponse::SerializeWithCachedSizes(
 ::google::protobuf::uint8* ModelResponse::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
   // @@protoc_insertion_point(serialize_to_array_start:fankux.ModelResponse)
-  // required int32 status = 1;
-  if (has_status()) {
-    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->status(), target);
+  // required .fankux.ResponseStatus __status__ = 1;
+  if (has___status__()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        1, this->__status__(), target);
   }
 
   // required int32 error = 2;
@@ -651,11 +694,11 @@ int ModelResponse::ByteSize() const {
   int total_size = 0;
 
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required int32 status = 1;
-    if (has_status()) {
+    // required .fankux.ResponseStatus __status__ = 1;
+    if (has___status__()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::Int32Size(
-          this->status());
+        ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+          this->__status__());
     }
 
     // required int32 error = 2;
@@ -699,8 +742,8 @@ void ModelResponse::MergeFrom(const ::google::protobuf::Message& from) {
 void ModelResponse::MergeFrom(const ModelResponse& from) {
   GOOGLE_CHECK_NE(&from, this);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (from.has_status()) {
-      set_status(from.status());
+    if (from.has___status__()) {
+      mutable___status__()->::fankux::ResponseStatus::MergeFrom(from.__status__());
     }
     if (from.has_error()) {
       set_error(from.error());
@@ -727,12 +770,15 @@ void ModelResponse::CopyFrom(const ModelResponse& from) {
 bool ModelResponse::IsInitialized() const {
   if ((_has_bits_[0] & 0x00000007) != 0x00000007) return false;
 
+  if (has___status__()) {
+    if (!this->__status__().IsInitialized()) return false;
+  }
   return true;
 }
 
 void ModelResponse::Swap(ModelResponse* other) {
   if (other != this) {
-    std::swap(status_, other->status_);
+    std::swap(__status___, other->__status___);
     std::swap(error_, other->error_);
     std::swap(msg_, other->msg_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);

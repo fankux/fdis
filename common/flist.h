@@ -4,6 +4,11 @@
 #include <inttypes.h>
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+namespace fankux{
+#endif
+
 /* error code */
 #define FLIST_OK 0
 #define FLIST_NONE -1 /* none target */
@@ -103,5 +108,10 @@ extern int flist_cmp_int_func(void *a, void *b);
 extern int flist_cmp_str_func(void *a, void *b);
 
 extern int flist_cmp_casestr_func(void *a, void *b);
+
+#ifdef __cplusplus
+}
+};
+#endif
 
 #endif //FQUEUE_H

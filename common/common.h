@@ -30,7 +30,7 @@ int keysplit(char* buf, size_t* sec_len, char** start, char** next);
 
 int valuesplit(char* buf, size_t* sec_len, char** start, char** next);
 
-int timeval_subtract(struct timeval* re, struct timeval* x, struct timeval* y);
+int timeval_subtract(struct timeval* re, struct timeval* start, struct timeval* y);
 
 char* time_formate(char* buffer, time_t* ptm);
 
