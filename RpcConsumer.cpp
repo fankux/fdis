@@ -4,26 +4,20 @@
 #include <errno.h>
 #include "google/protobuf/service.h"
 #include "proto/modelService.pb.h"
+#include "proto/meta.pb.h"
 
 #include "common/flog.h"
+#include "common/check.h"
 #include "net.h"
 #include "event.h"
 
-using google::protobuf::RpcChannel;
-using google::protobuf::Service;
-using google::protobuf::Closure;
 using fankux::ModelService;
 using fankux::ModelService_Stub;
 using fankux::ModelRequest;
 using fankux::ModelResponse;
-using google::protobuf::Message;
-using google::protobuf::Closure;
-using google::protobuf::MethodDescriptor;
-using google::protobuf::RpcController;
-using google::protobuf::NewCallback;
 
 namespace fankux {
-class FChannel : public RpcChannel {
+class FChannel : public google::protobuf::RpcChannel {
 public:
     FChannel(const std::string& addr, uint16_t port) {
         _addr = addr;
@@ -44,15 +38,38 @@ public:
         }
     }
 
-    void CallMethod(const MethodDescriptor* method, RpcController* controller,
-            const Message* request, Message* response, Closure* done) {
+    void CallMethod(const google::protobuf::MethodDescriptor* method,
+            google::protobuf::RpcController* controller, const google::protobuf::Message* request,
+            google::protobuf::Message* response, google::protobuf::Closure* done) {
 
-        debug("method: %s_%d", method->full_name(), method->index());
+        debug("service: %s(%d)\n method: %s(%d)", method->service()->full_name().c_str(),
+                method->service()->index(), method->full_name().c_str(), method->index());
+
+        RequestMeta meta;
+        meta.set_service_id(method->service()->index());
+        meta.set_method_id(method->index());
+
+        int meta_len = meta.ByteSize();
+        int request_len = request->ByteSize();
+        FChannel::_package_len = meta_len + request_len;
+        if (FChannel::_package_len >= sizeof(FChannel::_send_buffer)) {
+            // TODO send for some batch
+            error("too large package, len: %d, max len: %zu", request_len,
+                    sizeof(FChannel::_send_buffer));
+            return;
+        }
+
+        debug("meta len: %d, request_len: %d", meta_len, request_len);
+        memcpy(FChannel::_send_buffer, &FChannel::_package_len, 4);
+        memcpy(FChannel::_send_buffer + 4, &meta_len, 4);
+        int ret = meta.SerializeToArray(FChannel::_send_buffer + 8, meta_len);
+        check_cond(ret, return, "serialize meta faild");
+        ret = request->SerializeToArray(FChannel::_send_buffer + 8 + meta_len, request_len);
+        check_cond(ret, return, "serialize request faild");
 
         _ev->flags = EVENT_WRITE;
         _ev->send_func = invoke_callback;
         _ev->recv_param = response;
-        _ev->send_param = const_cast<Message*>(request);
 
         event_mod(_netinf, _ev);
     }
@@ -75,10 +92,9 @@ private:
     static int invoke_callback(struct event* ev) {
         debug("invoke fired");
 
-        ModelRequest* request = (ModelRequest*) ev->send_param;
-        std::string ssend = request->SerializeAsString();
-
-        ssize_t write_len = write_tcp(ev->fd, ssend.c_str(), ssend.size());
+        debug("send buffer: %s", FChannel::_send_buffer);
+        ssize_t write_len = write_tcp(ev->fd, FChannel::_send_buffer,
+                (size_t) FChannel::_package_len);
         if (write_len == -1) {
             error("write_tcp faild, fd: %d", ev->fd);
             ev->status = EVENT_STATUS_ERR;
@@ -86,7 +102,6 @@ private:
         }
 
         ev->flags = EVENT_READ;
-        ev->send_func = NULL;
         ev->recv_func = return_callback;
         return 0;
     }
@@ -101,9 +116,33 @@ private:
             ev->status = EVENT_STATUS_ERR;
             return -1;
         }
+        if (readlen < 4) {
+            error("return package too low, len:%zu", readlen);
+            ev->status = EVENT_STATUS_ERR;
+            return -1;
+        }
 
-        ModelResponse* response = (ModelResponse*) ev->recv_param;
-        response->ParseFromArray(buffer, sizeof(buffer));
+        int package_len = 0;
+        memcpy(&package_len, buffer, 4);
+        if (package_len != readlen) {
+            error("package len incorrect, packagelen:%d, readlen: %zu", package_len, readlen);
+            ev->status = EVENT_STATUS_ERR;
+            return -1;
+        }
+
+        int status_len = 0;
+        memcpy(&status_len, buffer + 4, 4);
+
+        ResponseStatus status;
+        status.ParseFromArray(buffer + 8, status_len);
+        if (status.status() != 0) {
+            info("return error, status: %d, message: %s", status.status(), status.msg());
+            //TODO release
+            return 0;
+        }
+
+        google::protobuf::Message* response = (google::protobuf::Message*) ev->recv_param;
+        response->ParseFromArray(buffer + 8 + status_len, package_len);
 
         ev->flags = 0;
         ev->send_param = NULL;
@@ -122,16 +161,21 @@ private:
     }
 
 private:
-    std::string _addr;
     uint16_t _port;
+    std::string _addr;
     struct event* _ev;
     struct netinf* _netinf;
     pthread_t _routine_pid;
+
+    static int _package_len;
+    static char _send_buffer[1024];
 
     static bool _is_sync;
     static pthread_mutex_t _invoke_sync;
 };
 
+int FChannel::_package_len = 0;
+char FChannel::_send_buffer[1024] = "\0";
 bool FChannel::_is_sync = true;
 pthread_mutex_t FChannel::_invoke_sync = PTHREAD_MUTEX_INITIALIZER;
 
@@ -141,7 +185,7 @@ using fankux::FChannel;
 using namespace fankux;
 
 int main() {
-    RpcChannel* channel = new FChannel("127.0.0.1", 7234);
+    google::protobuf::RpcChannel* channel = new FChannel("127.0.0.1", 7234);
     ((FChannel*) channel)->run(true);
     sleep(1);
 
@@ -149,12 +193,12 @@ int main() {
     ModelRequest request;
     ModelResponse response;
 
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < 1; ++i) {
         request.set_key("to_string");
         request.set_seq(1);
         model_service->to_string(NULL, &request, &response, NULL);
         sleep(1);
-        info("call succ, response: %s", response.SerializeAsString().c_str());
+        info("call succ, response, msg: %s", response.msg().c_str());
         sleep(5);
         request.Clear();
         response.Clear();

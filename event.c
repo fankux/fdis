@@ -112,7 +112,7 @@ static int event_err_handle(struct netinf* netinf) {
             if (errno == 0) continue;
 
             error("epoll error occured, fire_event:%d, errno:%d, error:%s",
-                  fire_event, errno, strerror(errno));
+                    fire_event, errno, strerror(errno));
 
             //TODO...error handling
             epoll_del(epfd, ev);
@@ -144,7 +144,7 @@ static int event_accept_handle(struct netinf* netinf) {
                 error("accept, fd:%d", fire_sock);
             }
 
-            info("set noblocking.ret: %d", set_nonblocking(conn_sock));
+            set_nonblocking(conn_sock);
             conn_ev = event_info_create(conn_sock);
             conn_ev->flags = (ev->flags & EVENT_READ ? EVENT_READ : 0) |
                              (ev->flags & EVENT_WRITE ? EVENT_WRITE : 0);
@@ -152,6 +152,8 @@ static int event_accept_handle(struct netinf* netinf) {
             conn_ev->recv_func = ev->recv_func;
             conn_ev->send_func = ev->send_func;
             conn_ev->keepalive = ev->keepalive;
+            conn_ev->recv_param = ev->recv_param;
+            conn_ev->send_param = ev->send_param;
 
             epoll_add(epfd, conn_ev);
 
@@ -188,7 +190,7 @@ static int event_read_handle(struct netinf* netinf) {
         getsockopt(fire_sock, SOL_SOCKET, SO_ERROR, &sockerr, &socklen);
         if (sockerr != 0) {
             debug("socket error, fd: %d, sockerror: %d, error: %s",
-                  fire_sock, sockerr, strerror(sockerr));
+                    fire_sock, sockerr, strerror(sockerr));
             epoll_del(epfd, ev);
             continue;
         }
@@ -238,7 +240,7 @@ static int event_write_handle(struct netinf* netinf) {
         getsockopt(fire_sock, SOL_SOCKET, SO_ERROR, &sockerr, &socklen);
         if (sockerr != 0) {
             debug("socket error, fd: %d, sockerror: %d, error: %s", fire_sock,
-                  sockerr, strerror(sockerr));
+                    sockerr, strerror(sockerr));
             epoll_del(epfd, ev);
             continue;
         }
@@ -308,7 +310,7 @@ struct netinf* event_create(size_t event_size) {
     netinf->list_num = 0;
     netinf->eplist = fcalloc(event_size, sizeof(struct epoll_event));
     check_null_oom(netinf->eplist,
-                   goto faild, "netinf eplist");
+            goto faild, "netinf eplist");
 
     return netinf;
 

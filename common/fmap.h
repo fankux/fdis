@@ -90,7 +90,7 @@ typedef struct fmap_iter {
 #define fmap_size(h) ((h)->header[0].used + (h)->header[1].used)
 
 /******************** API ****************************/
-void fmap_init(struct fmap* map);
+void fmap_init_int(struct fmap* map);
 
 struct fmap* fmap_create();
 

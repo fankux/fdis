@@ -24,9 +24,7 @@ public:
             const ::fankux::ModelRequest* request,
             ::fankux::ModelResponse* response,
             ::google::protobuf::Closure* done) {
-        info("to_string achieved: %s", request->SerializeAsString().c_str());
-
-        response->set_error(0);
+        info("to_string achieved: seq: %d, key: %s", request->seq(), request->key().c_str());
 
         std::stringstream ss;
         ss << "seq : " << request->seq() << ", key:" << request->key() << std::endl;
@@ -50,8 +48,7 @@ public:
 class Woker {
 
 public:
-    Woker() : _id(0), _server(RpcServerFactory::instance()) {
-    }
+    Woker() : _id(0), _server(RpcServerFactory::instance()) {}
 
     void init() {
         info("woker init, id: %d", _id);
@@ -75,9 +72,7 @@ private:
 
 using fankux::Woker;
 
-#define DEBUG_WORKER
 #ifdef DEBUG_WORKER
-#define DEBUG_WORKER
 
 int main(void) {
     Woker woker;

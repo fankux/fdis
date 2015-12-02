@@ -25,7 +25,6 @@
 #include <google/protobuf/extension_set.h>
 #include <google/protobuf/service.h>
 #include <google/protobuf/unknown_field_set.h>
-#include "proto/meta.pb.h"  // IWYU pragma: export
 // @@protoc_insertion_point(includes)
 
 namespace fankux {
@@ -93,15 +92,6 @@ class ModelRequest : public ::google::protobuf::Message {
 
   // accessors -------------------------------------------------------
 
-  // required .fankux.RequestMeta __meta__ = 1;
-  inline bool has___meta__() const;
-  inline void clear___meta__();
-  static const int kMetaFieldNumber = 1;
-  inline const ::fankux::RequestMeta& __meta__() const;
-  inline ::fankux::RequestMeta* mutable___meta__();
-  inline ::fankux::RequestMeta* release___meta__();
-  inline void set_allocated___meta__(::fankux::RequestMeta* __meta__);
-
   // required int32 seq = 2;
   inline bool has_seq() const;
   inline void clear_seq();
@@ -123,8 +113,6 @@ class ModelRequest : public ::google::protobuf::Message {
 
   // @@protoc_insertion_point(class_scope:fankux.ModelRequest)
  private:
-  inline void set_has___meta__();
-  inline void clear_has___meta__();
   inline void set_has_seq();
   inline void clear_has_seq();
   inline void set_has_key();
@@ -134,7 +122,6 @@ class ModelRequest : public ::google::protobuf::Message {
 
   ::google::protobuf::uint32 _has_bits_[1];
   mutable int _cached_size_;
-  ::fankux::RequestMeta* __meta___;
   ::std::string* key_;
   ::google::protobuf::int32 seq_;
   friend void  protobuf_AddDesc_proto_2fmodelService_2eproto();
@@ -199,22 +186,6 @@ class ModelResponse : public ::google::protobuf::Message {
 
   // accessors -------------------------------------------------------
 
-  // required .fankux.ResponseStatus __status__ = 1;
-  inline bool has___status__() const;
-  inline void clear___status__();
-  static const int kStatusFieldNumber = 1;
-  inline const ::fankux::ResponseStatus& __status__() const;
-  inline ::fankux::ResponseStatus* mutable___status__();
-  inline ::fankux::ResponseStatus* release___status__();
-  inline void set_allocated___status__(::fankux::ResponseStatus* __status__);
-
-  // required int32 error = 2;
-  inline bool has_error() const;
-  inline void clear_error();
-  static const int kErrorFieldNumber = 2;
-  inline ::google::protobuf::int32 error() const;
-  inline void set_error(::google::protobuf::int32 value);
-
   // required string msg = 3;
   inline bool has_msg() const;
   inline void clear_msg();
@@ -229,10 +200,6 @@ class ModelResponse : public ::google::protobuf::Message {
 
   // @@protoc_insertion_point(class_scope:fankux.ModelResponse)
  private:
-  inline void set_has___status__();
-  inline void clear_has___status__();
-  inline void set_has_error();
-  inline void clear_has_error();
   inline void set_has_msg();
   inline void clear_has_msg();
 
@@ -240,9 +207,7 @@ class ModelResponse : public ::google::protobuf::Message {
 
   ::google::protobuf::uint32 _has_bits_[1];
   mutable int _cached_size_;
-  ::fankux::ResponseStatus* __status___;
   ::std::string* msg_;
-  ::google::protobuf::int32 error_;
   friend void  protobuf_AddDesc_proto_2fmodelService_2eproto();
   friend void protobuf_AssignDesc_proto_2fmodelService_2eproto();
   friend void protobuf_ShutdownFile_proto_2fmodelService_2eproto();
@@ -324,56 +289,15 @@ class ModelService_Stub : public ModelService {
 
 // ModelRequest
 
-// required .fankux.RequestMeta __meta__ = 1;
-inline bool ModelRequest::has___meta__() const {
-  return (_has_bits_[0] & 0x00000001u) != 0;
-}
-inline void ModelRequest::set_has___meta__() {
-  _has_bits_[0] |= 0x00000001u;
-}
-inline void ModelRequest::clear_has___meta__() {
-  _has_bits_[0] &= ~0x00000001u;
-}
-inline void ModelRequest::clear___meta__() {
-  if (__meta___ != NULL) __meta___->::fankux::RequestMeta::Clear();
-  clear_has___meta__();
-}
-inline const ::fankux::RequestMeta& ModelRequest::__meta__() const {
-  // @@protoc_insertion_point(field_get:fankux.ModelRequest.__meta__)
-  return __meta___ != NULL ? *__meta___ : *default_instance_->__meta___;
-}
-inline ::fankux::RequestMeta* ModelRequest::mutable___meta__() {
-  set_has___meta__();
-  if (__meta___ == NULL) __meta___ = new ::fankux::RequestMeta;
-  // @@protoc_insertion_point(field_mutable:fankux.ModelRequest.__meta__)
-  return __meta___;
-}
-inline ::fankux::RequestMeta* ModelRequest::release___meta__() {
-  clear_has___meta__();
-  ::fankux::RequestMeta* temp = __meta___;
-  __meta___ = NULL;
-  return temp;
-}
-inline void ModelRequest::set_allocated___meta__(::fankux::RequestMeta* __meta__) {
-  delete __meta___;
-  __meta___ = __meta__;
-  if (__meta__) {
-    set_has___meta__();
-  } else {
-    clear_has___meta__();
-  }
-  // @@protoc_insertion_point(field_set_allocated:fankux.ModelRequest.__meta__)
-}
-
 // required int32 seq = 2;
 inline bool ModelRequest::has_seq() const {
-  return (_has_bits_[0] & 0x00000002u) != 0;
+  return (_has_bits_[0] & 0x00000001u) != 0;
 }
 inline void ModelRequest::set_has_seq() {
-  _has_bits_[0] |= 0x00000002u;
+  _has_bits_[0] |= 0x00000001u;
 }
 inline void ModelRequest::clear_has_seq() {
-  _has_bits_[0] &= ~0x00000002u;
+  _has_bits_[0] &= ~0x00000001u;
 }
 inline void ModelRequest::clear_seq() {
   seq_ = 0;
@@ -391,13 +315,13 @@ inline void ModelRequest::set_seq(::google::protobuf::int32 value) {
 
 // required string key = 3;
 inline bool ModelRequest::has_key() const {
-  return (_has_bits_[0] & 0x00000004u) != 0;
+  return (_has_bits_[0] & 0x00000002u) != 0;
 }
 inline void ModelRequest::set_has_key() {
-  _has_bits_[0] |= 0x00000004u;
+  _has_bits_[0] |= 0x00000002u;
 }
 inline void ModelRequest::clear_has_key() {
-  _has_bits_[0] &= ~0x00000004u;
+  _has_bits_[0] &= ~0x00000002u;
 }
 inline void ModelRequest::clear_key() {
   if (key_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
@@ -469,80 +393,15 @@ inline void ModelRequest::set_allocated_key(::std::string* key) {
 
 // ModelResponse
 
-// required .fankux.ResponseStatus __status__ = 1;
-inline bool ModelResponse::has___status__() const {
-  return (_has_bits_[0] & 0x00000001u) != 0;
-}
-inline void ModelResponse::set_has___status__() {
-  _has_bits_[0] |= 0x00000001u;
-}
-inline void ModelResponse::clear_has___status__() {
-  _has_bits_[0] &= ~0x00000001u;
-}
-inline void ModelResponse::clear___status__() {
-  if (__status___ != NULL) __status___->::fankux::ResponseStatus::Clear();
-  clear_has___status__();
-}
-inline const ::fankux::ResponseStatus& ModelResponse::__status__() const {
-  // @@protoc_insertion_point(field_get:fankux.ModelResponse.__status__)
-  return __status___ != NULL ? *__status___ : *default_instance_->__status___;
-}
-inline ::fankux::ResponseStatus* ModelResponse::mutable___status__() {
-  set_has___status__();
-  if (__status___ == NULL) __status___ = new ::fankux::ResponseStatus;
-  // @@protoc_insertion_point(field_mutable:fankux.ModelResponse.__status__)
-  return __status___;
-}
-inline ::fankux::ResponseStatus* ModelResponse::release___status__() {
-  clear_has___status__();
-  ::fankux::ResponseStatus* temp = __status___;
-  __status___ = NULL;
-  return temp;
-}
-inline void ModelResponse::set_allocated___status__(::fankux::ResponseStatus* __status__) {
-  delete __status___;
-  __status___ = __status__;
-  if (__status__) {
-    set_has___status__();
-  } else {
-    clear_has___status__();
-  }
-  // @@protoc_insertion_point(field_set_allocated:fankux.ModelResponse.__status__)
-}
-
-// required int32 error = 2;
-inline bool ModelResponse::has_error() const {
-  return (_has_bits_[0] & 0x00000002u) != 0;
-}
-inline void ModelResponse::set_has_error() {
-  _has_bits_[0] |= 0x00000002u;
-}
-inline void ModelResponse::clear_has_error() {
-  _has_bits_[0] &= ~0x00000002u;
-}
-inline void ModelResponse::clear_error() {
-  error_ = 0;
-  clear_has_error();
-}
-inline ::google::protobuf::int32 ModelResponse::error() const {
-  // @@protoc_insertion_point(field_get:fankux.ModelResponse.error)
-  return error_;
-}
-inline void ModelResponse::set_error(::google::protobuf::int32 value) {
-  set_has_error();
-  error_ = value;
-  // @@protoc_insertion_point(field_set:fankux.ModelResponse.error)
-}
-
 // required string msg = 3;
 inline bool ModelResponse::has_msg() const {
-  return (_has_bits_[0] & 0x00000004u) != 0;
+  return (_has_bits_[0] & 0x00000001u) != 0;
 }
 inline void ModelResponse::set_has_msg() {
-  _has_bits_[0] |= 0x00000004u;
+  _has_bits_[0] |= 0x00000001u;
 }
 inline void ModelResponse::clear_has_msg() {
-  _has_bits_[0] &= ~0x00000004u;
+  _has_bits_[0] &= ~0x00000001u;
 }
 inline void ModelResponse::clear_msg() {
   if (msg_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {

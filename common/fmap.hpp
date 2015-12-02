@@ -5,7 +5,7 @@ template<class K, class V>
 class Map {
 public:
     Map() {
-        fmap_init(&_map);
+        fmap_init_int(&_map);
     }
 
     size_t size() {
@@ -13,15 +13,15 @@ public:
     }
 
     int add(const K& key, V& value) {
-        return fmap_add(&_map, &key, &value);
+        return fmap_add(&_map, key, &value);
     }
 
     int remove(const K& key) {
-        return fmap_remove(&_map, &key);
+        return fmap_remove(&_map, key);
     }
 
     V* get(const K& key) {
-        fmap_node* node = fmap_get(&_map, &key);
+        fmap_node* node = fmap_get(&_map, key);
         if (node == NULL) return NULL;
         return (V*) node->value;
     }

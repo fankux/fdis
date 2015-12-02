@@ -1,20 +1,13 @@
-import public "proto/meta.proto";
-
 package fankux;
 
 option cc_generic_services = true;
 
 message ModelRequest {
-    required RequestMeta __meta__ = 1;
-
     required int32 seq = 2;
     required string key = 3;
 }
 
 message ModelResponse {
-    required ResponseStatus __status__ = 1;
-
-    required int32 error = 2;
     required string msg = 3;
 }
 

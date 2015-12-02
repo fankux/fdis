@@ -37,6 +37,7 @@ void RpcServer::init(const uint16_t port) {
     _netinf->listenfd = create_tcpsocket_listen(_port);
     _ev = event_info_create(_netinf->listenfd);
     check_null_oom(_ev, exit(EXIT_FAILURE), "list event init");
+    RpcServer::_invoke_param._server = this;
     _ev->flags = EVENT_ACCEPT | EVENT_READ;
     _ev->recv_func = request_handler;
     _ev->recv_param = &RpcServer::_invoke_param;
@@ -54,29 +55,48 @@ int RpcServer::request_handler(struct event* ev) {
         return -1;
     }
 
-    InvokeParam* param = reinterpret_cast<InvokeParam*>(ev->recv_param);
+    int package_len = 0;
+    memcpy(&package_len, buffer, 4);
+    if (readlen <= 4 || package_len != readlen) {
+        info("tcp package length incorrect, drop it, read len: %zu, package len: %d",
+                readlen, package_len);
+        ev->status = EVENT_STATUS_ERR;
+        return -1;
+    }
+
+    InvokeParam* param = (InvokeParam*) ev->recv_param;
     RpcServer* server = param->_server;
 
+    int meta_len = 0;
+    memcpy(&meta_len, buffer + 4, 4);
     RequestMeta meta;
-    int status = meta.ParseFromArray(buffer, meta.ByteSize());
-    if (!status) {
+
+    // TODO.. check length
+
+    //set service id and method id due to calculate size
+    debug("meta len: %d", meta_len);
+    int ret = meta.ParseFromArray(buffer + 8, meta_len);
+    if (!ret) {
         param->_status = -1;
         param->_msg = "RequestMeta parse faild";
         error("RequestMeta parse faild");
         return 0;
     }
 
+    int service_id = meta.service_id();
     int method_id = meta.method_id();
-    google::protobuf::Service* service = server->_services.get(meta.method_id());
+    debug("service id: %d, method id: %d", service_id, method_id);
+    google::protobuf::Service* service = server->_services.get(meta.service_id());
     if (service == NULL) {
         param->_status = -1;
-        param->_msg = "invalid service_id:" + method_id;
+        param->_msg = "invalid service_id:" + service_id;
         error("invalid service_id: %d", method_id);
         return 0;
     }
 
-    const google::protobuf::MethodDescriptor* method = service->GetDescriptor()->method(method_id);
-    if (method == NULL) {
+    param->_method = const_cast<google::protobuf::MethodDescriptor*>(
+            service->GetDescriptor()->method(method_id));
+    if (param->_method == NULL) {
         param->_status = -1;
         param->_msg = "invalid methoid: " + meta.method_id();
         error("invalid methoid: %d", meta.method_id());
@@ -88,20 +108,21 @@ int RpcServer::request_handler(struct event* ev) {
         delete param->_request;
         param->_request;
     }
-    param->_request = service->GetRequestPrototype(method).New();
+    param->_request = service->GetRequestPrototype(param->_method).New();
     if (param->_request == NULL) {
         param->_status = -1;
         param->_msg = "server request alloc faild";
         error("server request alloc faild");
         return 0;
     }
+    param->_request->ParseFromArray(buffer + 8 + meta_len, package_len - 8 - meta_len);
 
     if (param->_response) {
         delete param->_response;
         param->_response = NULL;
     }
-    param->_response = service->GetResponsePrototype(method).New();
-    if (param->_response) {
+    param->_response = service->GetResponsePrototype(param->_method).New();
+    if (param->_response == NULL) {
         param->_status = -1;
         param->_msg = "server response alloc faild";
         error("server response alloc faild");
@@ -111,7 +132,8 @@ int RpcServer::request_handler(struct event* ev) {
     if (ev->async) {
         // TODO..actuall call in a queue, or other thread, but do not block event thread
     } else {
-        debug("start Invoke method, id: %d, full name: %s", method->index(), method->full_name());
+        debug("start Invoke method, id: %d, full name: %s", param->_method->index(),
+                param->_method->full_name().c_str());
         struct timeval start;
         struct timeval end;
         struct timeval delta;
@@ -120,8 +142,8 @@ int RpcServer::request_handler(struct event* ev) {
                 param->_request, param->_response, NULL);
         gettimeofday(&end, NULL);
         timeval_subtract(&delta, &start, &end);
-        debug("end Invoke method, id: %d, full name: %s, time: %ldus", method->index(),
-                method->full_name(), delta.tv_usec);
+        debug("end Invoke method, id: %d, full name: %s, time: %ldus", param->_method->index(),
+                param->_method->full_name().c_str(), delta.tv_usec);
     }
 
     ev->flags = EVENT_WRITE;
@@ -136,11 +158,21 @@ int RpcServer::response_handler(struct event* ev) {
 
     InvokeParam* param = reinterpret_cast<InvokeParam*> (ev->recv_param);
 
-    std::string ssend;
-    int status = param->_response->SerializeToString(&ssend);
-    check_cond(status, return -1, "serialize response faild");
+    char ssend[1024];
 
-    ssize_t write_len = write_tcp(ev->fd, ssend.c_str(), ssend.size());
+    ResponseStatus status;
+    status.set_status(param->_status);
+    status.set_msg(param->_msg);
+
+    int status_len = status.ByteSize();
+    int response_len = param->_response->ByteSize();
+    int package_len = status_len + response_len;
+    memcpy(ssend, &package_len, 4);
+    memcpy(ssend + 4, &status_len, 4);
+    int ret = param->_response->SerializeToArray(ssend + 8, response_len);
+    check_cond(ret, return -1, "serialize response faild");
+
+    ssize_t write_len = write_tcp(ev->fd, ssend, (size_t) package_len);
     if (write_len == -1) {
         info("write_tcp faild, fd: %d, errno:%d, error:%s", ev->fd, errno, strerror(errno));
         ev->status = EVENT_STATUS_ERR;

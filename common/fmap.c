@@ -116,12 +116,12 @@ static void _release_header(struct fmap_header* header) {
     _reset_header(header);
 }
 
-void fmap_init(struct fmap* map) {
+void fmap_init_int(struct fmap* map) {
     _reset_header(&map->header[1]);
     _reset_header(&map->header[0]);
     map->rehash_idx = -1;
     map->iter_num = 0;
-    map->type = &hash_type_lnkboth;
+    map->type = &hash_type_int;
 }
 
 /*create a fmap which value linked */
