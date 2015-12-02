@@ -39,11 +39,12 @@ public:
     }
 
     void CallMethod(const google::protobuf::MethodDescriptor* method,
-            google::protobuf::RpcController* controller, const google::protobuf::Message* request,
-            google::protobuf::Message* response, google::protobuf::Closure* done) {
+                    google::protobuf::RpcController* controller,
+                    const google::protobuf::Message* request,
+                    google::protobuf::Message* response, google::protobuf::Closure* done) {
 
         debug("service: %s(%d)\n method: %s(%d)", method->service()->full_name().c_str(),
-                method->service()->index(), method->full_name().c_str(), method->index());
+              method->service()->index(), method->full_name().c_str(), method->index());
 
         RequestMeta meta;
         meta.set_service_id(method->service()->index());
@@ -51,15 +52,16 @@ public:
 
         int meta_len = meta.ByteSize();
         int request_len = request->ByteSize();
-        FChannel::_package_len = meta_len + request_len;
+        FChannel::_package_len = 8 + meta_len + request_len;
         if (FChannel::_package_len >= sizeof(FChannel::_send_buffer)) {
             // TODO send for some batch
             error("too large package, len: %d, max len: %zu", request_len,
-                    sizeof(FChannel::_send_buffer));
+                  sizeof(FChannel::_send_buffer));
             return;
         }
 
-        debug("meta len: %d, request_len: %d", meta_len, request_len);
+        debug("meta len: %d, request_len: %d, ModelRequest len: %d", meta_len, request_len,
+              ((ModelRequest*) request)->ByteSize());
         memcpy(FChannel::_send_buffer, &FChannel::_package_len, 4);
         memcpy(FChannel::_send_buffer + 4, &meta_len, 4);
         int ret = meta.SerializeToArray(FChannel::_send_buffer + 8, meta_len);
@@ -92,9 +94,8 @@ private:
     static int invoke_callback(struct event* ev) {
         debug("invoke fired");
 
-        debug("send buffer: %s", FChannel::_send_buffer);
         ssize_t write_len = write_tcp(ev->fd, FChannel::_send_buffer,
-                (size_t) FChannel::_package_len);
+                                      (size_t) FChannel::_package_len);
         if (write_len == -1) {
             error("write_tcp faild, fd: %d", ev->fd);
             ev->status = EVENT_STATUS_ERR;
@@ -116,7 +117,7 @@ private:
             ev->status = EVENT_STATUS_ERR;
             return -1;
         }
-        if (readlen < 4) {
+        if (readlen < 8) {
             error("return package too low, len:%zu", readlen);
             ev->status = EVENT_STATUS_ERR;
             return -1;
@@ -141,8 +142,15 @@ private:
             return 0;
         }
 
+        // if status is 0, then request content must be existed
+        if (package_len - 8 - status_len <= 0) {
+            info("request not occured, error package");
+            //TODO release
+            return 0;
+        }
+
         google::protobuf::Message* response = (google::protobuf::Message*) ev->recv_param;
-        response->ParseFromArray(buffer + 8 + status_len, package_len);
+        response->ParseFromArray(buffer + 8 + status_len, package_len - 8 - status_len);
 
         ev->flags = 0;
         ev->send_param = NULL;
