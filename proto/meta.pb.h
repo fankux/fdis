@@ -187,7 +187,7 @@ class ResponseStatus : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 status() const;
   inline void set_status(::google::protobuf::int32 value);
 
-  // required string msg = 2;
+  // optional string msg = 2;
   inline bool has_msg() const;
   inline void clear_msg();
   static const int kMsgFieldNumber = 2;
@@ -302,7 +302,7 @@ inline void ResponseStatus::set_status(::google::protobuf::int32 value) {
   // @@protoc_insertion_point(field_set:fankux.ResponseStatus.status)
 }
 
-// required string msg = 2;
+// optional string msg = 2;
 inline bool ResponseStatus::has_msg() const {
   return (_has_bits_[0] & 0x00000002u) != 0;
 }

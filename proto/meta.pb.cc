@@ -105,7 +105,7 @@ void protobuf_AddDesc_proto_2fmeta_2eproto() {
     "\n\020proto/meta.proto\022\006fankux\"4\n\013RequestMet"
     "a\022\022\n\nservice_id\030\001 \002(\005\022\021\n\tmethod_id\030\002 \002(\005"
     "\"-\n\016ResponseStatus\022\016\n\006status\030\001 \002(\005\022\013\n\003ms"
-    "g\030\002 \002(\t", 127);
+    "g\030\002 \001(\t", 127);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "proto/meta.proto", &protobuf_RegisterTypes);
   RequestMeta::default_instance_ = new RequestMeta();
@@ -499,7 +499,7 @@ bool ResponseStatus::MergePartialFromCodedStream(
         break;
       }
 
-      // required string msg = 2;
+      // optional string msg = 2;
       case 2: {
         if (tag == 18) {
          parse_msg:
@@ -546,7 +546,7 @@ void ResponseStatus::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->status(), output);
   }
 
-  // required string msg = 2;
+  // optional string msg = 2;
   if (has_msg()) {
     ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
       this->msg().data(), this->msg().length(),
@@ -571,7 +571,7 @@ void ResponseStatus::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->status(), target);
   }
 
-  // required string msg = 2;
+  // optional string msg = 2;
   if (has_msg()) {
     ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
       this->msg().data(), this->msg().length(),
@@ -601,7 +601,7 @@ int ResponseStatus::ByteSize() const {
           this->status());
     }
 
-    // required string msg = 2;
+    // optional string msg = 2;
     if (has_msg()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::StringSize(
@@ -658,7 +658,7 @@ void ResponseStatus::CopyFrom(const ResponseStatus& from) {
 }
 
 bool ResponseStatus::IsInitialized() const {
-  if ((_has_bits_[0] & 0x00000003) != 0x00000003) return false;
+  if ((_has_bits_[0] & 0x00000001) != 0x00000001) return false;
 
   return true;
 }

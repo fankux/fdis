@@ -45,13 +45,13 @@ public:
 };
 
 
-class Woker {
+class Worker {
 
 public:
-    Woker() : _id(0), _server(RpcServerFactory::instance()) {}
+    Worker() : _id(0), _server(RpcServerFactory::instance()) {}
 
     void init() {
-        info("woker init, id: %d", _id);
+        info("worker init, id: %d", _id);
 
         _server.reg_provider(ModelServiceImpl::descriptor()->index(), ModelServiceImpl::instance());
         _server.init(7234);
@@ -70,12 +70,12 @@ private:
 #endif //WEBC_WOKER_H
 
 
-using fankux::Woker;
+using fankux::Worker;
 
 #ifdef DEBUG_WORKER
 
 int main(void) {
-    Woker woker;
+    Worker woker;
     woker.init();
     woker.run();
 

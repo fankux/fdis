@@ -52,8 +52,8 @@ set(RPC_PROVIDER
         RpcServer.h
         )
 set(WOKER
-        Woker.h
-        Woker.cpp
+    Worker.h
+    Worker.cpp
         )
 
 set(MODULE_COMMON_INC

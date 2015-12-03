@@ -1,5 +1,6 @@
 #include <sstream>
 #include <errno.h>
+#include <proto/modelService.pb.h>
 
 #include "proto/meta.pb.h"
 #include "RpcServer.h"
@@ -146,6 +147,7 @@ int RpcServer::request_handler(struct event* ev) {
                 param->_method->full_name().c_str(), delta.tv_usec);
     }
 
+    param->_status = 0;
     ev->flags = EVENT_WRITE;
     ev->send_func = response_handler;
     ev->send_param = param;
@@ -166,10 +168,10 @@ int RpcServer::response_handler(struct event* ev) {
 
     int status_len = status.ByteSize();
     int response_len = param->_response->ByteSize();
-    int package_len = status_len + response_len;
+    int package_len = 8 + status_len + response_len;
     memcpy(ssend, &package_len, 4);
     memcpy(ssend + 4, &status_len, 4);
-    int ret = param->_response->SerializeToArray(ssend + 8, response_len);
+    int ret = param->_response->SerializeToArray(ssend + 8 + status_len, response_len);
     check_cond(ret, return -1, "serialize response faild");
 
     ssize_t write_len = write_tcp(ev->fd, ssend, (size_t) package_len);
@@ -180,7 +182,6 @@ int RpcServer::response_handler(struct event* ev) {
     }
 
     ev->flags = EVENT_READ;
-    debug("write finish, modify to read");
     ev->send_func = NULL;
     ev->send_param = NULL;
     delete param->_response;
