@@ -1,21 +1,17 @@
 #include <sstream>
 #include <errno.h>
-#include <proto/modelService.pb.h>
 
+#include "proto/modelService.pb.h"
 #include "proto/meta.pb.h"
-#include "RpcServer.h"
+
+#include "rpc.h"
 #include "common/flog.h"
 #include "common/check.h"
-#include "event.h"
 #include "net.h"
-
-using google::protobuf::Message;
 
 namespace fankux {
 
 RpcServer::InvokeParam RpcServer::_invoke_param;
-
-RpcServer::RpcServer() : _port(0), _ev(NULL), _netinf(NULL) {}
 
 RpcServer::~RpcServer() {
     event_stop(_netinf);
@@ -41,7 +37,6 @@ void RpcServer::init(const uint16_t port) {
     RpcServer::_invoke_param._server = this;
     _ev->flags = EVENT_ACCEPT | EVENT_READ;
     _ev->recv_func = request_handler;
-    _ev->recv_param = &RpcServer::_invoke_param;
     event_add(_netinf, _ev);
 }
 
@@ -65,17 +60,12 @@ int RpcServer::request_handler(struct event* ev) {
         return -1;
     }
 
-    InvokeParam* param = (InvokeParam*) ev->recv_param;
+    InvokeParam* param = &RpcServer::_invoke_param;
     RpcServer* server = param->_server;
 
     int meta_len = 0;
     memcpy(&meta_len, buffer + 4, 4);
     RequestMeta meta;
-
-    // TODO.. check length
-
-    //set service id and method id due to calculate size
-    debug("meta len: %d", meta_len);
     int ret = meta.ParseFromArray(buffer + 8, meta_len);
     if (!ret) {
         param->_status = -1;
@@ -104,31 +94,17 @@ int RpcServer::request_handler(struct event* ev) {
         return 0;
     }
 
-    // TODO  same type _request & _response pool
-    if (param->_request) {
-        delete param->_request;
-        param->_request;
+    provider_id_t provider_id = build_service_method_id(service_id, method_id);
+    InternalData* in_data = param->_internal_data.get(provider_id);
+    if (in_data == NULL) {
+        error("incorrect provider, service id: %d, method id: %d", service_id, method_id);
+        ev->status = EVENT_STATUS_ERR;
+        return -1;
     }
-    param->_request = service->GetRequestPrototype(param->_method).New();
-    if (param->_request == NULL) {
-        param->_status = -1;
-        param->_msg = "server request alloc faild";
-        error("server request alloc faild");
-        return 0;
-    }
-    param->_request->ParseFromArray(buffer + 8 + meta_len, package_len - 8 - meta_len);
 
-    if (param->_response) {
-        delete param->_response;
-        param->_response = NULL;
-    }
-    param->_response = service->GetResponsePrototype(param->_method).New();
-    if (param->_response == NULL) {
-        param->_status = -1;
-        param->_msg = "server response alloc faild";
-        error("server response alloc faild");
-        return 0;
-    }
+    google::protobuf::Message* request = in_data->first;
+    google::protobuf::Message* response = in_data->second;
+    request->ParseFromArray(buffer + 8 + meta_len, package_len - 8 - meta_len);
 
     if (ev->async) {
         // TODO..actuall call in a queue, or other thread, but do not block event thread
@@ -140,7 +116,7 @@ int RpcServer::request_handler(struct event* ev) {
         struct timeval delta;
         gettimeofday(&start, NULL);
         service->CallMethod(service->GetDescriptor()->method(meta.method_id()), NULL,
-                param->_request, param->_response, NULL);
+                request, response, NULL);
         gettimeofday(&end, NULL);
         timeval_subtract(&delta, &start, &end);
         debug("end Invoke method, id: %d, full name: %s, time: %ldus", param->_method->index(),
@@ -150,7 +126,6 @@ int RpcServer::request_handler(struct event* ev) {
     param->_status = 0;
     ev->flags = EVENT_WRITE;
     ev->send_func = response_handler;
-    ev->send_param = param;
 
     return 0;
 }
@@ -158,7 +133,7 @@ int RpcServer::request_handler(struct event* ev) {
 int RpcServer::response_handler(struct event* ev) {
     debug("response_handler fired");
 
-    InvokeParam* param = reinterpret_cast<InvokeParam*> (ev->recv_param);
+    InvokeParam* param = &RpcServer::_invoke_param;
 
     char ssend[1024];
 
@@ -166,12 +141,18 @@ int RpcServer::response_handler(struct event* ev) {
     status.set_status(param->_status);
     status.set_msg(param->_msg);
 
+    int service_id = param->_method->service()->index();
+    int method_id = param->_method->index();
+    provider_id_t provider_id = build_service_method_id(service_id, method_id);
+
+    google::protobuf::Message* response = param->_internal_data.get(provider_id)->second;
+
     int status_len = status.ByteSize();
-    int response_len = param->_response->ByteSize();
+    int response_len = response->ByteSize();
     int package_len = 8 + status_len + response_len;
     memcpy(ssend, &package_len, 4);
     memcpy(ssend + 4, &status_len, 4);
-    int ret = param->_response->SerializeToArray(ssend + 8 + status_len, response_len);
+    int ret = response->SerializeToArray(ssend + 8 + status_len, response_len);
     check_cond(ret, return -1, "serialize response faild");
 
     ssize_t write_len = write_tcp(ev->fd, ssend, (size_t) package_len);
@@ -183,22 +164,63 @@ int RpcServer::response_handler(struct event* ev) {
 
     ev->flags = EVENT_READ;
     ev->send_func = NULL;
-    ev->send_param = NULL;
-    delete param->_response;
     return 0;
 }
 
 void RpcServer::reg_provider(const int id, google::protobuf::Service& service) {
+    int service_id = service.GetDescriptor()->index();
+
+    for (int i = 0; i < service.GetDescriptor()->method_count(); ++i) {
+        const google::protobuf::MethodDescriptor* method = service.GetDescriptor()->method(i);
+        int method_id = method->index();
+
+        provider_id_t provider_id = build_service_method_id(service_id, method_id);
+        info("provider register: %s(%d)==>%s(%d)", service.GetDescriptor()->full_name().c_str(),
+                service_id, method->full_name().c_str(), method_id);
+
+        InternalData* in_data = _invoke_param._internal_data.get(provider_id);
+        if (in_data != NULL) {
+            continue;
+        }
+
+        in_data = new(std::nothrow) InternalData;
+        if (in_data == NULL) {
+            fatal("server internal data alloc faild");
+            exit(EXIT_FAILURE);
+        }
+        google::protobuf::Message* request = service.GetRequestPrototype(method).New();
+        if (request == NULL) {
+            fatal("server request alloc faild");
+            delete in_data;
+            exit(EXIT_FAILURE);
+        }
+        google::protobuf::Message* response = service.GetResponsePrototype(method).New();
+        if (response == NULL) {
+            fatal("server response alloc faild");
+            delete in_data;
+            delete request;
+            exit(EXIT_FAILURE);
+        }
+
+        in_data->first = request;
+        in_data->second = response;
+        _invoke_param._internal_data.add(provider_id, *in_data);
+    }
     _services.add(id, service);
 }
 }
 
 #ifdef DEBUG_RPCSERVER
-#include "Woker.h"
+
+#include "Worker.h"
+
+using namespace fankux;
+
 int main() {
     fankux::RpcServer server;
     server.reg_provider(ModelServiceImpl::descriptor()->index(), ModelServiceImpl::instance());
     server.init(7234);
     server.run();
 }
+
 #endif

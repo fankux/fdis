@@ -15,6 +15,7 @@ namespace fankux{
 #define EVENT_READ      1
 #define EVENT_WRITE     2
 #define EVENT_ACCEPT    4
+#define EVENT_REUSE     8
 
 #define EVENT_STATUS_ERR 0
 #define EVENT_STATUS_OK 1

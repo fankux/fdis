@@ -19,21 +19,21 @@ namespace fankux{
 ** because of -1(SIZE_MAX) meaning faild,
 ** -2(SIZE_MAX - 1) meaning out of range */
 struct flist_node {
-    struct flist_node *prev;
-    struct flist_node *next;
-    void *data;
+    struct flist_node* prev;
+    struct flist_node* next;
+    void* data;
 };
 
 struct flist {
     size_t len;
-    struct flist_node *head;
-    struct flist_node *tail;
+    struct flist_node* head;
+    struct flist_node* tail;
 
-    void *(*dup_val_func)(void *value);
+    void* (* dup_val_func)(void* value);
 
-    void (*free_val_func)(void *a);
+    void (* free_val_func)(void* a);
 
-    int (*cmp_val_func)(void *a, void *b);
+    int (* cmp_val_func)(void* a, void* b);
 };
 
 /* iter direction */
@@ -43,8 +43,8 @@ struct flist {
 struct flist_iter {
     int direct;
     size_t rank;
-    struct flist_node *prev;
-    struct flist_node *next;
+    struct flist_node* prev;
+    struct flist_node* next;
 };
 
 
@@ -62,52 +62,54 @@ struct flist_iter {
     (list->dup_val_func? list->dup_val_func(value): value)
 
 /************* API *************/
-struct flist *flist_create(void);
+void flist_init(struct flist* list);
 
-void flist_free(struct flist *list);
+struct flist* flist_create();
 
-int flist_set(struct flist *list, const size_t index, void *value);
+void flist_free(struct flist* list);
 
-int flist_insert(struct flist *list, void *value, void *pivot,
-                 const uint8_t aorb);
+int flist_set(struct flist* list, const size_t index, void* value);
 
-int flist_get(struct flist *list, void *value, struct flist_node **p);
+int flist_insert(struct flist* list, void* value, void* pivot,
+        const uint8_t aorb);
 
-int flist_add_head(struct flist *list, void *value);
+int flist_get(struct flist* list, void* value, struct flist_node** p);
 
-int flist_add_tail(struct flist *list, void *value);
+int flist_add_head(struct flist* list, void* value);
 
-struct flist_node *flist_pop_head(struct flist *list);
+int flist_add_tail(struct flist* list, void* value);
 
-struct flist_node *flist_pop_tail(struct flist *list);
+struct flist_node* flist_pop_head(struct flist* list);
 
-int flist_remove(struct flist *list, void *value, const size_t pos, int count);
+struct flist_node* flist_pop_tail(struct flist* list);
 
-int flist_remove_value(struct flist *list, void *value, void **out_val);
+int flist_remove(struct flist* list, void* value, const size_t pos, int count);
 
-int flist_remove_at(struct flist *list, const size_t pos, void **out_val);
+int flist_remove_value(struct flist* list, void* value, void** out_val);
 
-struct flist_node *flist_get_index(struct flist *list, const size_t index);
+int flist_remove_at(struct flist* list, const size_t pos, void** out_val);
 
-int flist_indexof(struct flist *list, void *value);
+struct flist_node* flist_get_index(struct flist* list, const size_t index);
 
-struct flist_iter *flist_iter_create(struct flist *p, const uint8_t direct,
-                                     const size_t start_pos);
+int flist_indexof(struct flist* list, void* value);
 
-struct flist_node *flist_iter_next(struct flist_iter *iter);
+struct flist_iter* flist_iter_create(struct flist* p, const uint8_t direct,
+        const size_t start_pos);
 
-void flist_iter_cancel(struct flist_iter *iter);
+struct flist_node* flist_iter_next(struct flist_iter* iter);
 
-void flist_iter_rewind(struct flist *list, struct flist_iter *iter);
+void flist_iter_cancel(struct flist_iter* iter);
 
-char *flist_info(struct flist *list, int simplify);
+void flist_iter_rewind(struct flist* list, struct flist_iter* iter);
+
+char* flist_info(struct flist* list, int simplify);
 
 /**** function type ****/
-extern int flist_cmp_int_func(void *a, void *b);
+extern int flist_cmp_int_func(void* a, void* b);
 
-extern int flist_cmp_str_func(void *a, void *b);
+extern int flist_cmp_str_func(void* a, void* b);
 
-extern int flist_cmp_casestr_func(void *a, void *b);
+extern int flist_cmp_casestr_func(void* a, void* b);
 
 #ifdef __cplusplus
 }

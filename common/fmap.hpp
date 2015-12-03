@@ -1,3 +1,6 @@
+#ifndef FANKUX_MAP_H
+#define FANKUX_MAP_H
+
 #include "fmap.h"
 
 namespace fankux {
@@ -20,6 +23,10 @@ public:
         return fmap_remove(&_map, key);
     }
 
+    bool find(const K& key) {
+        return fmap_get(&_map, key) != NULL;
+    }
+
     V* get(const K& key) {
         fmap_node* node = fmap_get(&_map, key);
         if (node == NULL) return NULL;
@@ -30,3 +37,5 @@ private:
     struct fmap _map;
 };
 }
+
+#endif // FANKUX_MAP_H

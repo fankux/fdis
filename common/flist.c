@@ -7,13 +7,19 @@
 namespace fankux{
 #endif
 
-struct flist* flist_create(void) {
+struct flist* flist_create() {
     struct flist* list;
     if (!(list = (struct flist*) fmalloc(sizeof(struct flist))))
         return NULL;
 
     fmemset(list, 0, sizeof(struct flist));
     return list;
+}
+
+void flist_init(struct flist* list) {
+    if (list == NULL) return;
+    fmemset(list, 0, sizeof(struct flist));
+    return;
 }
 
 void flist_free(struct flist* list) {

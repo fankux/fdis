@@ -64,7 +64,7 @@ inline void event_info_free(struct event* event) {
             ((ev)->flags & EVENT_WRITE ? EPOLLOUT : 0);     \
     (ev)->epev.data.ptr = (ev);                             \
     if (epoll_ctl((epfd), EPOLL_CTL_ADD, (ev)->fd, &(ev)->epev) == -1) {       \
-        error("epoll add faild, errno:%d, error:%s", errno, strerror(errno));  \
+        warn("epoll add faild, errno:%d, error:%s", errno, strerror(errno));  \
     }                                                       \
 } while(0)
 
@@ -74,7 +74,7 @@ inline void event_info_free(struct event* event) {
             ((ev)->flags & EVENT_WRITE ? EPOLLOUT : 0);     \
     (ev)->epev.data.ptr = (ev);                             \
     if (epoll_ctl((epfd), EPOLL_CTL_MOD, (ev)->fd, &(ev)->epev) == -1) {       \
-        error("epoll mod faild, errno:%d, error:%s", errno, strerror(errno));  \
+        warn("epoll mod faild, errno:%d, error:%s", errno, strerror(errno));  \
     }                                                       \
 } while(0)
 
@@ -85,7 +85,7 @@ as NULL when using EPOLL_CTL_DEL.  Applications that need to be portable to kern
 #define epoll_del(epfd, ev) do {                            \
     ev->status = EVENT_STATUS_ERR;                          \
     if (epoll_ctl((epfd), EPOLL_CTL_DEL, (ev)->fd, &(ev)->epev) == -1) {       \
-        error("epoll del faild, errno:%d, error:%s", errno, strerror(errno));  \
+        warn("epoll del faild, errno:%d, error:%s", errno, strerror(errno));  \
     }                                                       \
     close((ev)->fd);                                        \
 } while(0)
@@ -111,7 +111,7 @@ static int event_err_handle(struct netinf* netinf) {
         if (fire_event & EPOLLERR || fire_event & EPOLLHUP) {
             if (errno == 0) continue;
 
-            error("epoll error occured, fire_event:%d, errno:%d, error:%s",
+            warn("epoll error occured, fire_event:%d, errno:%d, error:%s",
                     fire_event, errno, strerror(errno));
 
             //TODO...error handling
@@ -141,7 +141,7 @@ static int event_accept_handle(struct netinf* netinf) {
             debug("accept fired, listen fd: %d, conn fd: %d", fire_sock, conn_sock);
 
             if (conn_sock == -1) {
-                error("accept, fd:%d", fire_sock);
+                warn("accept, fd:%d", fire_sock);
             }
 
             set_nonblocking(conn_sock);
@@ -156,8 +156,6 @@ static int event_accept_handle(struct netinf* netinf) {
             conn_ev->send_param = ev->send_param;
 
             epoll_add(epfd, conn_ev);
-
-            //TODO...job after connection
             ++n;
         }
     }
@@ -203,7 +201,7 @@ static int event_read_handle(struct netinf* netinf) {
 
         if (ev->recv_func) {
             if (ev->recv_func(ev) != 0) {
-                error("EPOLLIN handler invoke error, fd: %d", fire_sock);
+                warn("EPOLLIN handler invoke error, fd: %d", fire_sock);
                 epoll_del(epfd, ev);
             }
             epoll_mod(epfd, ev);
@@ -253,7 +251,7 @@ static int event_write_handle(struct netinf* netinf) {
 
         if (ev->send_func) {
             if (ev->send_func(ev) != 0) {
-                error("EPOLLOUT handler invok error, fd: %d", fire_sock);
+                warn("EPOLLOUT handler invok error, fd: %d", fire_sock);
                 epoll_del(epfd, ev);
             }
         }
@@ -279,7 +277,9 @@ static int event_clear_handle(struct netinf* netinf) {
         if (ev->status == EVENT_STATUS_ERR) {
             eplist[i].data.ptr = NULL;
             close(ev->fd);
-            event_info_free(ev);
+            if (ev->flags & EVENT_REUSE == 0) {
+                event_info_free(ev);
+            }
             ++n;
         }
     }
@@ -309,8 +309,7 @@ struct netinf* event_create(size_t event_size) {
     netinf->epfd = epfd;
     netinf->list_num = 0;
     netinf->eplist = fcalloc(event_size, sizeof(struct epoll_event));
-    check_null_oom(netinf->eplist,
-            goto faild, "netinf eplist");
+    check_null_oom(netinf->eplist, goto faild, "netinf eplist");
 
     return netinf;
 
@@ -351,7 +350,7 @@ inline void event_stop(struct netinf* netinf) {
 int event_connect(struct netinf* netinf, struct event* ev, struct sockaddr_in* saddr) {
     int ret = connect(ev->fd, (const struct sockaddr*) saddr, sizeof(struct sockaddr));
     if (ret == -1 && errno != EINPROGRESS) {
-        error("connect remote server fail, error:%s", strerror(errno));
+        warn("connect remote server fail, error:%s", strerror(errno));
         return -1;
     }
     if (errno == EINPROGRESS)
