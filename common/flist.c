@@ -35,6 +35,19 @@ void flist_free(struct flist* list) {
     ffree(list);
 }
 
+void flist_clear(struct flist* list) {
+    if (list == NULL) return;
+
+    struct flist_node* p = list->head;
+    struct flist_node* q = p;
+    for (size_t i = list->len; i > 0; --i) {
+        flist_free_val(list, q);
+        p = p->next;
+        q = p;
+    }
+    fmemset(list, 0, sizeof(struct flist));
+}
+
 /* insert a value, aorb means 'after or before',
 ** aorb 1, insert value before pivot, its default
 ** aorb 2, insert value after pivot ,

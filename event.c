@@ -38,6 +38,7 @@ inline struct event* event_info_create(int fd) {
     ev->send_func = NULL;
     ev->recv_param = NULL;
     ev->send_param = NULL;
+    ev->faild_func = NULL;
     return ev;
 }
 
@@ -51,6 +52,7 @@ inline void event_info_init(struct event* ev) {
     ev->send_func = NULL;
     ev->recv_param = NULL;
     ev->send_param = NULL;
+    ev->faild_func = NULL;
 }
 
 inline void event_info_free(struct event* event) {
@@ -58,13 +60,22 @@ inline void event_info_free(struct event* event) {
     ffree(event);
 }
 
+#define epoll_del(epfd, ev) do {                            \
+    ev->status = EVENT_STATUS_ERR;                          \
+    if (epoll_ctl((epfd), EPOLL_CTL_DEL, (ev)->fd, &(ev)->epev) == -1) {      \
+        warn("epoll del faild, errno:%d, error:%s", errno, strerror(errno));  \
+    }                                                       \
+    close((ev)->fd);                                        \
+} while(0)
+
 #define epoll_add(epfd, ev) do {                            \
     (ev)->epev.events = EPOLLET |                           \
             ((ev)->flags & EVENT_READ ? EPOLLIN : 0) |      \
             ((ev)->flags & EVENT_WRITE ? EPOLLOUT : 0);     \
     (ev)->epev.data.ptr = (ev);                             \
-    if (epoll_ctl((epfd), EPOLL_CTL_ADD, (ev)->fd, &(ev)->epev) == -1) {       \
+    if (epoll_ctl((epfd), EPOLL_CTL_ADD, (ev)->fd, &(ev)->epev) == -1) {      \
         warn("epoll add faild, errno:%d, error:%s", errno, strerror(errno));  \
+        (ev)->status = EVENT_STATUS_ERR;                    \
     }                                                       \
 } while(0)
 
@@ -73,21 +84,10 @@ inline void event_info_free(struct event* event) {
             ((ev)->flags & EVENT_READ ? EPOLLIN : 0) |      \
             ((ev)->flags & EVENT_WRITE ? EPOLLOUT : 0);     \
     (ev)->epev.data.ptr = (ev);                             \
-    if (epoll_ctl((epfd), EPOLL_CTL_MOD, (ev)->fd, &(ev)->epev) == -1) {       \
+    if (epoll_ctl((epfd), EPOLL_CTL_MOD, (ev)->fd, &(ev)->epev) == -1) {      \
         warn("epoll mod faild, errno:%d, error:%s", errno, strerror(errno));  \
+        (ev)->status = EVENT_STATUS_ERR;                    \
     }                                                       \
-} while(0)
-
-/* In  kernel  versions before 2.6.9, the EPOLL_CTL_DEL operation required a non-null pointer
-in event, even though this argument is ignored.  Since Linux 2.6.9, event can be specified
-as NULL when using EPOLL_CTL_DEL.  Applications that need to be portable to kernels before
-2.6.9 should specify a non-null pointer in event. */
-#define epoll_del(epfd, ev) do {                            \
-    ev->status = EVENT_STATUS_ERR;                          \
-    if (epoll_ctl((epfd), EPOLL_CTL_DEL, (ev)->fd, &(ev)->epev) == -1) {       \
-        warn("epoll del faild, errno:%d, error:%s", errno, strerror(errno));  \
-    }                                                       \
-    close((ev)->fd);                                        \
 } while(0)
 
 static int event_err_handle(struct netinf* netinf) {
@@ -154,6 +154,7 @@ static int event_accept_handle(struct netinf* netinf) {
             conn_ev->keepalive = ev->keepalive;
             conn_ev->recv_param = ev->recv_param;
             conn_ev->send_param = ev->send_param;
+            conn_ev->faild_func = ev->faild_func;
 
             epoll_add(epfd, conn_ev);
             ++n;
@@ -257,8 +258,6 @@ static int event_write_handle(struct netinf* netinf) {
         }
 
         if (ev->keepalive) {
-//            ev->flags = EVENT_READ;
-//            debug("event keepalive, write finish, modify to read");
             epoll_mod(epfd, ev);
         } else {
             epoll_del(epfd, ev);
@@ -274,6 +273,11 @@ static int event_clear_handle(struct netinf* netinf) {
     int n = 0;
     for (int i = 0; i < netinf->list_num; ++i) {
         ev = eplist[i].data.ptr;
+        debug("clear handler...");
+        if (ev->faild_func) {
+            debug("call faild func");
+            ev->faild_func(ev);
+        }
         if (ev->status == EVENT_STATUS_ERR) {
             eplist[i].data.ptr = NULL;
             close(ev->fd);
@@ -354,7 +358,7 @@ int event_connect(struct netinf* netinf, struct event* ev, struct sockaddr_in* s
         return -1;
     }
     if (errno == EINPROGRESS)
-        debug("connect in progress");
+            debug("connect in progress");
 
     epoll_add(netinf->epfd, ev);
 

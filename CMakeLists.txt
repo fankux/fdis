@@ -81,6 +81,6 @@ add_executable(worker ${MODULE_COMMON} ${WOKER})
 set_target_properties(worker PROPERTIES COMPILE_FLAGS "-DDEBUG_WORKER")
 
 add_executable(client ${MODULE_COMMON} ${RPC_CLIENT})
-set_target_properties(client PROPERTIES COMPILE_FLAGS "-DDEBUG_RPCCLIENT")
+set_target_properties(client PROPERTIES COMPILE_FLAGS "-DDEBUG_RPCCLIENT -fpermissive")
 
-add_custom_target(distclean rm -rf CMakeFiles cmake_install.cmake CMakeCache.txt Makefile)
+add_custom_target(distclean rm -rf CMakeFiles cmake_install.cmake CMakeCache.txt Makefile core)

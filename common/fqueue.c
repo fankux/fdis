@@ -45,6 +45,10 @@ inline struct fqueue* fqueue_create_fixed(const size_t size, int blocking) {
     return queue;
 }
 
+inline size_t fqueue_size(struct fqueue* queue) {
+    return flist_len(&queue->data);
+}
+
 static int fqueue_add_block(struct fqueue* queue, void* val) {
     pthread_mutex_lock(&queue->mutex);
 
@@ -97,6 +101,16 @@ inline void* fqueue_peek(struct fqueue* queue) {
     fqueue_node_t* n = queue->data.head;
     if (n == NULL) return NULL;
     return n->data;
+}
+
+inline void fqueue_clear(struct fqueue* queue) {
+    if (queue->blocked) {
+        pthread_cond_signal(&queue->cond);
+        pthread_mutex_lock(&queue->mutex);
+        pthread_cond_signal(&queue->cond);
+        pthread_mutex_unlock(&queue->mutex);
+    }
+    flist_clear(&queue->data);
 }
 
 #ifdef __cplusplus

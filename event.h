@@ -37,6 +37,8 @@ struct event {
 
     int (* send_func)(struct event* ev);
 
+    int (* faild_func)(struct event* ev);
+
     void* recv_param;
     void* send_param;
 };

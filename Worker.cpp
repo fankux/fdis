@@ -22,7 +22,7 @@ public:
         info("to_string achieved: seq: %d, key: %s", request->seq(), request->key().c_str());
 
         std::stringstream ss;
-        ss << "seq : " << request->seq() << ", key:" << request->key() << std::endl;
+        ss << "===to_string=== seq : " << request->seq() << ", key:" << request->key() << std::endl;
         response->set_msg(ss.str());
 
         if (done) {
@@ -37,8 +37,8 @@ public:
         info("hello achieved: seq:%d, key: %s", request->seq(), request->key().c_str());
 
         std::stringstream ss;
-        ss << "seq : " << request->seq() << ", key:" << request->key() << std::endl;
-//        response->set_msg(ss.str());
+        ss << "===hello=== seq : " << request->seq() << ", key:" << request->key() << std::endl;
+        response->set_msg(ss.str());
 
         if (done) {
             done->Run();
@@ -49,7 +49,6 @@ public:
 
 void Worker::init() {
     info("worker init, id: %d", _id);
-
     _server.reg_provider(ModelServiceImpl::descriptor()->index(), ModelServiceImpl::instance());
     _server.init(7234);
 }
