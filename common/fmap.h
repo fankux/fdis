@@ -40,22 +40,22 @@ typedef struct fmap_type {
  * because of SIZE_MAX(-1) means memory faild */
 struct fmap {
     struct fmap_header header[2];
-    ssize_t rehash_idx;   // if rehash needed */
-    size_t iter_num;       // iterators' number */
+    ssize_t rehash_idx;     // if rehash needed */
+    size_t iter_num;        // iterators' number */
     hash_type_t* type;
 };
 
 typedef struct fmap_iter {
     struct fmap_node* current;
-    size_t no;           //current node's rank
+    size_t no;              // current node's rank
     size_t iter_idx;
 } hash_iter_t;
 
 /****** error code *****/
-#define FMAP_FAILD -1 /* memory faild */
-#define FMAP_NONE 0  /* no result */
+#define FMAP_FAILD -1       /* memory faild */
+#define FMAP_NONE 0         /* no result */
 #define FMAP_OK 1
-#define FMAP_EXIST 2 /* already exist */
+#define FMAP_EXIST 2        /* already exist */
 
 /******************** constants **************************/
 #define FMAP_HEADER_INITIAL_SIZE 4
@@ -119,12 +119,6 @@ struct fmap_node* fmap_get(struct fmap* hash, const void* key);
 void* fmap_getvalue(struct fmap* map, const void* key);
 
 struct fmap_node* fmap_getslot(struct fmap* map, const void* key);
-
-struct fmap_node* fmap_getrand(struct fmap* map);
-
-int fmap_set(struct fmap* map, void* key, void* value);
-
-int fmap_replace(struct fmap* map, void* key, void* value);
 
 hash_iter_t* fmap_iter_create(struct fmap* map, size_t pos);
 
