@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <pthread.h>
 
 #include "common/common.h"
 
@@ -21,7 +22,7 @@ extern char __tm_buffer__[20];
 #if LOG_LEVEL > 4
 #define debug(format, ...) do { \
     __now__ = time(NULL);       \
-    printf("[%s]DEBUG:[%s:%4d]"format"\n", time_formate(__tm_buffer__, &__now__), __FILE__, __LINE__, ##__VA_ARGS__);\
+    printf("(%5d)[%s]DEBUG:[%s:%4d]"format"\n", pthread_self(), time_formate(__tm_buffer__, &__now__), __FILE__, __LINE__, ##__VA_ARGS__);\
 } while(0)
 #else
 #define debug(format, ...)
@@ -30,7 +31,7 @@ extern char __tm_buffer__[20];
 #if LOG_LEVEL > 3
 #define info(format, ...) do {   \
     __now__ = time(NULL);       \
-    printf("[%s]INFO:[%s:%4d]"format"\n", time_formate(__tm_buffer__, &__now__), __FILE__, __LINE__, ##__VA_ARGS__); \
+    printf("(%5d)[%s]INFO:[%s:%4d]"format"\n", pthread_self(), time_formate(__tm_buffer__, &__now__), __FILE__, __LINE__, ##__VA_ARGS__); \
 } while(0)
 #else
 #define info(format, ...)
@@ -39,7 +40,7 @@ extern char __tm_buffer__[20];
 #if LOG_LEVEL > 2
 #define warn(format, ...) do {  \
     __now__ = time(NULL);       \
-    printf("[%s]WARN:[%s:%4d]"format"\n", time_formate(__tm_buffer__, &__now__), __FILE__, __LINE__, ##__VA_ARGS__);\
+    printf("(%5d)[%s]WARN:[%s:%4d]"format"\n", pthread_self(), time_formate(__tm_buffer__, &__now__), __FILE__, __LINE__, ##__VA_ARGS__);\
 } while(0)
 #else
 #define warn(format, ...)
@@ -47,12 +48,12 @@ extern char __tm_buffer__[20];
 
 #define error(format, ...) do { \
     __now__ = time(NULL);       \
-    printf("[%s]ERROR:[%s:%4d]"format"\n", time_formate(__tm_buffer__, &__now__), __FILE__, __LINE__, ##__VA_ARGS__);\
+    printf("(%5d)[%s]ERROR:[%s:%4d]"format"\n", pthread_self(), time_formate(__tm_buffer__, &__now__), __FILE__, __LINE__, ##__VA_ARGS__);\
 } while(0)
 
 #define fatal(format, ...) do { \
     __now__ = time(NULL);       \
-    printf("[%s]FATAL:[%s:%4d]"format"\n", time_formate(__tm_buffer__, &__now__), __FILE__, __LINE__, ##__VA_ARGS__);\
+    printf("(%5d)[%s]FATAL:[%s:%4d]"format"\n", pthread_self(), time_formate(__tm_buffer__, &__now__), __FILE__, __LINE__, ##__VA_ARGS__);\
 } while(0)
 
 #ifdef __cplusplus

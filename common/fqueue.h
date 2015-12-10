@@ -33,11 +33,15 @@ typedef struct flist_node fqueue_node_t;
 /************* API *************/
 void fqueue_free(struct fqueue* queue);
 
+void fqueue_clear(struct fqueue* queue);
+
 void fqueue_init_fixed(struct fqueue* queue, const size_t size, const int blocking);
 
 struct fqueue* fqueue_create(const int blocking);
 
 struct fqueue* fqueue_create_fixed(const size_t size, const int blocking);
+
+size_t fqueue_size(struct fqueue* queue);
 
 int fqueue_add(struct fqueue* queue, void* val);
 

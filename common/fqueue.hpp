@@ -11,8 +11,8 @@ public:
         fqueue_init_fixed(&_queue, size, blocking);
     }
 
-    void add(T& value) {
-        fqueue_add(&_queue, &value);
+    int add(T& value) {
+        return fqueue_add(&_queue, &value);
     }
 
     T* pop() {
@@ -21,6 +21,14 @@ public:
 
     T* peek() {
         return fqueue_peek(&_queue);
+    }
+
+    void clear() {
+        return fqueue_clear(&_queue);
+    }
+
+    size_t size() {
+        return fqueue_size(&_queue);
     }
 
 private:

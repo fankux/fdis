@@ -49,9 +49,9 @@ struct flist_iter {
 
 
 /* macros */
-#define flist_isempty(list) (list->len == 0)
-#define flist_isfull(list) (list->len == (SIZE_MAX - 2))
-#define flist_len(list) (list->len)
+#define flist_isempty(list) ((list)->len == 0)
+#define flist_isfull(list) ((list)->len == (SIZE_MAX - 2))
+#define flist_len(list) ((list)->len)
 #define flist_free_val(list, n) do {                             \
     if(list->free_val_func) list->free_val_func(n->data);        \
     else n->data = NULL; }while(0)
@@ -67,6 +67,8 @@ void flist_init(struct flist* list);
 struct flist* flist_create();
 
 void flist_free(struct flist* list);
+
+void flist_clear(struct flist* list);
 
 int flist_set(struct flist* list, const size_t index, void* value);
 

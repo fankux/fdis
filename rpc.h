@@ -66,7 +66,8 @@ static const size_t INVOKE_PACKAGE_LEN = 1024;
 
 struct InvokePackage {
     int _package_len;
-    char _send_buffer[INVOKE_PACKAGE_LEN];
+    char _recv_buffer[INVOKE_PACKAGE_LEN];
+    char _read_buffer[INVOKE_PACKAGE_LEN];
     google::protobuf::Message* _response;
 };
 
@@ -91,13 +92,15 @@ private:
     bool populate_invoke_package(InvokePackage* package, const int sid, const int mid,
             const google::protobuf::Message* request);
 
-    void connect(struct event* _ev);
+    bool connect(struct event* _ev);
 
     static void* poll_routine(void* arg);
 
     static int invoke_callback(struct event* ev);
 
     static int return_callback(struct event* ev);
+
+    static int faild_callback(struct event* ev);
 
     void init();
 
@@ -111,8 +114,6 @@ private:
     static Map<provider_id_t, Queue<InvokePackage> > _invoke_packages;
     static Map<provider_id_t, MutexCond> _provider_locks;
     static pthread_mutex_t _lock;
-
-    static bool _is_sync;
 };
 
 }
