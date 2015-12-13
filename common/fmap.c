@@ -339,8 +339,10 @@ static struct fmap_node* _find(struct fmap* map, const void* key, unsigned int* 
     return NULL;
 }
 
-/* Add a key-value node at index of 'hash to index'.
-** Be sure that key's hash must be equal to p->key's */
+/*
+ * Add a key-value node at index of 'hash to index'.
+ * Be sure that key's hash must be equal to p->key's
+ */
 int fmap_addraw(struct fmap* map, const unsigned int hash, const void* key, void* value) {
     struct fmap_header* h;
     if (fmap_isrehash(map)) {
@@ -578,10 +580,17 @@ void fmap_info_int(struct fmap* map) {
 #define DEBUG_FMAP
 #ifdef DEBUG_FMAP
 
+#include "common.h"
+
 int main() {
     struct fmap* hash = fmap_create_dupboth();
+    int n = 65536 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 - 1;
 
-    int n = 65535 * 2 * 2 * 2 * 2;
+    struct timeval start;
+    struct timeval stop;
+    struct timeval diff;
+
+    gettimeofday(&start, NULL);
     for (int i = 0; i < n; ++i) {
         char key[100] = "\0";
         char val[100] = "\0";
@@ -589,10 +598,15 @@ int main() {
         sprintf(val, "v%d", i + 1);
         fmap_add(hash, key, val);
 
-        fmap_info_str(hash);
+//        fmap_info_str(hash);
     }
-    fmap_add(hash, "k7", "v7");
+//    fmap_add(hash, "k7", "v7");
+    gettimeofday(&stop, NULL);
+
+    timeval_subtract(&diff, &start, &stop);
     fmap_info_str(hash);
+
+    printf("time:%ldms\n", diff.tv_sec * 1000 + diff.tv_usec / 1000);
 
 //    fmap_remove(hash, "k4");
 //    fmap_info_str(hash);
