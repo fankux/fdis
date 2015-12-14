@@ -38,12 +38,12 @@ typedef struct fmap_type {
 
 /* max size of hash is (SIZE_MAX-1),
  * because of SIZE_MAX(-1) means memory faild */
-struct fmap {
+typedef struct fmap {
     struct fmap_header header[2];
     ssize_t rehash_idx;     // if rehash needed */
     size_t iter_num;        // iterators' number */
-    hash_type_t* type;
-};
+    hash_type_t type;
+} fmap_t;
 
 typedef struct fmap_iter {
     struct fmap_node* current;
@@ -51,6 +51,18 @@ typedef struct fmap_iter {
     size_t iter_idx;
 } hash_iter_t;
 
+typedef enum {
+    FMAP_DUP_NONE = 0,
+    FMAP_DUP_KEY = 1,
+    FMAP_DUP_VAL = 2,
+    FMAP_DUP_BOTH = FMAP_DUP_KEY | FMAP_DUP_VAL
+} fmap_dup_type;
+
+typedef enum {
+    FMAP_T_INT = 1,
+    FMAP_T_STR,
+    FMAP_T_STR_INCASE,
+} fmap_key_type;
 /****** error code *****/
 #define FMAP_FAILD -1       /* memory faild */
 #define FMAP_NONE 0         /* no result */
@@ -63,44 +75,36 @@ typedef struct fmap_iter {
 /* if dupkey is not null,
  * then means string should be duplicated,
  * either the string just linked */
-#define fmap_setkey(h, node, key) do{      \
-    if((h)->type->dupkey) (node)->key = (h)->type->dupkey(key); else (node)->key = key;     \
+#define fmap_setkey(map, node, key) do{      \
+    if((map)->type.dupkey) (node)->key = (map)->type.dupkey(key); else (node)->key = key;     \
 }while(0)
 
-#define fmap_setval(h, node, value) do{    \
-    if((h)->type->dupval) (h)->type->dupval((node), (value)); else (node)->value = (value); \
+#define fmap_setval(map, node, value) do{    \
+    if((map)->type.dupval) (map)->type.dupval((node), (value)); else (node)->value = (value); \
 }while(0)
 
 /* if deskey is not null,
  * means string had been duplicated,
  * then memeory should be freed,
  * either set the pointer NULL */
-#define fmap_freekey(h, node)  do{         \
-    if((h)->type->deskey) (h)->type->deskey((node)->key); else (node)->key = NULL;          \
+#define fmap_freekey(map, node)  do{         \
+    if((map)->type.deskey) (map)->type.deskey((node)->key); else (node)->key = NULL;          \
 } while (0)
 
-#define fmap_freeval(h, node)  do{         \
-    if((h)->type->desval) (h)->type->desval((node)->value); else (node)->value = NULL;      \
+#define fmap_freeval(map, node)  do{         \
+    if((map)->type.desval) (map)->type.desval((node)->value); else (node)->value = NULL;      \
 } while (0)
 
-#define fmap_cmpkey(h, key1, key2) ((h)->type->cmpkey(key1, key2))
-#define fmap_hash(h, key) ((h)->type->hash_func(key))
-#define fmap_isrehash(h) ((h)->rehash_idx != -1)
-#define fmap_isempty(h) ((h)->header[0].used + (h)->header[1].used == 0)
-#define fmap_size(h) ((h)->header[0].used + (h)->header[1].used)
+#define fmap_cmpkey(map, key1, key2) ((map)->type.cmpkey(key1, key2))
+#define fmap_hash(map, key) ((map)->type.hash_func(key))
+#define fmap_isrehash(map) ((map)->rehash_idx != -1)
+#define fmap_isempty(map) ((map)->header[0].used + (map)->header[1].used == 0)
+#define fmap_size(map) ((map)->header[0].used + (map)->header[1].used)
 
 /******************** API ****************************/
-void fmap_init_int(struct fmap* map);
+void fmap_init(struct fmap* map, fmap_key_type key_type, fmap_dup_type dup_mask);
 
-struct fmap* fmap_create();
-
-struct fmap* fmap_create_dupkey();
-
-struct fmap* fmap_create_dupboth();
-
-struct fmap* fmap_create_int();
-
-struct fmap* fmap_create_dupval();
+struct fmap* fmap_create(fmap_key_type key_type, fmap_dup_type dup_mask);
 
 void fmap_empty(struct fmap*);
 
@@ -109,6 +113,8 @@ void fmap_free(struct fmap*);
 int fmap_addraw(struct fmap* map, const unsigned int hash_code, const void* key, void* value);
 
 int fmap_add(struct fmap* map, const void* key, void* value);
+
+int fmap_set(struct fmap* map, const void* key, void* value);
 
 int fmap_remove(struct fmap* map, const void* key);
 
@@ -130,24 +136,12 @@ void fmap_info_str(struct fmap* map);
 
 void fmap_info_int(struct fmap* map);
 
-/******************* hash type ************************/
+/******************* hash func ************************/
 extern unsigned int int_hash_func(const void* x);
 
 extern unsigned int str_hash_func(const void* x);
 
 extern unsigned int strcase_hash_func(const void* x);
-
-extern int int_cmp_func(const void* av, const void* bv);
-
-extern int str_cmp_func(const void* str1, const void* str2);
-
-extern int strcase_cmp_func(void* str1, void* str2);
-
-extern void str_set_func(struct fmap_node* n, void* str);
-
-extern void* str_dup_func(const void* str);
-
-extern void str_free_func(void* str);
 
 #ifdef __cplusplus
 }

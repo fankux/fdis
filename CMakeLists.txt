@@ -86,7 +86,7 @@ add_executable(provider ${MODULE_COMMON} ${RPC_SERVER})
 set_target_properties(provider PROPERTIES COMPILE_FLAGS "-DDEBUG_RPCSERVER")
 
 add_executable(worker ${MODULE_COMMON} ${WOKER})
-set_target_properties(worker PROPERTIES COMPILE_FLAGS "-DDEBUG_WORKER")
+set_target_properties(worker PROPERTIES COMPILE_FLAGS "-DDEBUG_WORKER -DLOG_LEVEL=10")
 
 add_executable(client ${MODULE_COMMON} ${RPC_CLIENT})
 set_target_properties(client PROPERTIES COMPILE_FLAGS "-DDEBUG_RPCCLIENT -fpermissive")

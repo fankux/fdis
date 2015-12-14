@@ -10,8 +10,8 @@
 namespace fankux{
 #endif
 
-static unsigned int hash_seed = 5381;
-static unsigned int hash_rand_seed = 5731;
+static const unsigned int hash_seed = 5381;
+static const unsigned int hash_rand_seed = 5731;
 
 //private function
 static void _reset_header(struct fmap_header*);
@@ -25,27 +25,44 @@ static int _expand(struct fmap*, const size_t);
 static void _rehash_step(struct fmap*, const int);
 
 /****************Type Functions *****************/
-inline int int_cmp_func(const void* av, const void* bv) {
+static inline int int_cmp_func(const void* av, const void* bv) {
     int a = *((int*) av);
     int b = *((int*) bv);
     return a > b ? 1 : (a < b ? -1 : 0);
 }
 
-inline int str_cmp_func(const void* str1, const void* str2) {
+static inline void int_set_func(struct fmap_node* node, void* integer) {
+    if (!(node->value = fmalloc(sizeof(int)))) return;
+    memcpy(node->value, integer, sizeof(int));
+}
+
+static inline void* int_dup_func(const void* integer) {
+    char* p = NULL;
+    if (!(p = fmalloc(sizeof(int)))) return NULL;
+    memcpy(p, integer, sizeof(int));
+
+    return p;
+}
+
+static inline void int_free_func(void* integer) {
+    ffree(integer);
+}
+
+static inline int str_cmp_func(const void* str1, const void* str2) {
     return strcmp((char*) str1, (char*) str2);
 }
 
-inline int strcase_cmp_func(void* str1, void* str2) {
+static inline int strcase_cmp_func(const void* str1, const void* str2) {
     return strcasecmp((char*) str1, (char*) str2);
 }
 
-void str_set_func(struct fmap_node* node, void* str) {
+static inline void str_set_func(struct fmap_node* node, void* str) {
     size_t len = strlen((char*) str);
     if (!(node->value = fmalloc(sizeof(len) + 1))) return;
     cpystr(node->value, str, len);
 }
 
-void* str_dup_func(const void* str) {
+static inline void* str_dup_func(const void* str) {
     size_t len = strlen((char*) str);
     char* p = NULL;
     if (!(p = fmalloc(len + 1))) return NULL;
@@ -54,18 +71,9 @@ void* str_dup_func(const void* str) {
     return p;
 }
 
-inline void str_free_func(void* str) {
+static inline void str_free_func(void* str) {
     ffree(str);
 }
-
-hash_type_t hash_type_lnkboth = {str_hash_func, str_cmp_func, NULL, NULL, NULL, NULL};
-hash_type_t hash_type_dupboth = {str_hash_func, str_cmp_func, str_dup_func, str_set_func,
-                                 str_free_func, str_free_func};
-hash_type_t hash_type_dupkey = {str_hash_func, str_cmp_func, str_dup_func, NULL, str_free_func,
-                                NULL};
-hash_type_t hash_type_int = {int_hash_func, int_cmp_func, NULL, NULL, NULL, NULL};
-hash_type_t hash_type_int_dupval = {int_hash_func, int_cmp_func, NULL, str_set_func, NULL,
-                                    str_free_func};
 
 /*************** Hash *********************/
 /* Thomas Wang's 32 bit Mix Function */
@@ -116,102 +124,69 @@ static void _release_header(struct fmap_header* header) {
     _reset_header(header);
 }
 
-void fmap_init_int(struct fmap* map) {
-    _reset_header(&map->header[1]);
+inline void fmap_init(struct fmap* map, fmap_key_type key_type, fmap_dup_type dup_mask) {
     _reset_header(&map->header[0]);
+    _reset_header(&map->header[1]);
     map->rehash_idx = -1;
     map->iter_num = 0;
-    map->type = &hash_type_int;
+    memset(&map->type, 0, sizeof(map->type));
 
-    map->header[0].map = fmalloc(FMAP_HEADER_INITIAL_SIZE * sizeof(struct fmap_node*));
+    switch (key_type) {
+    case FMAP_T_INT:
+        map->type.hash_func = int_hash_func;
+        map->type.cmpkey = int_cmp_func;
+        if (dup_mask & FMAP_DUP_KEY) {
+            map->type.dupkey = int_dup_func;
+            map->type.deskey = int_free_func;
+        }
+        break;
+    case FMAP_T_STR:
+        map->type.hash_func = str_hash_func;
+        map->type.cmpkey = str_cmp_func;
+        if (dup_mask & FMAP_DUP_KEY) {
+            map->type.dupkey = str_dup_func;
+            map->type.deskey = str_free_func;
+        }
+        break;
+    case FMAP_T_STR_INCASE:
+        map->type.hash_func = strcase_hash_func;
+        map->type.cmpkey = strcase_cmp_func;
+        if (dup_mask & FMAP_DUP_KEY) {
+            map->type.dupkey = str_dup_func;
+            map->type.deskey = str_free_func;
+        }
+        break;
+    default:
+        break;
+    }
+
+    if (dup_mask & FMAP_DUP_VAL) {
+        map->type.dupval = str_set_func;
+        map->type.desval = str_free_func;
+    }
+
+    struct fmap_header* h = &map->header[0];
+    if ((h->map = fmalloc(FMAP_HEADER_INITIAL_SIZE * sizeof(struct fmap_node*))) == NULL) {
+        return;
+    }
+
+    fmemset(h->map, 0, FMAP_HEADER_INITIAL_SIZE * sizeof(struct fmap_node*));
+    h->size = FMAP_HEADER_INITIAL_SIZE;
+    h->size_mask = h->size - 1;
+
 }
 
 /*create a fmap which value linked */
-struct fmap* fmap_create() {
+struct fmap* fmap_create(fmap_key_type key_type, fmap_dup_type dup_mask) {
     struct fmap* map;
     if (!(map = fmalloc(sizeof(struct fmap)))) return NULL;
 
-    _reset_header(&map->header[0]);
-    _reset_header(&map->header[1]);
-    map->rehash_idx = -1;
-    map->iter_num = 0;
-    map->type = &hash_type_lnkboth;
+    fmap_init(map, key_type, dup_mask);
 
-    struct fmap_header* h = &map->header[0];
-    if ((h->map = fmalloc(FMAP_HEADER_INITIAL_SIZE * sizeof(struct fmap_node*))) == NULL) {
+    if (map->header[0].map == NULL) {
         ffree(map);
         return NULL;
     }
-
-    fmemset(h->map, 0, FMAP_HEADER_INITIAL_SIZE * sizeof(struct fmap_node*));
-    h->size = FMAP_HEADER_INITIAL_SIZE;
-    h->size_mask = h->size - 1;
-
-    return map;
-}
-
-/* create a fmap which key duplicated, value linked */
-struct fmap* fmap_create_dupkey() {
-    struct fmap* map;
-    if (!(map = fmalloc(sizeof(struct fmap)))) return NULL;
-
-    _reset_header(&map->header[1]);
-    _reset_header(&map->header[0]);
-    map->rehash_idx = -1;
-    map->iter_num = 0;
-    map->type = &hash_type_dupkey;
-
-    struct fmap_header* h = &map->header[0];
-    if ((h->map = fmalloc(FMAP_HEADER_INITIAL_SIZE * sizeof(struct fmap_node*))) == NULL) {
-        ffree(map);
-        return NULL;
-    }
-
-    fmemset(h->map, 0, FMAP_HEADER_INITIAL_SIZE * sizeof(struct fmap_node*));
-    h->size = FMAP_HEADER_INITIAL_SIZE;
-    h->size_mask = h->size - 1;
-
-    return map;
-}
-
-
-/* create a fmap which key & value both duplicated */
-struct fmap* fmap_create_dupboth() {
-    struct fmap* map;
-    if (!(map = fmalloc(sizeof(struct fmap)))) return NULL;
-
-    _reset_header(&map->header[1]);
-    _reset_header(&map->header[0]);
-    map->rehash_idx = -1;
-    map->iter_num = 0;
-    map->type = &hash_type_dupboth;
-
-    struct fmap_header* h = &map->header[0];
-    if ((h->map = fmalloc(FMAP_HEADER_INITIAL_SIZE * sizeof(struct fmap_node*))) == NULL) {
-        ffree(map);
-        return NULL;
-    }
-
-    fmemset(h->map, 0, FMAP_HEADER_INITIAL_SIZE * sizeof(struct fmap_node*));
-    h->size = FMAP_HEADER_INITIAL_SIZE;
-    h->size_mask = h->size - 1;
-
-    return map;
-}
-
-struct fmap* fmap_create_int() {
-    struct fmap* map = fmap_create();
-    if (map == NULL) return NULL;
-
-    map->type = &hash_type_int;
-    return map;
-}
-
-struct fmap* fmap_create_dupval() {
-    struct fmap* map = fmap_create();
-    if (map == NULL) return NULL;
-
-    map->type = &hash_type_int_dupval;
     return map;
 }
 
@@ -357,7 +332,7 @@ int fmap_addraw(struct fmap* map, const unsigned int hash, const void* key, void
         return FMAP_FAILD;/* allocate one */
 
     fmap_setkey(map, new, key);
-    if (map->type->dupkey == str_dup_func && !new->key) {
+    if (map->type.dupkey != NULL && new->key == NULL) {
         /* key never be null if key is string */
         ffree(new);
         return FMAP_FAILD;
@@ -388,6 +363,19 @@ int fmap_add(struct fmap* map, const void* key, void* value) {
     return fmap_addraw(map, hash, key, value);
 }
 
+int fmap_set(struct fmap* map, const void* key, void* value) {
+    unsigned int hash;
+    struct fmap_node* p = _find(map, key, &hash);
+    if (p) {
+        // this key already exist, free first
+        fmap_freeval(map, p);
+        fmap_setval(map, p, value);
+        return FMAP_OK;
+    }
+
+    return fmap_addraw(map, hash, key, value);
+}
+
 inline struct fmap_node* fmap_get(struct fmap* hash, const void* key) {
     return _find(hash, key, NULL);
 }
@@ -413,7 +401,7 @@ struct fmap_node* fmap_pop(struct fmap* hash, const void* key) {
     if (fmap_isrehash(hash)) h = &hash->header[1];
     else h = &hash->header[0];
 
-    unsigned int index = h->size_mask & fmap_hash(hash, key);
+    size_t index = h->size_mask & fmap_hash(hash, key);
     struct fmap_node* p = h->map[index];
     struct fmap_node* q = p;
     while (p) {
@@ -543,15 +531,15 @@ void fmap_info_str(struct fmap* map) {
         h = &map->header[j];
         printf("header:%d: size:%zu; used:%zu\n", j, h->size, h->used);
 
-//        for (int i = 0; i < h->size; ++i) {
-//            struct fmap_node* p = h->map[i];
-//            printf("%4d(p:%9d):", i, (int) p);
-//            while (p) {
-//                printf("%s:%s->", (char*) p->key, (char*) p->value);
-//                p = p->next;
-//            }
-//            printf("\n");
-//        }
+        for (int i = 0; i < h->size; ++i) {
+            struct fmap_node* p = h->map[i];
+            printf("%4d(p:%9d):", i, (int) p);
+            while (p) {
+                printf("%s:%s->", (char*) p->key, (char*) p->value);
+                p = p->next;
+            }
+            printf("\n");
+        }
     }
 }
 
@@ -565,7 +553,7 @@ void fmap_info_int(struct fmap* map) {
             struct fmap_node* p = h->map[i];
             printf("%4d(p:%9d):", i, (int) p);
             while (p) {
-                printf("%d:%d->", (int) p->key, (int) &p->value);
+                printf("%d:%d->", *((int*) p->key), (int) &p->value);
                 p = p->next;
             }
             printf("\n");
@@ -576,45 +564,3 @@ void fmap_info_int(struct fmap* map) {
 #ifdef __cplusplus
 }
 #endif
-
-#define DEBUG_FMAP
-#ifdef DEBUG_FMAP
-
-#include "common.h"
-
-int main() {
-    struct fmap* hash = fmap_create_dupboth();
-    int n = 65536 * 2 * 2 * 2 * 2 * 2 * 2 * 2 * 2 - 1;
-
-    struct timeval start;
-    struct timeval stop;
-    struct timeval diff;
-
-    gettimeofday(&start, NULL);
-    for (int i = 0; i < n; ++i) {
-        char key[100] = "\0";
-        char val[100] = "\0";
-        sprintf(key, "k%d", i + 1);
-        sprintf(val, "v%d", i + 1);
-        fmap_add(hash, key, val);
-
-//        fmap_info_str(hash);
-    }
-//    fmap_add(hash, "k7", "v7");
-    gettimeofday(&stop, NULL);
-
-    timeval_subtract(&diff, &start, &stop);
-    fmap_info_str(hash);
-
-    printf("time:%ldms\n", diff.tv_sec * 1000 + diff.tv_usec / 1000);
-
-//    fmap_remove(hash, "k4");
-//    fmap_info_str(hash);
-//
-//    fmap_add(hash, "k5", "v5");
-//    fmap_info_str(hash);
-
-    return 0;
-}
-
-#endif /* DEBUG_FMAP */

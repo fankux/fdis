@@ -94,7 +94,7 @@ int RpcServer::request_handler(struct event* ev) {
         return 0;
     }
 
-    provider_id_t provider_id = build_service_method_id(service_id, method_id);
+    provider_id_t provider_id = build_provider_id(service_id, method_id);
     InternalData* in_data = param->_internal_data.get(provider_id);
     if (in_data == NULL) {
         error("incorrect provider, service id: %d, method id: %d", service_id, method_id);
@@ -143,7 +143,7 @@ int RpcServer::response_handler(struct event* ev) {
 
     int service_id = param->_method->service()->index();
     int method_id = param->_method->index();
-    provider_id_t provider_id = build_service_method_id(service_id, method_id);
+    provider_id_t provider_id = build_provider_id(service_id, method_id);
 
     google::protobuf::Message* response = param->_internal_data.get(provider_id)->second;
 
@@ -174,7 +174,7 @@ void RpcServer::reg_provider(const int id, google::protobuf::Service& service) {
         const google::protobuf::MethodDescriptor* method = service.GetDescriptor()->method(i);
         int method_id = method->index();
 
-        provider_id_t provider_id = build_service_method_id(service_id, method_id);
+        provider_id_t provider_id = build_provider_id(service_id, method_id);
         info("provider register: %s(%d)==>%s(%d)", service.GetDescriptor()->full_name().c_str(),
                 service_id, method->full_name().c_str(), method_id);
 
@@ -209,18 +209,3 @@ void RpcServer::reg_provider(const int id, google::protobuf::Service& service) {
     _services.add(id, service);
 }
 }
-
-#ifdef DEBUG_RPCSERVER
-
-#include "Worker.h"
-
-using namespace fankux;
-
-int main() {
-    fankux::RpcServer server;
-    server.reg_provider(ModelServiceImpl::descriptor()->index(), ModelServiceImpl::instance());
-    server.init(7234);
-    server.run();
-}
-
-#endif

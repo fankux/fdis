@@ -22,16 +22,3 @@ private:
 }
 
 #endif // FANKUX_WOKER_H
-
-#ifdef DEBUG_WORKER
-using fankux::Worker;
-
-int main(void) {
-    Worker woker;
-    woker.init();
-    woker.run();
-
-    return 0;
-}
-
-#endif

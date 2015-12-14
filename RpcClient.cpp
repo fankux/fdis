@@ -38,14 +38,15 @@ void RpcClient::run(bool background = false) {
 }
 
 void RpcClient::CallMethod(const google::protobuf::MethodDescriptor* method,
-        google::protobuf::RpcController* controller, const google::protobuf::Message* request,
-        google::protobuf::Message* response, google::protobuf::Closure* done) {
+                           google::protobuf::RpcController* controller,
+                           const google::protobuf::Message* request,
+                           google::protobuf::Message* response, google::protobuf::Closure* done) {
     int service_id = method->service()->index();
     int method_id = method->index();
     debug("service: %s(%d)==>method: %s(%d)", method->service()->full_name().c_str(),
             service_id, method->full_name().c_str(), method_id);
 
-    provider_id_t provider_id = build_service_method_id(service_id, method_id);
+    provider_id_t provider_id = build_provider_id(service_id, method_id);
 
     MutexCond* mutex_cond_pair = get_provider_lock(service_id, method_id, provider_id);
     if (mutex_cond_pair == NULL) {
@@ -111,10 +112,11 @@ void RpcClient::CallMethod(const google::protobuf::MethodDescriptor* method,
         event_mod(_netinf, ev);
     }
 
-    //if invoking finish, then return directly, or blocking till queue empty
+    // if invoking finish, then return directly, or blocking till queue empty
     if (invoke_queue->size() > 0) {
         debug("add to block...");
         invoke_queue->add(*package);
+        debug("add to block done");
     }
 
     delete package;
@@ -123,19 +125,20 @@ void RpcClient::CallMethod(const google::protobuf::MethodDescriptor* method,
 }
 
 Queue<InvokePackage>* RpcClient::get_invoke_queue(const int sid, const int mid,
-        const provider_id_t pid) {
+                                                  const provider_id_t pid) {
     Queue<InvokePackage>* invoke_queue = RpcClient::_invoke_packages.get(pid);
     if (invoke_queue == NULL) {
         invoke_queue = new(std::nothrow) Queue<InvokePackage>(1, true);
         check_null_oom(invoke_queue, return NULL,
                 "invoke queue, service id:%d, method id:%d", sid, mid);
-        RpcClient::_invoke_packages.add(pid, *invoke_queue);
+        int ret = RpcClient::_invoke_packages.add(pid, *invoke_queue);
+        debug("add ret:%d", ret);
     }
     return invoke_queue;
 }
 
 MutexCond* RpcClient::get_provider_lock(const int sid, const int mid,
-        const provider_id_t pid) {
+                                        const provider_id_t pid) {
 
     MutexCond* pair = RpcClient::_provider_locks.get(pid);
     if (pair == NULL) {
@@ -160,7 +163,7 @@ MutexCond* RpcClient::get_provider_lock(const int sid, const int mid,
 }
 
 bool RpcClient::populate_invoke_package(InvokePackage* package, const int sid, const int mid,
-        const google::protobuf::Message* request) {
+                                        const google::protobuf::Message* request) {
     RequestMeta meta;
     meta.set_service_id(sid);
     meta.set_method_id(mid);
@@ -218,11 +221,12 @@ int RpcClient::faild_callback(struct event* ev) {
             (google::protobuf::MethodDescriptor*) ev->send_param;
     int service_id = method->service()->index();
     int method_id = method->index();
-    provider_id_t provider_id = build_service_method_id(service_id, method_id);
+    provider_id_t provider_id = build_provider_id(service_id, method_id);
 
     MutexCond* mutex_cond_pair = RpcClient::_provider_locks.get(provider_id);
     check_null(mutex_cond_pair, return 0,
-            "provider lock invalid, service id:%d, method id:%d", service_id, method_id);
+            "provider lock invalid, service id:%d, method id:%d, provider id : %d",
+            service_id, method_id, provider_id);
 
     pthread_mutex_unlock(&mutex_cond_pair->first);
 
@@ -232,11 +236,12 @@ int RpcClient::faild_callback(struct event* ev) {
 int RpcClient::invoke_callback(struct event* ev) {
     debug("invoke fired");
 
+    ev->flags = EVENT_REUSE;
     google::protobuf::MethodDescriptor* method =
             (google::protobuf::MethodDescriptor*) ev->send_param;
     int service_id = method->service()->index();
     int method_id = method->index();
-    provider_id_t provider_id = build_service_method_id(service_id, method_id);
+    provider_id_t provider_id = build_provider_id(service_id, method_id);
     Queue<InvokePackage>* invoke_queue = RpcClient::_invoke_packages.get(provider_id);
     check_null(invoke_queue, return 0,
             "invoke queue invalid, service id:%d, method id:%d", service_id, method_id);
@@ -265,11 +270,13 @@ int RpcClient::invoke_callback(struct event* ev) {
 int RpcClient::return_callback(struct event* ev) {
     debug("return fired");
 
+    ev->flags = EVENT_REUSE;
+
     google::protobuf::MethodDescriptor* method =
             (google::protobuf::MethodDescriptor*) ev->send_param;
     int service_id = method->service()->index();
     int method_id = method->index();
-    provider_id_t provider_id = build_service_method_id(service_id, method_id);
+    provider_id_t provider_id = build_provider_id(service_id, method_id);
     Queue<InvokePackage>* invoke_queue = RpcClient::_invoke_packages.get(provider_id);
     check_null(invoke_queue, return 0,
             "invoke queue invalid, service id:%d, method id:%d", service_id, method_id);
@@ -327,7 +334,6 @@ int RpcClient::return_callback(struct event* ev) {
     }
 
     end:
-    ev->flags = EVENT_REUSE;
     ev->faild_func = NULL;
     ev->send_param = NULL;
     ev->send_func = NULL;
@@ -357,11 +363,11 @@ void* call_routine(void* arg) {
     request.set_key("to_string");
     request.set_seq((google::protobuf::int32) pthread_self());
 
-    if (i % 2) {
-        model_service->to_string(NULL, &request, &response, NULL);
-    } else {
-        model_service->hello(NULL, &request, &response, NULL);
-    }
+//    if (i % 2) {
+    model_service->to_string(NULL, &request, &response, NULL);
+//    } else {
+//        model_service->hello(NULL, &request, &response, NULL);
+//    }
 
     info("invoking finished, response, msg: %s", response.msg().c_str());
     request.Clear();

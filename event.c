@@ -36,9 +36,10 @@ inline struct event* event_info_create(int fd) {
     ev->keepalive = 1;
     ev->recv_func = NULL;
     ev->send_func = NULL;
+    ev->faild_func = NULL;
     ev->recv_param = NULL;
     ev->send_param = NULL;
-    ev->faild_func = NULL;
+    ev->faild_param = NULL;
     return ev;
 }
 
@@ -50,9 +51,10 @@ inline void event_info_init(struct event* ev) {
     ev->keepalive = 1;
     ev->recv_func = NULL;
     ev->send_func = NULL;
+    ev->faild_func = NULL;
     ev->recv_param = NULL;
     ev->send_param = NULL;
-    ev->faild_func = NULL;
+    ev->faild_param = NULL;
 }
 
 inline void event_info_free(struct event* event) {
@@ -149,12 +151,13 @@ static int event_accept_handle(struct netinf* netinf) {
             conn_ev->flags = (ev->flags & EVENT_READ ? EVENT_READ : 0) |
                              (ev->flags & EVENT_WRITE ? EVENT_WRITE : 0);
             conn_ev->async = ev->async;
+            conn_ev->keepalive = ev->keepalive;
             conn_ev->recv_func = ev->recv_func;
             conn_ev->send_func = ev->send_func;
-            conn_ev->keepalive = ev->keepalive;
+            conn_ev->faild_func = ev->faild_func;
             conn_ev->recv_param = ev->recv_param;
             conn_ev->send_param = ev->send_param;
-            conn_ev->faild_func = ev->faild_func;
+            conn_ev->faild_param = ev->faild_param;
 
             epoll_add(epfd, conn_ev);
             ++n;
@@ -273,7 +276,6 @@ static int event_clear_handle(struct netinf* netinf) {
     int n = 0;
     for (int i = 0; i < netinf->list_num; ++i) {
         ev = eplist[i].data.ptr;
-        debug("clear handler...");
         if (ev->faild_func) {
             debug("call faild func");
             ev->faild_func(ev);

@@ -41,6 +41,7 @@ struct event {
 
     void* recv_param;
     void* send_param;
+    void* faild_param;
 };
 
 struct netinf {

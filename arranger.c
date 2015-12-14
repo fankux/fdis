@@ -84,8 +84,8 @@ struct webc_arranger* arranger_create() {
 ///////////////// Implement ///////////////////////////////////////////////////////////////////
 static struct webc_token* match_token(struct webc_arranger* ager,
                                       const char* key) {
-    unsigned int hash = str_hash_func(key);
-    return &ager->tokens[hash % ager->token_num];
+//    unsigned int hash = str_hash_func(key);
+//    return &ager->tokens[hash % ager->token_num];
 }
 
 /*
@@ -163,7 +163,7 @@ static void failover(struct webc_arranger* ager, struct webc_worker* worker) {
 
 static int arranger_handle(struct webc_arranger* ager,
                            struct webc_mutation* mutation) {
-    unsigned int hash = str_hash_func(mutation->key);
+    unsigned int hash = 1;//str_hash_func(mutation->key);
     info("key:[%s] to hash value: %u", mutation->key, hash);
     struct webc_token* token = &ager->tokens[hash % ager->token_num];
 

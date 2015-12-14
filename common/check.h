@@ -11,7 +11,7 @@ namespace fankux {
 #define typeof __typeof__
 #define check_null(var, action, format, ...)                \
 if((var) == (typeof(var))NULL) {                            \
-    error(#format, ##__VA_ARGS__);                          \
+    error(format, ##__VA_ARGS__);                          \
     action;                                                 \
 }
 
@@ -23,7 +23,7 @@ if((var) == (typeof(var))NULL) {                            \
 
 #define check_cond(condition, action, format, ...)          \
 if(!(condition)) {                                          \
-    error(#format, ##__VA_ARGS__);                          \
+    error(format, ##__VA_ARGS__);                          \
     action;                                                 \
 }                                                           \
 

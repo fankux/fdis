@@ -14,7 +14,7 @@ typedef int64_t provider_id_t;
 typedef std::pair<google::protobuf::Message*, google::protobuf::Message*> InternalData;
 typedef std::pair<pthread_mutex_t, pthread_cond_t> MutexCond;
 
-#define build_service_method_id(__service_id__, __method_id__) \
+#define build_provider_id(__service_id__, __method_id__) \
     (((__service_id__) << (sizeof(__service_id__) * 8)) | (__method_id__))
 
 class RpcServer {

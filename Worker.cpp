@@ -57,3 +57,17 @@ void Worker::run() {
     _server.run();
 }
 }
+
+#ifdef DEBUG_WORKER
+
+using fankux::Worker;
+
+int main(void) {
+    Worker woker;
+    woker.init();
+    woker.run();
+
+    return 0;
+}
+
+#endif
