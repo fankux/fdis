@@ -52,6 +52,7 @@ set(THREADPOOL
         )
 set(RPC_CLIENT
         RpcClient.cpp
+        InvokeController.cpp
         )
 set(RPC_SERVER
         RpcServer.cpp

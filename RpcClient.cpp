@@ -39,10 +39,15 @@ void RpcClient::run(bool background) {
     }
 }
 
+/**
+ * done is not null, invoke async
+ * else invoke sync
+ */
 void RpcClient::CallMethod(const google::protobuf::MethodDescriptor* method,
         google::protobuf::RpcController* controller,
         const google::protobuf::Message* request,
         google::protobuf::Message* response, google::protobuf::Closure* done) {
+    std::string errmsg;
     int service_id = method->service()->index();
     int method_id = method->index();
     debug("service: %s(%d)==>method: %s(%d)", method->service()->full_name().c_str(),
@@ -51,7 +56,8 @@ void RpcClient::CallMethod(const google::protobuf::MethodDescriptor* method,
     provider_id_t provider_id = build_provider_id(service_id, method_id);
     pthread_mutex_t* provider_lock = get_provider_lock(service_id, method_id, provider_id);
     if (provider_lock == NULL) {
-        return;
+        errmsg = "faild to get provider lock";
+        goto faild;
     }
     debug("lock accquiring, pid: %ld", provider_id);
     pthread_mutex_lock(provider_lock);
@@ -60,33 +66,86 @@ void RpcClient::CallMethod(const google::protobuf::MethodDescriptor* method,
     InvokePackage* package = get_invoke_package(service_id, method_id, provider_id);
     if (package == NULL) {
         pthread_mutex_unlock(provider_lock);
-        return;
+        errmsg = "faild to get invoke package";
+        goto faild;
     }
-    package->_response = response;
-    bool ret = populate_invoke_package(package, service_id, method_id, request);
-    if (!ret) {
+    package->response = response;
+    if (!populate_invoke_package(package, service_id, method_id, request, done == NULL)) {
         pthread_mutex_unlock(provider_lock);
-        return;
+        errmsg = "faild to populate invoke package";
+        goto faild;
     }
 
-    MutexCond* invoke_signal = get_invoke_signal(service_id, method_id, provider_id);
-    if (invoke_signal == NULL) {
-        pthread_mutex_unlock(provider_lock);
-        return;
+    MutexCond* invoke_signal = NULL;
+    if (done == NULL) {
+        invoke_signal = get_invoke_signal(service_id, method_id, provider_id);
+        if (invoke_signal == NULL) {
+            pthread_mutex_unlock(provider_lock);
+            errmsg = "faild to get invoke signal";
+            goto faild;
+        }
+        debug("signal lock accquiring");
+        pthread_mutex_lock(&invoke_signal->first);
+
+        if (!invoke(method, errmsg)) {
+            pthread_mutex_unlock(provider_lock);
+            pthread_mutex_unlock(&invoke_signal->first);
+            goto faild;
+        }
+    } else {
+        if (!invoke(method, errmsg)) {
+            pthread_mutex_unlock(provider_lock);
+            goto faild;
+        }
     }
 
+    if (done == NULL) {
+        struct timespec timeout;
+        timeout.tv_sec = time(0) + RpcClient::INVOKE_TIMEOUT / 1000;
+        timeout.tv_nsec = RpcClient::INVOKE_TIMEOUT * 1000000;
+        // blocking untill invoking finish
+        debug("signal lock accquired, waiting!!!");
+        int sig_ret = pthread_cond_timedwait(&invoke_signal->second, &invoke_signal->first,
+                &timeout);
+        if (sig_ret == ETIMEDOUT) {
+            errmsg = "faild to invoke, timeout: " + RpcClient::INVOKE_TIMEOUT;
+            error("faild to invoke, timeout: %d", RpcClient::INVOKE_TIMEOUT);
+            pthread_mutex_unlock(provider_lock);
+            pthread_mutex_unlock(&invoke_signal->first);
+            goto faild;
+        }
+        debug("signal waked!!!");
+        pthread_mutex_unlock(&invoke_signal->first);
+        debug("signal lock unlocked!!!");
+    }
+
+    pthread_mutex_unlock(provider_lock);
+    debug("lock unlocked!!!, pid: %ld", provider_id);
+    if (controller != NULL) {
+        if (package->status == FAILD) {
+            controller->SetFailed(package->errmsg);
+        }
+    }
+    return;
+
+    faild:
+    if (controller != NULL) {
+        controller->SetFailed(errmsg);
+    }
+    return;
+}
+
+bool RpcClient::invoke(const google::protobuf::MethodDescriptor* method, std::string& errmsg) {
+    int service_id = method->service()->index();
+    int method_id = method->index();
+    provider_id_t provider_id = build_provider_id(service_id, method_id);
     struct event* ev = RpcClient::_evs.get(provider_id);
-    debug("signal lock accquiring");
-    pthread_mutex_lock(&invoke_signal->first);
-
-    // FIXME reconnect
     if (ev == NULL) {
         ev = event_info_create(create_tcpsocket());
         if (ev == NULL) {
-            error("invoke event, service id:%d, method id:%d", service_id, method_id);
-            pthread_mutex_unlock(provider_lock);
-            pthread_mutex_unlock(&invoke_signal->first);
-            return;
+            errmsg = "faild to alloc event info";
+            error("faild to alloc event info, service id:%d, method id:%d", service_id, method_id);
+            return false;
         }
 
         RpcClient::_evs.add(provider_id, *ev);
@@ -97,17 +156,15 @@ void RpcClient::CallMethod(const google::protobuf::MethodDescriptor* method,
         ev->send_param = (void*) method;
 
         if (!connect(ev)) {
+            errmsg = "invoke connect error";
             error("invoke connect error, service id:%d, method id:%d", service_id, method_id);
-            pthread_mutex_unlock(provider_lock);
-            pthread_mutex_unlock(&invoke_signal->first);
-            return;
+            return false;
         }
     } else {
         if (ev->status == EVENT_STATUS_ERR) {
             if (!connect(ev)) {
-                pthread_mutex_unlock(provider_lock);
-                pthread_mutex_unlock(&invoke_signal->first);
-                return;
+                errmsg = "invoke re connect error";
+                return false;
             }
         }
         ev->flags = EVENT_REUSE | EVENT_WRITE;
@@ -115,27 +172,17 @@ void RpcClient::CallMethod(const google::protobuf::MethodDescriptor* method,
         ev->send_param = (void*) method;
         event_mod(_netinf, ev);
     }
-
-    // blocking untill invoking finish
-    debug("signal lock accquired, waiting!!!");
-    pthread_cond_wait(&invoke_signal->second, &invoke_signal->first);
-    debug("signal waked!!!");
-    pthread_mutex_unlock(&invoke_signal->first);
-    debug("signal lock unlocked!!!");
-
-    pthread_mutex_unlock(provider_lock);
-    debug("lock unlocked!!!, pid: %ld", provider_id);
+    return true;
 }
 
 InvokePackage* RpcClient::get_invoke_package(const int sid, const int mid,
         const provider_id_t pid) {
     InvokePackage* invoke_queue = RpcClient::_invoke_packages.get(pid);
     if (invoke_queue == NULL) {
-        invoke_queue = (InvokePackage*) malloc(sizeof(InvokePackage));
+        invoke_queue = new(std::nothrow) InvokePackage;
         check_null_oom(invoke_queue, return NULL,
                 "invoke queue, service id:%d, method id:%d", sid, mid);
-        int ret = RpcClient::_invoke_packages.add(pid, *invoke_queue);
-        debug("add ret:%d", ret);
+        RpcClient::_invoke_packages.add(pid, *invoke_queue);
     }
     return invoke_queue;
 }
@@ -181,35 +228,38 @@ MutexCond* RpcClient::get_invoke_signal(const int sid, const int mid,
 }
 
 bool RpcClient::populate_invoke_package(InvokePackage* package, const int sid, const int mid,
-        const google::protobuf::Message* request) {
+        const google::protobuf::Message* request, const bool async) {
     RequestMeta meta;
     meta.set_service_id(sid);
     meta.set_method_id(mid);
 
     int meta_len = meta.ByteSize();
     int request_len = request->ByteSize();
-    package->_package_len = 8 + meta_len + request_len;
-    if (package->_package_len >= sizeof(package->_recv_buffer)) {
+    package->package_len = 8 + meta_len + request_len;
+    if (package->package_len >= sizeof(package->recv_buffer)) {
         // TODO send for some batch
         error("too large package, len: %d, max len: %zu", request_len,
-                sizeof(package->_recv_buffer));
+                sizeof(package->recv_buffer));
         return false;
     }
 
 //    debug("meta len: %d, request_len: %d, ModelRequest len: %d", meta_len, request_len,
 //            ((ModelRequest*) request)->ByteSize());
-    memcpy(package->_recv_buffer, &package->_package_len, 4);
-    memcpy(package->_recv_buffer + 4, &meta_len, 4);
-    bool ret = meta.SerializeToArray(package->_recv_buffer + 8, meta_len);
+    memcpy(package->recv_buffer, &package->package_len, 4);
+    memcpy(package->recv_buffer + 4, &meta_len, 4);
+    bool ret = meta.SerializeToArray(package->recv_buffer + 8, meta_len);
     if (!ret) {
         error("serialize meta faild");
         return false;
     }
-    ret = request->SerializeToArray(package->_recv_buffer + 8 + meta_len, request_len);
+    ret = request->SerializeToArray(package->recv_buffer + 8 + meta_len, request_len);
     if (!ret) {
         error("serialize request faild");
         return false;
     }
+    package->errmsg.clear();
+    package->status = DOING;
+    package->async = async;
 
     return true;
 }
@@ -252,10 +302,20 @@ int RpcClient::faild_callback(struct event* ev) {
     int method_id = method->index();
     provider_id_t provider_id = build_provider_id(service_id, method_id);
 
-    int ret = wakeup_invoke(provider_id, &RpcClient::_invoke_signals);
-    check_cond(ret == 0, return 0,
-            "provider signal invalid, service id:%d, method id:%d, provider id : %d",
-            service_id, method_id, provider_id);
+    InvokePackage* package = RpcClient::_invoke_packages.get(provider_id);
+    if (package == NULL) {
+        warn("empty package, maybe error occured already, service id:%d, method id:%d",
+                service_id, method_id);
+        return 0;
+    }
+    package->errmsg = "network error";
+    package->status = FAILD;
+    if (package->async) {
+        int ret = wakeup_invoke(provider_id, &RpcClient::_invoke_signals);
+        check_cond(ret == 0, return 0,
+                "provider signal invalid, service id:%d, method id:%d, provider id : %d",
+                service_id, method_id, provider_id);
+    }
     return 0;
 }
 
@@ -272,15 +332,18 @@ int RpcClient::invoke_callback(struct event* ev) {
     if (package == NULL) {
         warn("empty package, maybe error occured already, service id:%d, method id:%d",
                 service_id, method_id);
-        wakeup_invoke(provider_id, &RpcClient::_invoke_signals);
         return 0;
     }
 
-    ssize_t write_len = write_tcp(ev->fd, package->_recv_buffer, (size_t) package->_package_len);
+    ssize_t write_len = write_tcp(ev->fd, package->recv_buffer, (size_t) package->package_len);
     if (write_len == -1) {
         error("write_tcp faild, fd: %d", ev->fd);
         ev->status = EVENT_STATUS_ERR;
-        wakeup_invoke(provider_id, &RpcClient::_invoke_signals);
+        package->errmsg = "write_tcp faild";
+        package->status = FAILD;
+        if (package->async) {
+            wakeup_invoke(provider_id, &RpcClient::_invoke_signals);
+        }
         return -1;
     }
 
@@ -306,50 +369,67 @@ int RpcClient::return_callback(struct event* ev) {
         goto end;
     }
 
-    ssize_t readlen = read_tcp(ev->fd, package->_recv_buffer, sizeof(package->_recv_buffer));
+    ssize_t readlen = read_tcp(ev->fd, package->recv_buffer, sizeof(package->recv_buffer));
     if (readlen == -1) {
-        error("read_tcp faild, fd: %d, errno:%d, error:%s", ev->fd, errno, strerror(errno));
+        error("read tcp faild, fd: %d, errno:%d, error:%s", ev->fd, errno, strerror(errno));
         ev->status = EVENT_STATUS_ERR;
-        wakeup_invoke(provider_id, &RpcClient::_invoke_signals);
+        package->errmsg = "read tcp error";
+        package->status = FAILD;
+        if (package->async) {
+            wakeup_invoke(provider_id, &RpcClient::_invoke_signals);
+        }
         return -1;
     }
     if (readlen < 8) {
         error("return package too low, len:%zu", readlen);
         ev->status = EVENT_STATUS_ERR;
-        wakeup_invoke(provider_id, &RpcClient::_invoke_signals);
+        package->errmsg = "return package too low";
+        package->status = FAILD;
+        if (package->async) {
+            wakeup_invoke(provider_id, &RpcClient::_invoke_signals);
+        }
         return -1;
     }
 
     int package_len = 0;
-    memcpy(&package_len, package->_recv_buffer, 4);
+    memcpy(&package_len, package->recv_buffer, 4);
     if (package_len != readlen) {
         error("package len incorrect, package len:%d, read len: %zu", package_len, readlen);
         ev->status = EVENT_STATUS_ERR;
+        package->errmsg = "package len incorrect";
+        package->status = FAILD;
         goto end;
     }
 
     int status_len = 0;
-    memcpy(&status_len, package->_recv_buffer + 4, 4);
+    memcpy(&status_len, package->recv_buffer + 4, 4);
 
     ResponseStatus status;
-    status.ParseFromArray(package->_recv_buffer + 8, status_len);
+    status.ParseFromArray(package->recv_buffer + 8, status_len);
     if (status.status() != 0) {
-        info("return error, status: %d, message: %s", status.status(), status.msg().c_str());
+        error("return error, status: %d, message: %s", status.status(), status.msg().c_str());
+        package->errmsg = "return error";
+        package->status = FAILD;
         goto end;
     }
 
     // if status is 0, then request content must be existed
     if (package_len - 8 - status_len <= 0) {
-        info("request not occured, error package");
+        error("request not occured, error package");
+        package->errmsg = "request not occured";
+        package->status = FAILD;
         goto end;
     }
 
-    bool ret = package->_response->ParseFromArray(package->_recv_buffer + 8 + status_len,
+    bool ret = package->response->ParseFromArray(package->recv_buffer + 8 + status_len,
             package_len - 8 - status_len);
     if (!ret) {
-        info("unserialize faild, error package");
+        error("unserialize faild, error package");
+        package->errmsg = "unserialized faild";
+        package->status = FAILD;
         goto end;
     }
+    package->status = SUCCESS;
 
     end:
     ev->faild_func = NULL;
@@ -357,7 +437,9 @@ int RpcClient::return_callback(struct event* ev) {
     ev->send_func = NULL;
     ev->recv_param = NULL;
     ev->recv_func = NULL;
-    wakeup_invoke(provider_id, &RpcClient::_invoke_signals);
+    if (package != NULL && package->async) {
+        wakeup_invoke(provider_id, &RpcClient::_invoke_signals);
+    }
     return 0;
 }
 
@@ -375,18 +457,23 @@ int i;
 void* call_routine(void* arg) {
     ModelService_Stub* model_service = (ModelService_Stub*) arg;
 
+    InvokeController controller;
     ModelResponse response;
     ModelRequest request;
     request.set_key("to_string");
     request.set_seq((google::protobuf::int32) pthread_self());
 
     if (i % 2) {
-        model_service->to_string(NULL, &request, &response, NULL);
+        model_service->to_string(&controller, &request, &response, NULL);
     } else {
-        model_service->hello(NULL, &request, &response, NULL);
+        model_service->hello(&controller, &request, &response, NULL);
     }
 
-    info("invoking finished, response, msg: %s", response.msg().c_str());
+    if (controller.Failed()) {
+        error("invoke faild, err msg: %s", controller.ErrorText().c_str());
+    } else {
+        info("invoking finished, response, msg: %s", response.msg().c_str());
+    }
     request.Clear();
     response.Clear();
 
