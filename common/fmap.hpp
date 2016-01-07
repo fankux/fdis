@@ -8,7 +8,7 @@ template<class K, class V>
 class Map {
 public:
     Map() {
-        fmap_init(&_map, FMAP_T_INT, FMAP_DUP_NONE);
+        fmap_init(&_map, FMAP_T_INT, FMAP_DUP_KEY);
     }
 
     size_t size() {
@@ -40,9 +40,7 @@ private:
 
 #endif // FANKUX_MAP_H
 
-#define DEBUG_FMAP
 #ifdef DEBUG_FMAP
-
 
 using namespace fankux;
 

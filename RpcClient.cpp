@@ -14,8 +14,10 @@
 
 namespace fankux {
 
-Map<provider_id_t, Queue<InvokePackage> > RpcClient::_invoke_packages;
-Map<provider_id_t, std::pair<pthread_mutex_t, pthread_cond_t> > RpcClient::_provider_locks;
+Map<provider_id_t, pthread_mutex_t> RpcClient::_provider_locks;
+Map<provider_id_t, InvokePackage> RpcClient::_invoke_packages;
+Map<provider_id_t, MutexCond> RpcClient::_invoke_signals;
+
 pthread_mutex_t RpcClient::_lock = PTHREAD_MUTEX_INITIALIZER;
 
 RpcClient::RpcClient(const std::string& addr, uint16_t port) {
@@ -29,7 +31,7 @@ RpcClient::~RpcClient() {
     pthread_join(_routine_pid, NULL);
 }
 
-void RpcClient::run(bool background = false) {
+void RpcClient::run(bool background) {
     if (background) {
         pthread_create(&_routine_pid, NULL, poll_routine, _netinf);
     } else {
@@ -38,73 +40,75 @@ void RpcClient::run(bool background = false) {
 }
 
 void RpcClient::CallMethod(const google::protobuf::MethodDescriptor* method,
-                           google::protobuf::RpcController* controller,
-                           const google::protobuf::Message* request,
-                           google::protobuf::Message* response, google::protobuf::Closure* done) {
+        google::protobuf::RpcController* controller,
+        const google::protobuf::Message* request,
+        google::protobuf::Message* response, google::protobuf::Closure* done) {
     int service_id = method->service()->index();
     int method_id = method->index();
     debug("service: %s(%d)==>method: %s(%d)", method->service()->full_name().c_str(),
             service_id, method->full_name().c_str(), method_id);
 
     provider_id_t provider_id = build_provider_id(service_id, method_id);
-
-    MutexCond* mutex_cond_pair = get_provider_lock(service_id, method_id, provider_id);
-    if (mutex_cond_pair == NULL) {
+    pthread_mutex_t* provider_lock = get_provider_lock(service_id, method_id, provider_id);
+    if (provider_lock == NULL) {
         return;
     }
-    pthread_mutex_t* provider_lock = &mutex_cond_pair->first;
     debug("lock accquiring, pid: %ld", provider_id);
     pthread_mutex_lock(provider_lock);
     debug("lock accquired!!!, pid: %ld", provider_id);
 
-    Queue<InvokePackage>* invoke_queue = get_invoke_queue(service_id, method_id, provider_id);
-    if (invoke_queue == NULL) {
+    InvokePackage* package = get_invoke_package(service_id, method_id, provider_id);
+    if (package == NULL) {
         pthread_mutex_unlock(provider_lock);
         return;
     }
-
-    InvokePackage* package = new(std::nothrow) InvokePackage();
-    check_null_oom(package, pthread_mutex_unlock(provider_lock), return,
-            "invoke queue, service id:%d, method id:%d", service_id, method_id);
     package->_response = response;
-
     bool ret = populate_invoke_package(package, service_id, method_id, request);
     if (!ret) {
         pthread_mutex_unlock(provider_lock);
         return;
     }
 
-    debug("queue clear...");
-    invoke_queue->clear();
-    debug("queue blocking add...");
-    invoke_queue->add(*package); // will blocking if concurrent
-    debug("queue added!!!");
+    MutexCond* invoke_signal = get_invoke_signal(service_id, method_id, provider_id);
+    if (invoke_signal == NULL) {
+        pthread_mutex_unlock(provider_lock);
+        return;
+    }
 
     struct event* ev = RpcClient::_evs.get(provider_id);
+    debug("signal lock accquiring");
+    pthread_mutex_lock(&invoke_signal->first);
+
     // FIXME reconnect
     if (ev == NULL) {
         ev = event_info_create(create_tcpsocket());
         if (ev == NULL) {
             error("invoke event, service id:%d, method id:%d", service_id, method_id);
             pthread_mutex_unlock(provider_lock);
+            pthread_mutex_unlock(&invoke_signal->first);
             return;
         }
 
         RpcClient::_evs.add(provider_id, *ev);
         ev->flags = EVENT_REUSE | EVENT_WRITE;
         ev->faild_func = faild_callback;
+        ev->faild_param = (void*) method;
         ev->send_func = invoke_callback;
         ev->send_param = (void*) method;
+
         if (!connect(ev)) {
             error("invoke connect error, service id:%d, method id:%d", service_id, method_id);
             pthread_mutex_unlock(provider_lock);
+            pthread_mutex_unlock(&invoke_signal->first);
             return;
         }
     } else {
         if (ev->status == EVENT_STATUS_ERR) {
-            pthread_mutex_unlock(provider_lock);
-            connect(ev);
-            return;
+            if (!connect(ev)) {
+                pthread_mutex_unlock(provider_lock);
+                pthread_mutex_unlock(&invoke_signal->first);
+                return;
+            }
         }
         ev->flags = EVENT_REUSE | EVENT_WRITE;
         ev->send_func = invoke_callback;
@@ -112,23 +116,22 @@ void RpcClient::CallMethod(const google::protobuf::MethodDescriptor* method,
         event_mod(_netinf, ev);
     }
 
-    // if invoking finish, then return directly, or blocking till queue empty
-    if (invoke_queue->size() > 0) {
-        debug("add to block...");
-        invoke_queue->add(*package);
-        debug("add to block done");
-    }
+    // blocking untill invoking finish
+    debug("signal lock accquired, waiting!!!");
+    pthread_cond_wait(&invoke_signal->second, &invoke_signal->first);
+    debug("signal waked!!!");
+    pthread_mutex_unlock(&invoke_signal->first);
+    debug("signal lock unlocked!!!");
 
-    delete package;
     pthread_mutex_unlock(provider_lock);
     debug("lock unlocked!!!, pid: %ld", provider_id);
 }
 
-Queue<InvokePackage>* RpcClient::get_invoke_queue(const int sid, const int mid,
-                                                  const provider_id_t pid) {
-    Queue<InvokePackage>* invoke_queue = RpcClient::_invoke_packages.get(pid);
+InvokePackage* RpcClient::get_invoke_package(const int sid, const int mid,
+        const provider_id_t pid) {
+    InvokePackage* invoke_queue = RpcClient::_invoke_packages.get(pid);
     if (invoke_queue == NULL) {
-        invoke_queue = new(std::nothrow) Queue<InvokePackage>(1, true);
+        invoke_queue = (InvokePackage*) malloc(sizeof(InvokePackage));
         check_null_oom(invoke_queue, return NULL,
                 "invoke queue, service id:%d, method id:%d", sid, mid);
         int ret = RpcClient::_invoke_packages.add(pid, *invoke_queue);
@@ -137,25 +140,40 @@ Queue<InvokePackage>* RpcClient::get_invoke_queue(const int sid, const int mid,
     return invoke_queue;
 }
 
-MutexCond* RpcClient::get_provider_lock(const int sid, const int mid,
-                                        const provider_id_t pid) {
+pthread_mutex_t* RpcClient::get_provider_lock(const int sid, const int mid,
+        const provider_id_t pid) {
 
-    MutexCond* pair = RpcClient::_provider_locks.get(pid);
+    pthread_mutex_t* lock = RpcClient::_provider_locks.get(pid);
+    if (lock == NULL) {
+        // double check, lock if provider lock not available yet in cause of double new
+        pthread_mutex_lock(&RpcClient::_lock);
+        if ((lock = RpcClient::_provider_locks.get(pid)) == NULL) {
+            lock = (pthread_mutex_t*) malloc(sizeof(pthread_mutex_t));
+            check_null_oom(lock, pthread_mutex_unlock(&RpcClient::_lock), return NULL,
+                    "provider lock , service id:%d, method id:%d", sid, mid);
+            pthread_mutex_init(lock, NULL);
+            RpcClient::_provider_locks.add(pid, *lock);
+        }
+        pthread_mutex_unlock(&RpcClient::_lock);
+    }
+    return lock;
+}
+
+MutexCond* RpcClient::get_invoke_signal(const int sid, const int mid,
+        const provider_id_t pid) {
+    MutexCond* pair = RpcClient::_invoke_signals.get(pid);
     if (pair == NULL) {
         // double check, lock if provider lock not available yet in cause of double new
         pthread_mutex_lock(&RpcClient::_lock);
-
-        if (!RpcClient::_provider_locks.find(pid)) {
+        if ((pair = RpcClient::_invoke_signals.get(pid)) == NULL) {
             pair = new(std::nothrow) std::pair<pthread_mutex_t, pthread_cond_t>();
             check_null_oom(pair, pthread_mutex_unlock(&RpcClient::_lock), return NULL,
-                    "provider <lock cond> pair, service id:%d, method id:%d", sid, mid);
-
+                    "signal <lock cond> pair, service id:%d, method id:%d", sid, mid);
             pthread_mutex_t provider_lock = PTHREAD_MUTEX_INITIALIZER;
             pthread_cond_t provider_cond = PTHREAD_COND_INITIALIZER;
             pair->first = provider_lock;
             pair->second = provider_cond;
-
-            RpcClient::_provider_locks.add(pid, *pair);
+            RpcClient::_invoke_signals.add(pid, *pair);
         }
         pthread_mutex_unlock(&RpcClient::_lock);
     }
@@ -163,7 +181,7 @@ MutexCond* RpcClient::get_provider_lock(const int sid, const int mid,
 }
 
 bool RpcClient::populate_invoke_package(InvokePackage* package, const int sid, const int mid,
-                                        const google::protobuf::Message* request) {
+        const google::protobuf::Message* request) {
     RequestMeta meta;
     meta.set_service_id(sid);
     meta.set_method_id(mid);
@@ -210,26 +228,34 @@ void* RpcClient::poll_routine(void* arg) {
     return (void*) 0;
 }
 
-static inline void wakeup_invoke(Queue<InvokePackage>* queue) {
-    queue->pop();
+static inline int wakeup_invoke(provider_id_t provider_id, Map<provider_id_t, MutexCond>* signals) {
+    MutexCond* pair = signals->get(provider_id);
+    if (pair == NULL) {
+        return -1;
+    }
+    debug("signal lock accquiring");
+    pthread_mutex_lock(&pair->first);
+    debug("signal lock accquired, signal!!!");
+    pthread_cond_signal(&pair->second);
+    debug("signal signaled!!!");
+    pthread_mutex_unlock(&pair->first);
+    debug("signal lock unlocked!!!");
+    return 0;
 }
 
 int RpcClient::faild_callback(struct event* ev) {
     debug("faild fired");
 
     google::protobuf::MethodDescriptor* method =
-            (google::protobuf::MethodDescriptor*) ev->send_param;
+            (google::protobuf::MethodDescriptor*) ev->faild_param;
     int service_id = method->service()->index();
     int method_id = method->index();
     provider_id_t provider_id = build_provider_id(service_id, method_id);
 
-    MutexCond* mutex_cond_pair = RpcClient::_provider_locks.get(provider_id);
-    check_null(mutex_cond_pair, return 0,
-            "provider lock invalid, service id:%d, method id:%d, provider id : %d",
+    int ret = wakeup_invoke(provider_id, &RpcClient::_invoke_signals);
+    check_cond(ret == 0, return 0,
+            "provider signal invalid, service id:%d, method id:%d, provider id : %d",
             service_id, method_id, provider_id);
-
-    pthread_mutex_unlock(&mutex_cond_pair->first);
-
     return 0;
 }
 
@@ -242,15 +268,11 @@ int RpcClient::invoke_callback(struct event* ev) {
     int service_id = method->service()->index();
     int method_id = method->index();
     provider_id_t provider_id = build_provider_id(service_id, method_id);
-    Queue<InvokePackage>* invoke_queue = RpcClient::_invoke_packages.get(provider_id);
-    check_null(invoke_queue, return 0,
-            "invoke queue invalid, service id:%d, method id:%d", service_id, method_id);
-
-    InvokePackage* package = invoke_queue->peek();
+    InvokePackage* package = RpcClient::_invoke_packages.get(provider_id);
     if (package == NULL) {
         warn("empty package, maybe error occured already, service id:%d, method id:%d",
                 service_id, method_id);
-        wakeup_invoke(invoke_queue);
+        wakeup_invoke(provider_id, &RpcClient::_invoke_signals);
         return 0;
     }
 
@@ -258,7 +280,7 @@ int RpcClient::invoke_callback(struct event* ev) {
     if (write_len == -1) {
         error("write_tcp faild, fd: %d", ev->fd);
         ev->status = EVENT_STATUS_ERR;
-        wakeup_invoke(invoke_queue);
+        wakeup_invoke(provider_id, &RpcClient::_invoke_signals);
         return -1;
     }
 
@@ -277,11 +299,7 @@ int RpcClient::return_callback(struct event* ev) {
     int service_id = method->service()->index();
     int method_id = method->index();
     provider_id_t provider_id = build_provider_id(service_id, method_id);
-    Queue<InvokePackage>* invoke_queue = RpcClient::_invoke_packages.get(provider_id);
-    check_null(invoke_queue, return 0,
-            "invoke queue invalid, service id:%d, method id:%d", service_id, method_id);
-
-    InvokePackage* package = invoke_queue->peek();
+    InvokePackage* package = RpcClient::_invoke_packages.get(provider_id);
     if (package == NULL) {
         warn("empty package, maybe error occured already, service id:%d, method id:%d",
                 service_id, method_id);
@@ -292,13 +310,13 @@ int RpcClient::return_callback(struct event* ev) {
     if (readlen == -1) {
         error("read_tcp faild, fd: %d, errno:%d, error:%s", ev->fd, errno, strerror(errno));
         ev->status = EVENT_STATUS_ERR;
-        wakeup_invoke(invoke_queue);
+        wakeup_invoke(provider_id, &RpcClient::_invoke_signals);
         return -1;
     }
     if (readlen < 8) {
         error("return package too low, len:%zu", readlen);
         ev->status = EVENT_STATUS_ERR;
-        wakeup_invoke(invoke_queue);
+        wakeup_invoke(provider_id, &RpcClient::_invoke_signals);
         return -1;
     }
 
@@ -316,7 +334,7 @@ int RpcClient::return_callback(struct event* ev) {
     ResponseStatus status;
     status.ParseFromArray(package->_recv_buffer + 8, status_len);
     if (status.status() != 0) {
-        info("return error, status: %d, message: %s", status.status(), status.msg());
+        info("return error, status: %d, message: %s", status.status(), status.msg().c_str());
         goto end;
     }
 
@@ -339,14 +357,13 @@ int RpcClient::return_callback(struct event* ev) {
     ev->send_func = NULL;
     ev->recv_param = NULL;
     ev->recv_func = NULL;
-    wakeup_invoke(invoke_queue);
+    wakeup_invoke(provider_id, &RpcClient::_invoke_signals);
     return 0;
 }
 
 void RpcClient::init() {
     _netinf = event_create(EVENT_LIST_MAX);
 }
-
 }
 
 #ifdef DEBUG_RPCCLIENT
@@ -363,11 +380,11 @@ void* call_routine(void* arg) {
     request.set_key("to_string");
     request.set_seq((google::protobuf::int32) pthread_self());
 
-//    if (i % 2) {
-    model_service->to_string(NULL, &request, &response, NULL);
-//    } else {
-//        model_service->hello(NULL, &request, &response, NULL);
-//    }
+    if (i % 2) {
+        model_service->to_string(NULL, &request, &response, NULL);
+    } else {
+        model_service->hello(NULL, &request, &response, NULL);
+    }
 
     info("invoking finished, response, msg: %s", response.msg().c_str());
     request.Clear();

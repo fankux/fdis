@@ -5,7 +5,6 @@
 #include "google/protobuf/service.h"
 
 #include "common/fmap.hpp"
-#include "common/fqueue.hpp"
 #include "event.h"
 
 namespace fankux {
@@ -85,9 +84,11 @@ public:
             google::protobuf::Message* response, google::protobuf::Closure* done);
 
 private:
-    MutexCond* get_provider_lock(const int sid, const int mid, const provider_id_t pid);
+    pthread_mutex_t* get_provider_lock(const int sid, const int mid, const provider_id_t pid);
 
-    Queue<InvokePackage>* get_invoke_queue(const int sid, const int mid, const provider_id_t pid);
+    MutexCond* get_invoke_signal(const int sid, const int mid, const provider_id_t pid);
+
+    InvokePackage* get_invoke_package(const int sid, const int mid, const provider_id_t pid);
 
     bool populate_invoke_package(InvokePackage* package, const int sid, const int mid,
             const google::protobuf::Message* request);
@@ -111,8 +112,9 @@ private:
     pthread_t _routine_pid;
 
     struct Map<provider_id_t, event> _evs;
-    static Map<provider_id_t, Queue<InvokePackage> > _invoke_packages;
-    static Map<provider_id_t, MutexCond> _provider_locks;
+    static Map<provider_id_t, pthread_mutex_t> _provider_locks;
+    static Map<provider_id_t, InvokePackage> _invoke_packages;
+    static Map<provider_id_t, MutexCond> _invoke_signals;
     static pthread_mutex_t _lock;
 };
 

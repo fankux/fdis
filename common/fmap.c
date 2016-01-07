@@ -26,20 +26,20 @@ static void _rehash_step(struct fmap*, const int);
 
 /****************Type Functions *****************/
 static inline int int_cmp_func(const void* av, const void* bv) {
-    int a = *((int*) av);
-    int b = *((int*) bv);
+    int64_t a = *((int64_t*) av);
+    int64_t b = *((int64_t*) bv);
     return a > b ? 1 : (a < b ? -1 : 0);
 }
 
 static inline void int_set_func(struct fmap_node* node, void* integer) {
-    if (!(node->value = fmalloc(sizeof(int)))) return;
-    memcpy(node->value, integer, sizeof(int));
+    if (!(node->value = fmalloc(sizeof(int64_t)))) return;
+    memcpy(node->value, integer, sizeof(int64_t));
 }
 
 static inline void* int_dup_func(const void* integer) {
     char* p = NULL;
-    if (!(p = fmalloc(sizeof(int)))) return NULL;
-    memcpy(p, integer, sizeof(int));
+    if (!(p = fmalloc(sizeof(int64_t)))) return NULL;
+    memcpy(p, integer, sizeof(int64_t));
 
     return p;
 }
@@ -76,18 +76,20 @@ static inline void str_free_func(void* str) {
 }
 
 /*************** Hash *********************/
-/* Thomas Wang's 32 bit Mix Function */
+/* Thomas Wang's 64 bit Mix Function: http://www.cris.com/~Ttwang/tech/inthash.htm */
 inline unsigned int int_hash_func(const void* x) {
-    unsigned int key = *((unsigned int*) x);
+    uint64_t key = *((uint64_t*) x);
 
-    key += ~(key << 15);
-    key ^= (key >> 10);
+    key += ~(key << 32);
+    key ^= (key >> 22);
+    key += ~(key << 13);
+    key ^= (key >> 8);
     key += (key << 3);
-    key ^= (key >> 6);
-    key += ~(key << 11);
-    key ^= (key >> 16);
+    key ^= (key >> 15);
+    key += ~(key << 27);
+    key ^= (key >> 31);
 
-    return key;
+    return (unsigned int)key;
 }
 
 /* djb hash */
