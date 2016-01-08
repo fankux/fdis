@@ -77,11 +77,11 @@ int RpcServer::request_handler(struct event* ev) {
     int service_id = meta.service_id();
     int method_id = meta.method_id();
     debug("service id: %d, method id: %d", service_id, method_id);
-    google::protobuf::Service* service = server->_services.get(meta.service_id());
+    google::protobuf::Service* service = server->_services.get(service_id);
     if (service == NULL) {
         param->_status = -1;
         param->_msg = "invalid service_id:" + service_id;
-        error("invalid service_id: %d", method_id);
+        error("invalid service_id: %d", service_id);
         return 0;
     }
 
@@ -175,8 +175,9 @@ void RpcServer::reg_provider(const int id, google::protobuf::Service& service) {
         int method_id = method->index();
 
         provider_id_t provider_id = build_provider_id(service_id, method_id);
-        info("provider register: %s(%d)==>%s(%d)", service.GetDescriptor()->full_name().c_str(),
-                service_id, method->full_name().c_str(), method_id);
+        info("id:%d, provider register: %s(%d)==>%s(%d)", id,
+                service.GetDescriptor()->full_name().c_str(), service_id,
+                method->full_name().c_str(), method_id);
 
         InternalData* in_data = _invoke_param._internal_data.get(provider_id);
         if (in_data != NULL) {

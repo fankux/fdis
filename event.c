@@ -276,11 +276,11 @@ static int event_clear_handle(struct netinf* netinf) {
     int n = 0;
     for (int i = 0; i < netinf->list_num; ++i) {
         ev = eplist[i].data.ptr;
-        if (ev->faild_func) {
-            debug("call faild func");
-            ev->faild_func(ev);
-        }
         if (ev->status == EVENT_STATUS_ERR) {
+            if (ev->faild_func) {
+                debug("call faild func");
+                ev->faild_func(ev);
+            }
             eplist[i].data.ptr = NULL;
             close(ev->fd);
             if (ev->flags & EVENT_REUSE == 0) {

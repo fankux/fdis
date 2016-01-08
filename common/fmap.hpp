@@ -7,8 +7,9 @@ namespace fankux {
 template<class K, class V>
 class Map {
 public:
-    Map() {
-        fmap_init(&_map, FMAP_T_INT, FMAP_DUP_KEY);
+
+    Map(fmap_key_type key_type, fmap_dup_type dup_mask) {
+        fmap_init(&_map, key_type, dup_mask);
     }
 
     size_t size() {

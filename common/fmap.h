@@ -59,7 +59,8 @@ typedef enum {
 } fmap_dup_type;
 
 typedef enum {
-    FMAP_T_INT = 1,
+    FMAP_T_INT32 = 1,
+    FMAP_T_INT64,
     FMAP_T_STR,
     FMAP_T_STR_INCASE,
 } fmap_key_type;
@@ -137,7 +138,9 @@ void fmap_info_str(struct fmap* map);
 void fmap_info_int(struct fmap* map);
 
 /******************* hash func ************************/
-extern unsigned int int_hash_func(const void* x);
+extern unsigned int int32_hash_func(const void* x);
+
+extern unsigned int int64_hash_func(const void* x);
 
 extern unsigned int str_hash_func(const void* x);
 

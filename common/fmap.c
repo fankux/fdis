@@ -25,21 +25,40 @@ static int _expand(struct fmap*, const size_t);
 static void _rehash_step(struct fmap*, const int);
 
 /****************Type Functions *****************/
-static inline int int_cmp_func(const void* av, const void* bv) {
+static inline int int64_cmp_func(const void* av, const void* bv) {
     int64_t a = *((int64_t*) av);
     int64_t b = *((int64_t*) bv);
     return a > b ? 1 : (a < b ? -1 : 0);
 }
 
-static inline void int_set_func(struct fmap_node* node, void* integer) {
+static inline void int64_set_func(struct fmap_node* node, void* integer) {
     if (!(node->value = fmalloc(sizeof(int64_t)))) return;
     memcpy(node->value, integer, sizeof(int64_t));
 }
 
-static inline void* int_dup_func(const void* integer) {
+static inline void* int64_dup_func(const void* integer) {
     char* p = NULL;
     if (!(p = fmalloc(sizeof(int64_t)))) return NULL;
     memcpy(p, integer, sizeof(int64_t));
+
+    return p;
+}
+
+static inline int int32_cmp_func(const void* av, const void* bv) {
+    int32_t a = *((int32_t*) av);
+    int32_t b = *((int32_t*) bv);
+    return a > b ? 1 : (a < b ? -1 : 0);
+}
+
+static inline void int32_set_func(struct fmap_node* node, void* integer) {
+    if (!(node->value = fmalloc(sizeof(int32_t)))) return;
+    memcpy(node->value, integer, sizeof(int32_t));
+}
+
+static inline void* int32_dup_func(const void* integer) {
+    char* p = NULL;
+    if (!(p = fmalloc(sizeof(int32_t)))) return NULL;
+    memcpy(p, integer, sizeof(int32_t));
 
     return p;
 }
@@ -76,8 +95,22 @@ static inline void str_free_func(void* str) {
 }
 
 /*************** Hash *********************/
+/* Thomas Wang's 32 bit Mix Function */
+inline unsigned int int32_hash_func(const void* x) {
+    uint32_t key = *((uint32_t*) x);
+
+    key += ~(key << 15);
+    key ^= (key >> 10);
+    key += (key << 3);
+    key ^= (key >> 6);
+    key += ~(key << 11);
+    key ^= (key >> 16);
+
+    return key;
+}
+
 /* Thomas Wang's 64 bit Mix Function: http://www.cris.com/~Ttwang/tech/inthash.htm */
-inline unsigned int int_hash_func(const void* x) {
+inline unsigned int int64_hash_func(const void* x) {
     uint64_t key = *((uint64_t*) x);
 
     key += ~(key << 32);
@@ -134,11 +167,19 @@ inline void fmap_init(struct fmap* map, fmap_key_type key_type, fmap_dup_type du
     memset(&map->type, 0, sizeof(map->type));
 
     switch (key_type) {
-    case FMAP_T_INT:
-        map->type.hash_func = int_hash_func;
-        map->type.cmpkey = int_cmp_func;
+    case FMAP_T_INT32:
+        map->type.hash_func = int32_hash_func;
+        map->type.cmpkey = int32_cmp_func;
         if (dup_mask & FMAP_DUP_KEY) {
-            map->type.dupkey = int_dup_func;
+            map->type.dupkey = int32_dup_func;
+            map->type.deskey = int_free_func;
+        }
+        break;
+    case FMAP_T_INT64:
+        map->type.hash_func = int64_hash_func;
+        map->type.cmpkey = int64_cmp_func;
+        if (dup_mask & FMAP_DUP_KEY) {
+            map->type.dupkey = int64_dup_func;
             map->type.deskey = int_free_func;
         }
         break;

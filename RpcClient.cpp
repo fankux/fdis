@@ -14,13 +14,13 @@
 
 namespace fankux {
 
-Map<provider_id_t, pthread_mutex_t> RpcClient::_provider_locks;
-Map<provider_id_t, InvokePackage> RpcClient::_invoke_packages;
-Map<provider_id_t, MutexCond> RpcClient::_invoke_signals;
+Map<provider_id_t, pthread_mutex_t> RpcClient::_provider_locks(FMAP_T_INT64, FMAP_DUP_KEY);
+Map<provider_id_t, InvokePackage> RpcClient::_invoke_packages(FMAP_T_INT64, FMAP_DUP_KEY);
+Map<provider_id_t, MutexCond> RpcClient::_invoke_signals(FMAP_T_INT64, FMAP_DUP_KEY);
 
 pthread_mutex_t RpcClient::_lock = PTHREAD_MUTEX_INITIALIZER;
 
-RpcClient::RpcClient(const std::string& addr, uint16_t port) {
+RpcClient::RpcClient(const std::string& addr, uint16_t port) : _evs(FMAP_T_INT64, FMAP_DUP_KEY) {
     _addr = addr;
     _port = port;
     init();
@@ -298,6 +298,14 @@ int RpcClient::faild_callback(struct event* ev) {
 
     google::protobuf::MethodDescriptor* method =
             (google::protobuf::MethodDescriptor*) ev->faild_param;
+
+//    ev->recv_func = NULL;
+//    ev->send_func = NULL;
+//    ev->faild_func = NULL;
+//    ev->recv_param = NULL;
+//    ev->send_param = NULL;
+//    ev->faild_param = NULL;
+
     int service_id = method->service()->index();
     int method_id = method->index();
     provider_id_t provider_id = build_provider_id(service_id, method_id);
@@ -348,7 +356,10 @@ int RpcClient::invoke_callback(struct event* ev) {
     }
 
     ev->flags = EVENT_REUSE | EVENT_READ;
+    ev->send_param = NULL;
+    ev->send_func = NULL;
     ev->recv_func = return_callback;
+    ev->recv_param = method;
     return 0;
 }
 
@@ -358,7 +369,7 @@ int RpcClient::return_callback(struct event* ev) {
     ev->flags = EVENT_REUSE;
 
     google::protobuf::MethodDescriptor* method =
-            (google::protobuf::MethodDescriptor*) ev->send_param;
+            (google::protobuf::MethodDescriptor*) ev->recv_param;
     int service_id = method->service()->index();
     int method_id = method->index();
     provider_id_t provider_id = build_provider_id(service_id, method_id);
@@ -432,9 +443,6 @@ int RpcClient::return_callback(struct event* ev) {
     package->status = SUCCESS;
 
     end:
-    ev->faild_func = NULL;
-    ev->send_param = NULL;
-    ev->send_func = NULL;
     ev->recv_param = NULL;
     ev->recv_func = NULL;
     if (package != NULL && package->async) {

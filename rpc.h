@@ -18,7 +18,7 @@ typedef std::pair<pthread_mutex_t, pthread_cond_t> MutexCond;
 
 class RpcServer {
 public:
-    RpcServer() : _port(0), _ev(NULL), _netinf(NULL) {}
+    RpcServer() : _port(0), _ev(NULL), _netinf(NULL), _services(FMAP_T_INT32, FMAP_DUP_KEY) {}
 
     virtual ~RpcServer();
 
@@ -49,7 +49,8 @@ private:
         Map<provider_id_t, InternalData> _internal_data;
         google::protobuf::MethodDescriptor* _method;
 
-        InvokeParam() : _server(NULL), _status(0), _msg(), _method(NULL) {}
+        InvokeParam() : _server(NULL), _status(0), _msg(), _method(NULL),
+                        _internal_data(FMAP_T_INT64, FMAP_DUP_KEY) {}
     } _invoke_param;
 };
 
@@ -63,7 +64,7 @@ public:
 
 static const size_t INVOKE_PACKAGE_LEN = 1024;
 
-enum InvokeStatus{
+enum InvokeStatus {
     DOING = 1,
     SUCCESS,
     FAILD
@@ -75,7 +76,6 @@ struct InvokePackage {
     int status;
     int package_len;
     char recv_buffer[INVOKE_PACKAGE_LEN];
-    char read_buffer[INVOKE_PACKAGE_LEN];
     google::protobuf::Message* response;
 };
 
