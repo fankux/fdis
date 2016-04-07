@@ -390,7 +390,7 @@ char* flist_info(struct flist* p, int simplify) {
             buf += sprintf(buf, "%d->", *((int*) (iter->data)));
             iter = iter->prev;
         }
-        buf += sprintf(buf, "null;length:%u\n", p->len);
+        buf += sprintf(buf, "null;length:%lu\n", p->len);
     }
     return s;
 }

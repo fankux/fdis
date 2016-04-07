@@ -1,0 +1,6 @@
+/home/fankux/app/fankux/webc/CMakeFiles/threadpool.dir
+/home/fankux/app/fankux/webc/CMakeFiles/webc.dir
+/home/fankux/app/fankux/webc/CMakeFiles/fmap.dir
+/home/fankux/app/fankux/webc/CMakeFiles/node.dir
+/home/fankux/app/fankux/webc/CMakeFiles/distclean.dir
+/home/fankux/app/fankux/webc/CMakeFiles/arranger.dir

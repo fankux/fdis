@@ -108,11 +108,22 @@ inline int timeval_subtract(struct timeval* result, struct timeval* start, struc
     result->tv_usec = (end->tv_usec - start->tv_usec);
 
     if (result->tv_usec < 0) {
-        result->tv_sec--;
+        --result->tv_sec;
         result->tv_usec += 1000000;
     }
 
     return 0;
+}
+
+inline struct timeval timeval_add(struct timeval a, struct timeval b) {
+    struct timeval re;
+    re.tv_sec = a.tv_sec + b.tv_sec;
+    re.tv_usec = a.tv_usec + a.tv_usec;
+    if (re.tv_usec > 1000000) {
+        ++re.tv_sec;
+        re.tv_usec -= 1000000;
+    }
+    return re;
 }
 
 inline char* time_formate(char* buffer, time_t* ptm) {

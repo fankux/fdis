@@ -568,11 +568,11 @@ void fmap_iter_cancel(struct fmap* hash, hash_iter_t* iter) {
 
 /****************Test use ******************/
 void fmap_info_str(struct fmap* map) {
-    printf("rehash_idx:%zd; iter_num:%zu\n", map->rehash_idx, map->iter_num);
+    printf("rehash_idx:%li; iter_num:%lu\n", map->rehash_idx, map->iter_num);
     struct fmap_header* h;
     for (int j = 0; j < 2; ++j) {
         h = &map->header[j];
-        printf("header:%d: size:%zu; used:%zu\n", j, h->size, h->used);
+        printf("header:%d: size:%lu; used:%lu\n", j, h->size, h->used);
 
         for (int i = 0; i < h->size; ++i) {
             struct fmap_node* p = h->map[i];
@@ -587,11 +587,11 @@ void fmap_info_str(struct fmap* map) {
 }
 
 void fmap_info_int(struct fmap* map) {
-    printf("rehash_idx:%zd; iter_num:%zu\n", map->rehash_idx, map->iter_num);
+    printf("rehash_idx:%li; iter_num:%lu\n", map->rehash_idx, map->iter_num);
     struct fmap_header* h;
     for (int j = 0; j < 2; ++j) {
         h = &map->header[j];
-        printf("h%d: size:%zu; used:%zu\n", j, h->size, h->used);
+        printf("h%d: size:%lu; used:%lu\n", j, h->size, h->used);
         for (int i = 0; i < h->size; ++i) {
             struct fmap_node* p = h->map[i];
             printf("%4d(p:%9d):", i, (int) p);

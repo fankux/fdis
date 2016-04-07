@@ -11,19 +11,19 @@ namespace fankux {
 #define typeof __typeof__
 #define check_null(var, action, format, ...)                \
 if((var) == (typeof(var))NULL) {                            \
-    error(format, ##__VA_ARGS__);                          \
+    fatal(format, ##__VA_ARGS__);                          \
     action;                                                 \
 }
 
 #define check_null_oom(var, action, format, ...)           \
 if((var) == (typeof(var))NULL) {                            \
-    error("!!!OUT OF MEMORY!!!"#format"memory allocate faild!", ##__VA_ARGS__);  \
+    fatal("!!!OUT OF MEMORY!!!"#format"memory allocate faild!", ##__VA_ARGS__);  \
     action;                                                \
 }
 
 #define check_cond(condition, action, format, ...)          \
 if(!(condition)) {                                          \
-    error(format, ##__VA_ARGS__);                          \
+    fatal(format, ##__VA_ARGS__);                          \
     action;                                                 \
 }                                                           \
 

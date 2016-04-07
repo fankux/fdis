@@ -21,6 +21,7 @@ set(MODULE_COMMON
         common/fstr.c
         common/flist.h
         common/flist.c
+        common/flist.hpp
         ${FMAP}
         common/fbit.h
         common/fbit.c
@@ -28,10 +29,9 @@ set(MODULE_COMMON
         common/fqueue.hpp
         common/fqueue.c
         common/check.h
+
         webc.h
         webc.c
-        arranger.h
-        arranger.c
         cmd.h
         cmd.c
         net.h
@@ -39,28 +39,40 @@ set(MODULE_COMMON
         event.h
         event.c
 
-        rpc.h
+        rpc/rpc.h
 
         proto/meta.pb.h
         proto/meta.pb.cc
-        proto/modelService.pb.h
-        proto/modelService.pb.cc
+        proto/heartbeat.pb.h
+        proto/heartbeat.pb.cc
+        proto/ArrangerService.pb.h
+        proto/ArrangerService.pb.cc
         )
 set(THREADPOOL
         threadpool.h
         threadpool.c
         )
-set(RPC_CLIENT
-        RpcClient.cpp
-        InvokeController.cpp
-        )
-set(RPC_SERVER
-        RpcServer.cpp
-        )
+
 set(WOKER
-        Worker.h
-        Worker.cpp
-        RpcServer.cpp
+        rpc/RpcServer.h
+        rpc/RpcServer.cpp
+
+        rpc/RpcClient.h
+        rpc/RpcClient.cpp
+        rpc/InvokeController.cpp
+
+        worker/worker.h
+        worker/worker.cpp
+        )
+
+set(ARRANGER
+        rpc/RpcServer.h
+        rpc/RpcServer.cpp
+
+        arranger.h
+        arranger.cpp
+        ArrangerServer.h
+        ArrangerServer.cpp
         )
 
 set(MODULE_COMMON_INC
@@ -83,13 +95,10 @@ add_executable(webc ${MODULE_COMMON})
 
 add_executable(threadpool ${MODULE_COMMON} ${THREADPOOL})
 
-add_executable(provider ${MODULE_COMMON} ${RPC_SERVER})
-set_target_properties(provider PROPERTIES COMPILE_FLAGS "-DDEBUG_RPCSERVER")
+add_executable(arranger ${MODULE_COMMON} ${ARRANGER})
+set_target_properties(arranger PROPERTIES COMPILE_FLAGS "-DDEBUG_ARRANGER -DLOG_LEVEL=10")
 
-add_executable(worker ${MODULE_COMMON} ${WOKER})
-set_target_properties(worker PROPERTIES COMPILE_FLAGS "-DDEBUG_WORKER -DLOG_LEVEL=10")
+add_executable(node ${MODULE_COMMON} ${WOKER})
+set_target_properties(node PROPERTIES COMPILE_FLAGS "-DDEBUG_WORKER -DLOG_LEVEL=10")
 
-add_executable(client ${MODULE_COMMON} ${RPC_CLIENT})
-set_target_properties(client PROPERTIES COMPILE_FLAGS "-DDEBUG_RPCCLIENT -fpermissive")
-
-add_custom_target(distclean rm -rf CMakeFiles cmake_install.cmake CMakeCache.txt Makefile core)
+add_custom_target(distclean rm CMakeFiles cmake_install.cmake CMakeCache.txt Makefile core)

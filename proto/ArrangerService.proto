@@ -1,0 +1,9 @@
+package fankux;
+
+import "proto/heartbeat.proto";
+
+option cc_generic_services = true;
+
+service ArrangerService {
+    rpc echo (HeartbeatRequest) returns (HeartbeatResponse);
+}

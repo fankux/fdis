@@ -1,0 +1,14 @@
+package fankux;
+
+message HeartbeatRequest {
+    required int32 id = 1;
+    required int64 timestamp = 2;
+    required int64 timemills = 3;
+    required string type = 4;
+}
+
+message HeartbeatResponse {
+    required int64 timestamp = 1;
+    required int64 timemills = 2;
+    required string type = 3;
+}

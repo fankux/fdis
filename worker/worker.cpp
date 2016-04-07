@@ -1,0 +1,78 @@
+#include <unistd.h>
+#include <sstream>
+#include "proto/ArrangerService.pb.h"
+
+#include "common/check.h"
+#include "worker/worker.h"
+#include "rpc/InvokeController.h"
+
+namespace fankux {
+
+pthread_t Worker::_heartbeat_thread;
+
+void* Worker::hreatbeat_rountine(void* arg) {
+    Worker* worker = (Worker*) arg;
+
+    ArrangerService_Stub* ager_service = new ArrangerService::Stub((google::protobuf::RpcChannel* )&worker->_client);
+
+    InvokeController controller;
+    HeartbeatRequest request;
+    HeartbeatResponse response;
+
+    int i = 0;
+    while (i++ < 100) {
+        struct timeval now;
+        gettimeofday(&now, NULL);
+        request.set_timestamp(now.tv_sec);
+        request.set_timemills(now.tv_usec / 1000);
+        request.set_id(1);
+        request.set_type("sssstype");
+
+        ager_service->echo(&controller, &request, &response, NULL);
+
+        if (controller.Failed()) {
+            error("invoke faild, err msg: %s", controller.ErrorText().c_str());
+        } else {
+            info("invoking finished, response, msg: %lld.%lld",
+                    response.timestamp(), response.timemills());
+        }
+        request.Clear();
+        response.Clear();
+
+        sleep(3);
+    }
+
+    return (void*) 0;
+}
+
+void Worker::init() {
+    info("worker init, id: %d", _id);
+
+    _client.run(true);
+    _server.init(7240);
+    sleep(3);
+}
+
+void Worker::run(bool background) {
+    int ret = pthread_create(&Worker::_heartbeat_thread, NULL, Worker::hreatbeat_rountine, this);
+    if (ret != 0) {
+        error("hreatbreat rountine create error");
+        return;
+    }
+    _server.run(background);
+}
+}
+
+#ifdef DEBUG_WORKER
+
+using namespace fankux;
+
+int main(void) {
+    Worker worker("127.0.0.1", 7234);
+    worker.init();
+    worker.run(false);
+
+    return 0;
+}
+
+#endif
