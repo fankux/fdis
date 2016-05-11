@@ -24,8 +24,6 @@ inline int create_tcpsocket() {
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) return -1;
 
-    int reuse = 1;
-    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(&reuse));
     set_nonblocking(sockfd);
 
     return sockfd;

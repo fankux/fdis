@@ -20,6 +20,10 @@ public:
         return fmap_add(&_map, &key, &value);
     }
 
+    int set(const K& key, V& value) {
+        return fmap_set(&_map, &key, &value);
+    }
+
     int remove(const K& key) {
         return fmap_remove(&_map, &key);
     }

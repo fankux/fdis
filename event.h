@@ -69,11 +69,14 @@ void event_loop(struct netinf* netinf);
 
 void event_stop(struct netinf* netinf);
 
-int event_connect(struct netinf* netinf, struct event* ev, struct sockaddr_in* saddr);
+int event_connect(struct netinf* netinf, struct event* ev, struct sockaddr_in* saddr,
+        struct timeval* timeout);
 
 void event_add(struct netinf* netinf, struct event* ev);
 
 void event_mod(struct netinf* netinf, struct event* ev);
+
+void event_del(struct netinf* netinf, struct event* ev);
 
 #ifdef __cplusplus
 }

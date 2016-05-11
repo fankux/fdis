@@ -27,8 +27,7 @@ struct Node {
     struct timeval delay;
 
     RpcClient* rpcClient;
-    unsigned int ip;
-    unsigned short port;
+    struct sockaddr_in sockaddr;
 };
 
 struct Token {

@@ -41,7 +41,7 @@ void protobuf_AssignDesc_proto_2fheartbeat_2eproto() {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(HeartbeatRequest, id_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(HeartbeatRequest, timestamp_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(HeartbeatRequest, timemills_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(HeartbeatRequest, type_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(HeartbeatRequest, port_),
   };
   HeartbeatRequest_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -107,7 +107,7 @@ void protobuf_AddDesc_proto_2fheartbeat_2eproto() {
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\025proto/heartbeat.proto\022\006fankux\"R\n\020Heart"
     "beatRequest\022\n\n\002id\030\001 \002(\005\022\021\n\ttimestamp\030\002 \002"
-    "(\003\022\021\n\ttimemills\030\003 \002(\003\022\014\n\004type\030\004 \002(\t\"G\n\021H"
+    "(\003\022\021\n\ttimemills\030\003 \002(\003\022\014\n\004port\030\004 \002(\005\"G\n\021H"
     "eartbeatResponse\022\021\n\ttimestamp\030\001 \002(\003\022\021\n\tt"
     "imemills\030\002 \002(\003\022\014\n\004type\030\003 \002(\t", 188);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
@@ -132,7 +132,7 @@ struct StaticDescriptorInitializer_proto_2fheartbeat_2eproto {
 const int HeartbeatRequest::kIdFieldNumber;
 const int HeartbeatRequest::kTimestampFieldNumber;
 const int HeartbeatRequest::kTimemillsFieldNumber;
-const int HeartbeatRequest::kTypeFieldNumber;
+const int HeartbeatRequest::kPortFieldNumber;
 #endif  // !_MSC_VER
 
 HeartbeatRequest::HeartbeatRequest()
@@ -152,12 +152,11 @@ HeartbeatRequest::HeartbeatRequest(const HeartbeatRequest& from)
 }
 
 void HeartbeatRequest::SharedCtor() {
-  ::google::protobuf::internal::GetEmptyString();
   _cached_size_ = 0;
   id_ = 0;
   timestamp_ = GOOGLE_LONGLONG(0);
   timemills_ = GOOGLE_LONGLONG(0);
-  type_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  port_ = 0;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -167,9 +166,6 @@ HeartbeatRequest::~HeartbeatRequest() {
 }
 
 void HeartbeatRequest::SharedDtor() {
-  if (type_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    delete type_;
-  }
   if (this != default_instance_) {
   }
 }
@@ -206,15 +202,7 @@ void HeartbeatRequest::Clear() {
     ::memset(&first, 0, n);                                \
   } while (0)
 
-  if (_has_bits_[0 / 32] & 15) {
-    ZR_(timestamp_, timemills_);
-    id_ = 0;
-    if (has_type()) {
-      if (type_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-        type_->clear();
-      }
-    }
-  }
+  ZR_(timestamp_, timemills_);
 
 #undef OFFSET_OF_FIELD_
 #undef ZR_
@@ -273,20 +261,18 @@ bool HeartbeatRequest::MergePartialFromCodedStream(
         } else {
           goto handle_unusual;
         }
-        if (input->ExpectTag(34)) goto parse_type;
+        if (input->ExpectTag(32)) goto parse_port;
         break;
       }
 
-      // required string type = 4;
+      // required int32 port = 4;
       case 4: {
-        if (tag == 34) {
-         parse_type:
-          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
-                input, this->mutable_type()));
-          ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
-            this->type().data(), this->type().length(),
-            ::google::protobuf::internal::WireFormat::PARSE,
-            "type");
+        if (tag == 32) {
+         parse_port:
+          DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
+                   ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
+                 input, &port_)));
+          set_has_port();
         } else {
           goto handle_unusual;
         }
@@ -334,14 +320,9 @@ void HeartbeatRequest::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteInt64(3, this->timemills(), output);
   }
 
-  // required string type = 4;
-  if (has_type()) {
-    ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
-      this->type().data(), this->type().length(),
-      ::google::protobuf::internal::WireFormat::SERIALIZE,
-      "type");
-    ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
-      4, this->type(), output);
+  // required int32 port = 4;
+  if (has_port()) {
+    ::google::protobuf::internal::WireFormatLite::WriteInt32(4, this->port(), output);
   }
 
   if (!unknown_fields().empty()) {
@@ -369,15 +350,9 @@ void HeartbeatRequest::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormatLite::WriteInt64ToArray(3, this->timemills(), target);
   }
 
-  // required string type = 4;
-  if (has_type()) {
-    ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
-      this->type().data(), this->type().length(),
-      ::google::protobuf::internal::WireFormat::SERIALIZE,
-      "type");
-    target =
-      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
-        4, this->type(), target);
+  // required int32 port = 4;
+  if (has_port()) {
+    target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(4, this->port(), target);
   }
 
   if (!unknown_fields().empty()) {
@@ -413,11 +388,11 @@ int HeartbeatRequest::ByteSize() const {
           this->timemills());
     }
 
-    // required string type = 4;
-    if (has_type()) {
+    // required int32 port = 4;
+    if (has_port()) {
       total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::StringSize(
-          this->type());
+        ::google::protobuf::internal::WireFormatLite::Int32Size(
+          this->port());
     }
 
   }
@@ -456,8 +431,8 @@ void HeartbeatRequest::MergeFrom(const HeartbeatRequest& from) {
     if (from.has_timemills()) {
       set_timemills(from.timemills());
     }
-    if (from.has_type()) {
-      set_type(from.type());
+    if (from.has_port()) {
+      set_port(from.port());
     }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
@@ -486,7 +461,7 @@ void HeartbeatRequest::Swap(HeartbeatRequest* other) {
     std::swap(id_, other->id_);
     std::swap(timestamp_, other->timestamp_);
     std::swap(timemills_, other->timemills_);
-    std::swap(type_, other->type_);
+    std::swap(port_, other->port_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);

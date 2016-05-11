@@ -6,21 +6,31 @@
 
 namespace fankux {
 
-typedef std::pair<Message*, Message*> InternalData;
+struct NetInfo {
+    struct sockaddr_in sockaddr;
+};
 
 struct Provider {
 public:
     Provider() : succ_dones(FMAP_T_INT32, FMAP_DUP_KEY),
                  fail_dones(FMAP_T_INT32, FMAP_DUP_NONE) {}
 
+    NetInfo net_info;
     Service* service;
-    Map<provider_id_t, Closure> succ_dones;
-    Map<provider_id_t, Closure> fail_dones;
+    Map<procedure_id_t, Closure> succ_dones;
+    Map<procedure_id_t, Closure> fail_dones;
+};
+
+struct InternalData {
+    Message* request;
+    Message* response;
+    Provider* provider;
 };
 
 class RpcServer {
 public:
-    RpcServer() : _port(0), _ev(NULL), _netinf(NULL), _providers(FMAP_T_INT32, FMAP_DUP_KEY) {}
+    RpcServer() : _port(0), _ev(NULL), _netinf(NULL),
+                               _providers(FMAP_T_INT32, FMAP_DUP_KEY) {}
 
     virtual ~RpcServer();
 
@@ -29,6 +39,8 @@ public:
     void run(bool background = false);
 
     void reg_provider(const int id, Provider& provider);
+
+    Provider* get_provider(const int id);
 
 private:
     static int request_handler(struct event* ev);
@@ -53,13 +65,14 @@ private:
     Map<int, Provider> _providers;
 
     static pthread_t _routine_pid;
+
     static class InvokeParam {
     public:
         int _status;
         RpcServer* _server;
         std::string _msg;
 
-        Map<provider_id_t, InternalData> _internal_data;
+        Map<procedure_id_t, InternalData> _internal_data;
         Method* _method;
 
         InvokeParam() : _server(NULL), _status(0), _msg(), _method(NULL),

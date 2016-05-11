@@ -26,7 +26,7 @@ void* Worker::hreatbeat_rountine(void* arg) {
         request.set_timestamp(now.tv_sec);
         request.set_timemills(now.tv_usec / 1000);
         request.set_id(1);
-        request.set_type("sssstype");
+        request.set_port(7240);
 
         ager_service->echo(&controller, &request, &response, NULL);
 
@@ -45,11 +45,11 @@ void* Worker::hreatbeat_rountine(void* arg) {
     return (void*) 0;
 }
 
-void Worker::init() {
+void Worker::init(uint16_t server_port) {
     info("worker init, id: %d", _id);
 
     _client.run(true);
-    _server.init(7240);
+    _server.init(server_port);
     sleep(3);
 }
 
@@ -69,7 +69,7 @@ using namespace fankux;
 
 int main(void) {
     Worker worker("127.0.0.1", 7234);
-    worker.init();
+    worker.init(7240);
     worker.run(false);
 
     return 0;

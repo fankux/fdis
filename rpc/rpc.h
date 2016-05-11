@@ -10,13 +10,13 @@
 
 namespace fankux {
 
-typedef int64_t provider_id_t;
+typedef int64_t procedure_id_t;
 typedef google::protobuf::Closure Closure;
 typedef google::protobuf::Service Service;
 typedef google::protobuf::MethodDescriptor Method;
 typedef google::protobuf::Message Message;
 
-#define build_provider_id(__service_id__, __method_id__) \
+#define build_procedure_id(__service_id__, __method_id__) \
     (((__service_id__) << (sizeof(__service_id__) * 8)) | (__method_id__))
 }
 

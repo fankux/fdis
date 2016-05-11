@@ -112,17 +112,12 @@ class HeartbeatRequest : public ::google::protobuf::Message {
   inline ::google::protobuf::int64 timemills() const;
   inline void set_timemills(::google::protobuf::int64 value);
 
-  // required string type = 4;
-  inline bool has_type() const;
-  inline void clear_type();
-  static const int kTypeFieldNumber = 4;
-  inline const ::std::string& type() const;
-  inline void set_type(const ::std::string& value);
-  inline void set_type(const char* value);
-  inline void set_type(const char* value, size_t size);
-  inline ::std::string* mutable_type();
-  inline ::std::string* release_type();
-  inline void set_allocated_type(::std::string* type);
+  // required int32 port = 4;
+  inline bool has_port() const;
+  inline void clear_port();
+  static const int kPortFieldNumber = 4;
+  inline ::google::protobuf::int32 port() const;
+  inline void set_port(::google::protobuf::int32 value);
 
   // @@protoc_insertion_point(class_scope:fankux.HeartbeatRequest)
  private:
@@ -132,17 +127,17 @@ class HeartbeatRequest : public ::google::protobuf::Message {
   inline void clear_has_timestamp();
   inline void set_has_timemills();
   inline void clear_has_timemills();
-  inline void set_has_type();
-  inline void clear_has_type();
+  inline void set_has_port();
+  inline void clear_has_port();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
   ::google::protobuf::uint32 _has_bits_[1];
   mutable int _cached_size_;
   ::google::protobuf::int64 timestamp_;
-  ::google::protobuf::int64 timemills_;
-  ::std::string* type_;
   ::google::protobuf::int32 id_;
+  ::google::protobuf::int32 port_;
+  ::google::protobuf::int64 timemills_;
   friend void  protobuf_AddDesc_proto_2fheartbeat_2eproto();
   friend void protobuf_AssignDesc_proto_2fheartbeat_2eproto();
   friend void protobuf_ShutdownFile_proto_2fheartbeat_2eproto();
@@ -333,80 +328,28 @@ inline void HeartbeatRequest::set_timemills(::google::protobuf::int64 value) {
   // @@protoc_insertion_point(field_set:fankux.HeartbeatRequest.timemills)
 }
 
-// required string type = 4;
-inline bool HeartbeatRequest::has_type() const {
+// required int32 port = 4;
+inline bool HeartbeatRequest::has_port() const {
   return (_has_bits_[0] & 0x00000008u) != 0;
 }
-inline void HeartbeatRequest::set_has_type() {
+inline void HeartbeatRequest::set_has_port() {
   _has_bits_[0] |= 0x00000008u;
 }
-inline void HeartbeatRequest::clear_has_type() {
+inline void HeartbeatRequest::clear_has_port() {
   _has_bits_[0] &= ~0x00000008u;
 }
-inline void HeartbeatRequest::clear_type() {
-  if (type_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    type_->clear();
-  }
-  clear_has_type();
+inline void HeartbeatRequest::clear_port() {
+  port_ = 0;
+  clear_has_port();
 }
-inline const ::std::string& HeartbeatRequest::type() const {
-  // @@protoc_insertion_point(field_get:fankux.HeartbeatRequest.type)
-  return *type_;
+inline ::google::protobuf::int32 HeartbeatRequest::port() const {
+  // @@protoc_insertion_point(field_get:fankux.HeartbeatRequest.port)
+  return port_;
 }
-inline void HeartbeatRequest::set_type(const ::std::string& value) {
-  set_has_type();
-  if (type_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    type_ = new ::std::string;
-  }
-  type_->assign(value);
-  // @@protoc_insertion_point(field_set:fankux.HeartbeatRequest.type)
-}
-inline void HeartbeatRequest::set_type(const char* value) {
-  set_has_type();
-  if (type_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    type_ = new ::std::string;
-  }
-  type_->assign(value);
-  // @@protoc_insertion_point(field_set_char:fankux.HeartbeatRequest.type)
-}
-inline void HeartbeatRequest::set_type(const char* value, size_t size) {
-  set_has_type();
-  if (type_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    type_ = new ::std::string;
-  }
-  type_->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:fankux.HeartbeatRequest.type)
-}
-inline ::std::string* HeartbeatRequest::mutable_type() {
-  set_has_type();
-  if (type_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    type_ = new ::std::string;
-  }
-  // @@protoc_insertion_point(field_mutable:fankux.HeartbeatRequest.type)
-  return type_;
-}
-inline ::std::string* HeartbeatRequest::release_type() {
-  clear_has_type();
-  if (type_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    return NULL;
-  } else {
-    ::std::string* temp = type_;
-    type_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-    return temp;
-  }
-}
-inline void HeartbeatRequest::set_allocated_type(::std::string* type) {
-  if (type_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    delete type_;
-  }
-  if (type) {
-    set_has_type();
-    type_ = type;
-  } else {
-    clear_has_type();
-    type_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  }
-  // @@protoc_insertion_point(field_set_allocated:fankux.HeartbeatRequest.type)
+inline void HeartbeatRequest::set_port(::google::protobuf::int32 value) {
+  set_has_port();
+  port_ = value;
+  // @@protoc_insertion_point(field_set:fankux.HeartbeatRequest.port)
 }
 
 // -------------------------------------------------------------------

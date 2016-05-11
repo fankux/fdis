@@ -65,7 +65,7 @@ inline void event_info_free(struct event* event) {
 #define epoll_del(epfd, ev) do {                            \
     ev->status = EVENT_STATUS_ERR;                          \
     if (epoll_ctl((epfd), EPOLL_CTL_DEL, (ev)->fd, &(ev)->epev) == -1) {      \
-        warn("epoll del faild, errno:%d, error:%s", errno, strerror(errno));  \
+        warn("epoll del faild, fd:%d, errno:%d, error:%s", (ev)->fd, errno, strerror(errno));  \
     }                                                       \
     close((ev)->fd);                                        \
 } while(0)
@@ -76,7 +76,7 @@ inline void event_info_free(struct event* event) {
             ((ev)->flags & EVENT_WRITE ? EPOLLOUT : 0);     \
     (ev)->epev.data.ptr = (ev);                             \
     if (epoll_ctl((epfd), EPOLL_CTL_ADD, (ev)->fd, &(ev)->epev) == -1) {      \
-        warn("epoll add faild, errno:%d, error:%s", errno, strerror(errno));  \
+        warn("epoll add faild, fd:%d, errno:%d, error:%s", (ev)->fd, errno, strerror(errno));  \
         (ev)->status = EVENT_STATUS_ERR;                    \
     }                                                       \
 } while(0)
@@ -87,7 +87,7 @@ inline void event_info_free(struct event* event) {
             ((ev)->flags & EVENT_WRITE ? EPOLLOUT : 0);     \
     (ev)->epev.data.ptr = (ev);                             \
     if (epoll_ctl((epfd), EPOLL_CTL_MOD, (ev)->fd, &(ev)->epev) == -1) {      \
-        warn("epoll mod faild, errno:%d, error:%s", errno, strerror(errno));  \
+        warn("epoll mod faild, fd:%d, errno:%d, error:%s", (ev)->fd, errno, strerror(errno));  \
         (ev)->status = EVENT_STATUS_ERR;                    \
     }                                                       \
 } while(0)
@@ -96,7 +96,9 @@ static int event_err_handle(struct netinf* netinf) {
     struct epoll_event* eplist = netinf->eplist;
     struct event* ev;
     int epfd = netinf->epfd;
+    int sockerr;
     int n = 0;
+    socklen_t socklen = sizeof(int);
 
     for (int i = 0; i < netinf->list_num; ++i) {
         uint32_t fire_event = eplist[i].events;
@@ -110,11 +112,12 @@ static int event_err_handle(struct netinf* netinf) {
             continue;
         }
 
-        if (fire_event & EPOLLERR || fire_event & EPOLLHUP) {
+        if ((fire_event & EPOLLERR) || (fire_event & EPOLLHUP)) {
             if (errno == 0) continue;
 
-            warn("epoll error occured, fire_event:%d, errno:%d, error:%s",
-                    fire_event, errno, strerror(errno));
+            getsockopt(ev->fd, SOL_SOCKET, SO_ERROR, &sockerr, &socklen);
+            debug("epoll error occured, fd: %d, sockerror: %d, error: %s",
+                    ev->fd, sockerr, strerror(sockerr));
 
             //TODO...error handling
             epoll_del(epfd, ev);
@@ -148,8 +151,8 @@ static int event_accept_handle(struct netinf* netinf) {
 
             set_nonblocking(conn_sock);
             conn_ev = event_info_create(conn_sock);
-            conn_ev->flags = (ev->flags & EVENT_READ ? EVENT_READ : 0) |
-                             (ev->flags & EVENT_WRITE ? EVENT_WRITE : 0);
+            conn_ev->flags = ((ev->flags & EVENT_READ) ? EVENT_READ : 0) |
+                             ((ev->flags & EVENT_WRITE) ? EVENT_WRITE : 0);
             conn_ev->async = ev->async;
             conn_ev->keepalive = ev->keepalive;
             conn_ev->recv_func = ev->recv_func;
@@ -178,13 +181,13 @@ static int event_read_handle(struct netinf* netinf) {
 
     for (int i = 0; i < netinf->list_num; ++i) {
         uint32_t fire_event = eplist[i].events;
-        if (fire_event & EPOLLIN == 0) continue;
+        if ((fire_event & EPOLLIN) == 0) continue;
 
         ev = eplist[i].data.ptr;
         fire_sock = ev->fd;
         if (ev->flags & EVENT_ACCEPT) continue;
         if (ev->status == EVENT_STATUS_ERR) {
-            debug("invalid sock, fd: %d", fire_sock);
+            debug("invalid sock, skip read, fd: %d", fire_sock);
             continue;
         }
 
@@ -207,8 +210,9 @@ static int event_read_handle(struct netinf* netinf) {
             if (ev->recv_func(ev) != 0) {
                 warn("EPOLLIN handler invoke error, fd: %d", fire_sock);
                 epoll_del(epfd, ev);
+            } else {
+                epoll_mod(epfd, ev);
             }
-            epoll_mod(epfd, ev);
         }
 
         ++n;
@@ -228,13 +232,13 @@ static int event_write_handle(struct netinf* netinf) {
 
     for (int i = 0; i < netinf->list_num; ++i) {
         uint32_t fire_event = eplist[i].events;
-        if (fire_event & EPOLLOUT == 0) continue;
+        if ((fire_event & EPOLLOUT) == 0) continue;
 
         ev = eplist[i].data.ptr;
         fire_sock = ev->fd;
         if (ev->flags & EVENT_ACCEPT) continue;
         if (ev->status == EVENT_STATUS_ERR) {
-            debug("invalid sock, fd: %d", fire_sock);
+            debug("invalid sock, skip write, fd: %d", fire_sock);
             continue;
         }
 
@@ -353,15 +357,53 @@ inline void event_stop(struct netinf* netinf) {
     event_active = 0;
 }
 
-int event_connect(struct netinf* netinf, struct event* ev, struct sockaddr_in* saddr) {
-    int ret = connect(ev->fd, (const struct sockaddr*) saddr, sizeof(struct sockaddr));
+int event_connect(struct netinf* netinf, struct event* ev, struct sockaddr_in* saddr,
+        struct timeval* timeout) {
+    int fd = ev->fd;
+    int ret = connect(fd, (const struct sockaddr*) saddr, sizeof(struct sockaddr));
     if (ret == -1 && errno != EINPROGRESS) {
+        ev->status = EVENT_STATUS_ERR;
         warn("connect remote server fail, error:%s", strerror(errno));
         return -1;
     }
-    if (errno == EINPROGRESS)
-            debug("connect in progress");
+    if (errno == EINPROGRESS) {
+        debug("connect in progress, waiting..., ev flags:%d, fd flag: %d", ev->flags);
 
+        fd_set wfd;
+        FD_ZERO(&wfd);
+        FD_SET(fd, &wfd);
+        if (select(FD_SETSIZE, NULL, &wfd, NULL, timeout) <= 0) {
+            ev->status = EVENT_STATUS_ERR;
+            warn("connect error, select error: %s", strerror(errno));
+            close(fd);
+            return -1;
+        }
+
+        if (!FD_ISSET(fd, &wfd)) {
+            ev->status = EVENT_STATUS_ERR;
+            errno = ETIMEDOUT;
+            warn("connect error, timeout");
+            close(fd);
+            return -1;
+        }
+
+        int err;
+        socklen_t errlen;
+        if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &errlen) == -1) {
+            ev->status = EVENT_STATUS_ERR;
+            warn("connect error getsockopt: %s", strerror(errno));
+            close(fd);
+            return -1;
+        }
+
+        if (err) {
+            ev->status = EVENT_STATUS_ERR;
+            errno = err;
+            warn("connect error, msg : %s", strerror(errno));
+            close(fd);
+            return -1;
+        }
+    }
     epoll_add(netinf->epfd, ev);
 
     return 0;
@@ -373,6 +415,10 @@ inline void event_add(struct netinf* netinf, struct event* ev) {
 
 inline void event_mod(struct netinf* netinf, struct event* ev) {
     epoll_mod(netinf->epfd, ev);
+}
+
+inline void event_del(struct netinf* netinf, struct event* ev) {
+    epoll_del(netinf->epfd, ev);
 }
 
 #ifdef DEBUG_EVENT

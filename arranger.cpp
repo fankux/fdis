@@ -56,8 +56,7 @@ struct Node* Arranger::add_node(struct Node* inode) {
     }
     struct Node* node = &_nodes[inode->id];
     node->id = inode->id;
-    node->ip = inode->ip;
-    node->port = inode->port;
+    node->sockaddr = inode->sockaddr;
     node->last_report = inode->last_report;
     node->delay = inode->delay;
     node->status = NODE_OK;

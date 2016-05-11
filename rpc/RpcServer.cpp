@@ -69,7 +69,7 @@ int RpcServer::request_handler(struct event* ev) {
     int package_len = 0;
     memcpy(&package_len, buffer, 4);
     if (readlen <= 4 || package_len != readlen) {
-        info("tcp package length incorrect, drop it, read len: %zu, package len: %d",
+        info("tcp package length incorrect, drop it, read len: %lu, package len: %d",
                 readlen, package_len);
         ev->status = EVENT_STATUS_ERR;
         return -1;
@@ -109,17 +109,21 @@ int RpcServer::request_handler(struct event* ev) {
         return 0;
     }
 
-    provider_id_t provider_id = build_provider_id(service_id, method_id);
-    InternalData* in_data = param->_internal_data.get(provider_id);
+    procedure_id_t procedure_id = build_procedure_id(service_id, method_id);
+    InternalData* in_data = param->_internal_data.get(procedure_id);
     if (in_data == NULL) {
         error("incorrect provider, service id: %d, method id: %d", service_id, method_id);
         ev->status = EVENT_STATUS_ERR;
         return -1;
     }
 
-    Message* request = in_data->first;
-    Message* response = in_data->second;
+    Message* request = in_data->request;
+    Message* response = in_data->response;
     request->ParseFromArray(buffer + 8 + meta_len, package_len - 8 - meta_len);
+
+    struct sockaddr_in addr;
+    getpeername(ev->fd, (struct sockaddr*) &addr, (socklen_t*) sizeof(addr));
+    in_data->provider->net_info.sockaddr = addr;
 
     if (ev->async) {
         // TODO..actuall call in a queue, or other thread, but do not block event thread
@@ -132,7 +136,7 @@ int RpcServer::request_handler(struct event* ev) {
         gettimeofday(&start, NULL);
         // TODO..controller to detect calling status
         service->CallMethod(service->GetDescriptor()->method(meta.method_id()), NULL,
-                request, response, provider->succ_dones.get(provider_id));
+                request, response, provider->succ_dones.get(procedure_id));
         gettimeofday(&end, NULL);
         timeval_subtract(&delta, &start, &end);
         debug("end Invoke method, id: %d, full name: %s, time: %ldus", param->_method->index(),
@@ -159,9 +163,9 @@ int RpcServer::response_handler(struct event* ev) {
 
     int service_id = param->_method->service()->index();
     int method_id = param->_method->index();
-    provider_id_t provider_id = build_provider_id(service_id, method_id);
+    procedure_id_t procedure_id = build_procedure_id(service_id, method_id);
 
-    Message* response = param->_internal_data.get(provider_id)->second;
+    Message* response = param->_internal_data.get(procedure_id)->response;
 
     int status_len = status.ByteSize();
     int response_len = response->ByteSize();
@@ -191,12 +195,12 @@ void RpcServer::reg_provider(const int id, Provider& provider) {
         const Method* method = service->GetDescriptor()->method(i);
         int method_id = method->index();
 
-        provider_id_t provider_id = build_provider_id(service_id, method_id);
+        procedure_id_t procedure_id = build_procedure_id(service_id, method_id);
         info("id:%d, provider register: %s(%d)==>%s(%d)", id,
                 service->GetDescriptor()->full_name().c_str(), service_id,
                 method->full_name().c_str(), method_id);
 
-        InternalData* in_data = _invoke_param._internal_data.get(provider_id);
+        InternalData* in_data = _invoke_param._internal_data.get(procedure_id);
         if (in_data != NULL) {
             continue;
         }
@@ -211,8 +215,7 @@ void RpcServer::reg_provider(const int id, Provider& provider) {
             fatal("server request alloc faild");
             delete in_data;
             exit(EXIT_FAILURE);
-        }
-        Message* response = service->GetResponsePrototype(method).New();
+        }        Message* response = service->GetResponsePrototype(method).New();
         if (response == NULL) {
             fatal("server response alloc faild");
             delete in_data;
@@ -220,10 +223,16 @@ void RpcServer::reg_provider(const int id, Provider& provider) {
             exit(EXIT_FAILURE);
         }
 
-        in_data->first = request;
-        in_data->second = response;
-        _invoke_param._internal_data.add(provider_id, *in_data);
+        in_data->request = request;
+        in_data->response = response;
+        in_data->provider = &provider;
+        _invoke_param._internal_data.add(procedure_id, *in_data);
     }
     _providers.add(id, provider);
 }
+
+Provider* RpcServer::get_provider(const int id) {
+    return _providers.get(id);
+}
+
 }
