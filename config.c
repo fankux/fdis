@@ -2,23 +2,23 @@
 #include <sys/stat.h>
 #include <errno.h>
 
-#include "common.h"
+#include "common/fmem.h"
+#include "common/check.h"
+#include "common/fmap.h"
+
 #include "config.h"
-#include "fmem.h"
 
-#define LOG_CLI
+#ifdef __cplusplus
+namespace fankux{
+#endif
 
-#include "flog.h"
-#include "fmap.h"
+static int _parse_file(struct fconf* conf, char* buf, size_t size);
 
-static int _parse_file(struct fconf * conf, char * buf, size_t size);
+static inline struct fconf* _fconf_init() {
+    struct fconf* conf = fmalloc(sizeof(struct fconf));
+    check_null_oom(conf, return NULL, "fconf");
 
-static inline struct fconf * _fconf_init()
-{
-    struct fconf * conf = fmalloc(sizeof(struct fconf));
-    ASSERT_NULL(conf, NULL);
-
-    if (!(conf->data = fmap_create_dupboth())) {
+    if (!(conf->data = fmap_create(FMAP_T_STR, FMAP_DUP_BOTH))) {
         ffree(conf);
         return NULL;
     }
@@ -40,8 +40,8 @@ static inline struct fconf * _fconf_init()
 #define STAT_BF_VAL 3
 #define STAT_AT_VAL 4
 #define STAT_AF_VAL 5
-static int _parse_file(struct fconf * conf, char * buf, size_t size)
-{
+
+static int _parse_file(struct fconf* conf, char* buf, size_t size) {
     size_t buf_idx = 0;
     int stat = STAT_BF_KEY;
     char end = ' ';
@@ -69,10 +69,10 @@ static int _parse_file(struct fconf * conf, char * buf, size_t size)
 
         if (stat == STAT_AT_KEY) {
             /* value included by quotes */
-            if (end != ' ' && *buf == '=') {
-                log("syntax error : key must end with %c", end);
+            if (end != ' ' && *buf == ':') {
+                fatal("syntax error : key must end with %c", end);
                 goto error;
-            } else if (end == ' ' && *buf == '=') {
+            } else if (end == ' ' && *buf == ':') {
                 stat = STAT_BF_VAL;
                 key[buf_idx] = '\0';
                 ++buf;
@@ -90,14 +90,15 @@ static int _parse_file(struct fconf * conf, char * buf, size_t size)
         }
 
 
-        if (stat == STAT_AF_KEY) { /* content after key must be = or spaces, otherwise syntax error */
-            if (*buf == '=') {
+        if (stat ==
+            STAT_AF_KEY) { /* content after key must be = or spaces, otherwise syntax error */
+            if (*buf == ':') {
                 stat = STAT_BF_VAL;
                 ++buf;
             } else if (isspace(*buf)) {
                 ++buf;
             } else {
-                log("syntax error : error charactors between key and value");
+                fatal("syntax error : error charactors between key and value");
                 goto error;
             }
             continue;
@@ -120,7 +121,7 @@ static int _parse_file(struct fconf * conf, char * buf, size_t size)
 
         if (stat == STAT_AT_VAL) {
             if (end != ' ' && (*buf == '\n' || *buf == '\r')) {
-                log("syntax error : value must end with %c", end);
+                fatal("syntax error : value must end with %c", end);
                 goto error;
             } else if (end == ' ' && (*buf == '\n' || *buf == '\r')) {
                 stat = STAT_BF_KEY;
@@ -128,7 +129,7 @@ static int _parse_file(struct fconf * conf, char * buf, size_t size)
                 ++buf;
 
                 fmap_add(conf->data, key, val);
-                log("%s => %s \n", key, val);
+                fatal("%s => %s \n", key, val);
             } else if (end != ' ' && *buf == end) {
                 stat = STAT_AF_VAL;
                 val[buf_idx] = '\0';
@@ -152,20 +153,20 @@ static int _parse_file(struct fconf * conf, char * buf, size_t size)
             } else if (isspace(*buf)) {
                 ++buf;
             } else {
-                log("syntax error : error charactors between key and value");
+                fatal("syntax error : error charactors between key and value");
                 goto error;
             }
             continue;
         }
     }
 
-/* at most condition, last value will follow by '\0'  */
-    log("stat:%d", stat);
+    /* at most condition, last value will follow by '\0'  */
+    debug("stat:%d", stat);
     if (stat == STAT_AF_VAL) {
         val[buf_idx] = '\0';
         fmap_add(conf->data, key, val);
     } else if (stat != STAT_BF_KEY) {
-        log("Syntax error : status error: %d", stat);
+        fatal("Syntax error : status error: %d", stat);
         goto error;
     }
 
@@ -176,63 +177,75 @@ static int _parse_file(struct fconf * conf, char * buf, size_t size)
     return -1;
 }
 
-fconf_t * fconf_create(char * path)
-{
-    struct fconf * conf = _fconf_init();
-    if (!conf) {
-        log("fconf init faild, mem error");
-        return NULL;
-    }
+fconf_t* fconf_create(const char* path) {
+    struct fconf* conf = _fconf_init();
+    check_null_oom(conf, return NULL, "fconf init");
 
     struct stat file_stat;
     if (-1 == stat(path, &file_stat)) {
-        log("get file(%s) status faild, %d, %s", path, errno, strerror(errno));
+        fatal("get file : %s status faild, error : %d, %s", path, errno, strerror(errno));
         return NULL;
     }
     if (file_stat.st_size >= FCONFIG_BUFSIZE) { /* over size */
-        log("file too large to read, file path:%s , size: %ld", path, file_stat.st_size);
+        fatal("file too large to read, file path:%s , size: %ld", path, file_stat.st_size);
         return NULL;
     }
 
-    FILE * fp = fopen(path, "r");
+    FILE* fp = fopen(path, "r");
     if (!fp) {
-        log("file(%s) open faild : %d, %s", path, errno, strerror(errno));
+        fatal("file(%s) open faild : %d, %s", path, errno, strerror(errno));
         return NULL;
     }
-
 
     char buf[FCONFIG_BUFSIZE] = "\0";
     size_t n = fread(buf, FCONFIG_BUFSIZE, 1, fp);
 
-    log("file(%s) read success, size: %zu, content:%s", path, n, buf);
+    debug("file(%s) read success, size: %zu, content:%s", path, n, buf);
 
-    _parse_file(conf, buf, n);
-
+    if (_parse_file(conf, buf, n) == -1) {
+        free(conf);
+        conf = NULL;
+    }
     fclose(fp);
 
     return conf;
 }
 
-char * fconf_get(fconf_t * conf, char * key)
-{
-    struct fmap_node * node = fmap_get(conf->data, key);
+char* fconf_get(fconf_t* conf, const char* key) {
+    struct fmap_node* node = fmap_get(conf->data, key);
     if (!node) return NULL;
     return node->value;
 }
 
-int fconf_get_int(fconf_t * conf, char * key)
-{
-    char * value = fmap_getvalue(conf->data, key);
+int32_t fconf_get_int32(fconf_t* conf, const char* key) {
+    char* value = fmap_getvalue(conf->data, key);
     if (!value) return 0;
     return atoi(value);
 }
 
-double fconf_get_float(fconf_t * conf, char * key)
-{
-    char * value = fmap_getvalue(conf->data, key);
+int64_t fconf_get_int64(fconf_t* conf, const char* key) {
+    char* value = fmap_getvalue(conf->data, key);
+    if (!value) return 0;
+    return atoll(value);
+}
+
+uint32_t fconf_get_uint32(fconf_t* conf, const char* key) {
+    return (uint32_t) fconf_get_int32(conf, key);
+}
+
+uint64_t fconf_get_uint64(fconf_t* conf, const char* key) {
+    return (uint64_t) fconf_get_int64(conf, key);
+}
+
+double fconf_get_float(fconf_t* conf, const char* key) {
+    char* value = fmap_getvalue(conf->data, key);
     if (!value) return 0;
     return atof(value);
 }
+
+#ifdef __cplusplus
+};
+#endif
 
 #ifdef DEBUG_FCONF
 

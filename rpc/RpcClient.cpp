@@ -213,7 +213,7 @@ pthread_mutex_t* RpcClient::get_provider_lock(const int sid, const int mid,
         if ((lock = RpcClient::_provider_locks.get(pid)) == NULL) {
             lock = (pthread_mutex_t*) malloc(sizeof(pthread_mutex_t));
             check_null_oom(lock, pthread_mutex_unlock(&RpcClient::_lock), return NULL,
-                    "provider lock , service id:%d, method id:%d", sid, mid);
+                    "provider lock, service id : %d, method id : %d", sid, mid);
             pthread_mutex_init(lock, NULL);
             RpcClient::_provider_locks.add(pid, *lock);
         }

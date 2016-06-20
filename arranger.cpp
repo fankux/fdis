@@ -5,24 +5,25 @@
 
 namespace fankux {
 
-Arranger* g_ager = new Arranger();
+Arranger g_ager;
 
-Arranger::Arranger() {
-    init();
-}
+/**
+ * TODO..nodes info persist
+ */
+Arranger::Arranger() {}
 
-void Arranger::init() {
+void Arranger::init(ArrangerConf& conf) {
     pthread_mutex_init(&_lock, NULL);
+    _conf = conf;
     // TODO... null check,
-    // TODO... worker should be created when heartbeat registering event dynamicly
-    _token_num = DEFAULT_TOKEN_NUM;
-    _node_num = DEFAULT_WORKER_NUM;
+    _token_num = _conf._default_token_num;
+    _node_num = _conf._default_worker_num;
     _node_space = min2level(_node_num);
 
     _nodes = (Node*) fcalloc(_node_space, sizeof(struct Node));
     for (size_t i = 0; i < _node_num; ++i) {
         fmemset(_nodes + i, 0, sizeof(struct Node));
-        // TODO.. field
+        // TODO.. init persist node
     }
 
     struct Token* token = (Token*) fcalloc(_token_num, sizeof(struct Token));
@@ -45,49 +46,56 @@ void Arranger::stop() {
 }
 
 struct Node* Arranger::add_node(struct Node* inode) {
+    pthread_mutex_lock(&_lock);
+
     if (inode->id >= _node_space) {
         info("add new node, id : %d, expand _node space", inode->id);
-        pthread_mutex_lock(&_lock);
         _node_space = _node_space << 1;
         struct Node* tmp_addr = (Node*) realloc(_nodes, _node_space * sizeof(struct Node));
         check_null_oom(tmp_addr, return NULL, "realloc _nodes faild, new size:%z, ", _node_space);
         _nodes = tmp_addr;
-        pthread_mutex_unlock(&_lock);
     }
-    struct Node* node = &_nodes[inode->id];
+
+    struct Node* node = &_nodes[_node_num];
     node->id = inode->id;
     node->sockaddr = inode->sockaddr;
     node->last_report = inode->last_report;
     node->delay = inode->delay;
     node->status = NODE_OK;
+    int ret = node->taskpool->init(_conf._threadpool_min, _conf._threadpool_max);
+    if (ret == -1) {
+        error("add node faild, taskpool init faild");
+        return NULL;
+    }
 
-    pthread_mutex_lock(&_lock);
     ++_node_num;
     pthread_mutex_unlock(&_lock);
 
     return node;
 }
 
-int Arranger::handle_node(struct Node* node) {
-    struct Node* tmp_node;
-    if (node->id >= _node_space) {
-        tmp_node = add_node(node);
-        check_null_oom(tmp_node, return -1, "handle node faild to add, ");
+int Arranger::handle_node(struct Node* innode) {
+    struct Node* node;
+
+    if (innode->id < 0 && innode->id >= _node_num) { // add new node
+        node = add_node(innode);
+        check_null_oom(node, return -1, "handle node faild to add, ");
+        return 0;
     }
-    tmp_node = &_nodes[node->id];
 
     timeval now;
     timeval delta;
     gettimeofday(&now, NULL);
 
-    timeval_subtract(&delta, &tmp_node->last_report, &now);
-    timeval_subtract(&delta, &tmp_node->last_report, &delta);
+    node = &_nodes[innode->id];
+    timeval_subtract(&delta, &node->last_report, &now);
+    timeval_subtract(&delta, &node->last_report, &delta);
 
-    if (delta.tv_sec > 0 || delta.tv_usec > LEASE_TIME * 1000) {
-        warn("node lease timeout, id", tmp_node->id);
-        tmp_node->status = NODE_OFFLINE;
+    if (delta.tv_sec > 0 || delta.tv_usec > _conf._lease_time * 1000) {
+        warn("node lease timeout, id", node->id);
+        node->status = NODE_EXPIRE;
     } else {
-        tmp_node->last_report = now;
+        node->status = NODE_OK;
     }
 
     return 0;
@@ -153,8 +161,11 @@ void Arranger::load_balance() {
 
 #ifdef DEBUG_ARRANGER
 using namespace fankux;
+
 int main(void) {
-    g_ager->run();
+    ArrangerConf ager_conf = ArrangerConf::load("/home/fankux/app/fankux/webc/conf/arranger.conf");
+    g_ager.init(ager_conf);
+    g_ager.run();
 
     return 0;
 }

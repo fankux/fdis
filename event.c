@@ -329,7 +329,12 @@ struct netinf* event_create(size_t event_size) {
 }
 
 void netinfo_free(struct netinf* netinf) {
-    ffree(netinf->eplist);
+    if (!netinf) {
+        return;
+    }
+    if (netinf->eplist) {
+        ffree(netinf->eplist);
+    }
     ffree(netinf);
 }
 

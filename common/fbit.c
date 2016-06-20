@@ -99,13 +99,11 @@ char *fbit_info(struct fbits *bits, int is_test) {
     char *base = str = malloc(sizeof(char) * 1000);
 
     if (!is_test)
-        str += sprintf(str, "size: %zd, compute bit size: %zd\n", bits->size,
-                       compute_size);
+        str += sprintf(str, "size: %zu, compute bit size: %zu\n", bits->size, compute_size);
 
     for (int i = 0; i < bits->size; ++i) {
         for (int j = 0; j < 8; ++j) {
-            str += sprintf(str, "%s",
-                           (bits->bits[i] & (1 << j)) == 0 ? "0" : "1");
+            str += sprintf(str, "%s", (bits->bits[i] & (1 << j)) == 0 ? "0" : "1");
         }
         if (i != bits->size - 1)
             str += sprintf(str, " ");

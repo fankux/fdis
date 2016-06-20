@@ -38,6 +38,8 @@ set(MODULE_COMMON
         net.c
         event.h
         event.c
+        config.h
+        config.c
 
         rpc/rpc.h
 
@@ -47,8 +49,8 @@ set(MODULE_COMMON
         proto/heartbeat.pb.cc
         proto/ArrangerService.pb.h
         proto/ArrangerService.pb.cc
-        )
-set(THREADPOOL
+
+        threadpool.hpp
         threadpool.h
         threadpool.c
         )
@@ -73,6 +75,7 @@ set(ARRANGER
         arranger.cpp
         ArrangerServer.h
         ArrangerServer.cpp
+        ArrangerConf.cpp
         )
 
 set(MODULE_COMMON_INC

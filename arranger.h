@@ -5,20 +5,24 @@
 #include "common/fqueue.hpp"
 #include "rpc/RpcClient.h"
 #include "ArrangerServer.h"
+#include "config.h"
+#include "threadpool.hpp"
 
 namespace fankux {
 
 struct Token;
 
 enum node_status {
-    NODE_OFFLINE = 0,
+    NODE_OK = 0,
     NODE_LOADING,
-    NODE_OK
+    NODE_OFFLINE,
+    NODE_EXPIRE
 };
 
 struct Node {
     int32_t id;
     Queue<struct Token> tokens;
+    Threadpool* taskpool;
 
     // server related
     int status;
@@ -36,11 +40,33 @@ struct Token {
     struct Node* node;
 };
 
+class Arranger;
+
+class ArrangerConf {
+    friend class Arranger;
+
+public:
+    static ArrangerConf& load(const std::string& path);
+
+private:
+    ArrangerConf() {};
+
+private:
+    fconf_t* _conf;
+
+    uint32_t _default_token_num;
+    uint32_t _default_worker_num;
+    uint32_t _handle_retry;
+    uint32_t _lease_time;
+    uint32_t _threadpool_min;
+    uint32_t _threadpool_max;
+};
+
 class Arranger {
 public:
     Arranger();
 
-    void init();
+    void init(ArrangerConf& conf);
 
     void run();
 
@@ -56,6 +82,7 @@ private:
     void load_balance();
 
 private:
+    ArrangerConf _conf;
     ArrangerServer _server;
 
     pthread_mutex_t _lock;
@@ -69,14 +96,9 @@ private:
     struct Node* _nodes;
     size_t _node_num;
     size_t _node_space;
-
-    static const int DEFAULT_TOKEN_NUM = 32;
-    static const int DEFAULT_WORKER_NUM = 3;
-    static const int HANDLE_RETRY = 3;
-    static const uint64_t LEASE_TIME = 4; /* mills */
 };
 
-extern Arranger* g_ager;
+extern Arranger g_ager;
 
 }
 

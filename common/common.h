@@ -1,8 +1,6 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define DEBUG_THREADPOOL
-
 #include <stdio.h>
 #include <sys/time.h>
 #include <time.h>

@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
 #define fmalloc(bytes) malloc(bytes)
 
 #define ffree(p) free(p)

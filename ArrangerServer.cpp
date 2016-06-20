@@ -32,7 +32,7 @@ void ArrangerServer::init() {
 void ArrangerServer::echo(::google::protobuf::RpcController* controller,
         const HeartbeatRequest* request, HeartbeatResponse* response,
         ::google::protobuf::Closure* done) {
-    info("heart beat achieved");
+    info("heartbeat achieved");
 
     int64_t timestamp = request->timestamp();
     int64_t timemills = request->timemills();
@@ -61,6 +61,6 @@ void ArrangerServer::echo(::google::protobuf::RpcController* controller,
         // TODO.. node time exceed arranger time
     }
 
-    g_ager->handle_node(&node);
+    g_ager.handle_node(&node);
 }
 }
