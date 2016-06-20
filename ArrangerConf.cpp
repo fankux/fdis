@@ -7,7 +7,7 @@ ArrangerConf& ArrangerConf::load(const std::string& path) {
     check_null_oom(conf, exit(EXIT_FAILURE), "arranger config");
 
     conf->_conf = fconf_create(path.c_str());
-    check_null_oom(conf->_conf, exit(EXIT_FAILURE), "arranger config inner");
+    check_null(conf->_conf, exit(EXIT_FAILURE), "arranger config inner init faild");
 
     conf->_default_token_num = fconf_get_uint32(conf->_conf, "default_token_num");
     conf->_default_worker_num = fconf_get_uint32(conf->_conf, "default_worker_num ");

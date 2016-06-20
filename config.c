@@ -129,7 +129,7 @@ static int _parse_file(struct fconf* conf, char* buf, size_t size) {
                 ++buf;
 
                 fmap_add(conf->data, key, val);
-                fatal("%s => %s \n", key, val);
+                debug("%s => %s", key, val);
             } else if (end != ' ' && *buf == end) {
                 stat = STAT_AF_VAL;
                 val[buf_idx] = '\0';
@@ -148,7 +148,7 @@ static int _parse_file(struct fconf* conf, char* buf, size_t size) {
             if (*buf == '\n' || *buf == '\r') {
                 stat = STAT_BF_KEY;
                 ++buf;
-
+                debug("%s => %s", key, val);
                 fmap_add(conf->data, key, val);
             } else if (isspace(*buf)) {
                 ++buf;
@@ -162,8 +162,9 @@ static int _parse_file(struct fconf* conf, char* buf, size_t size) {
 
     /* at most condition, last value will follow by '\0'  */
     debug("stat:%d", stat);
-    if (stat == STAT_AF_VAL) {
+    if (stat == STAT_AF_VAL || (stat == STAT_AT_VAL && *buf == '\0')) {
         val[buf_idx] = '\0';
+        debug("%s => %s", key, val);
         fmap_add(conf->data, key, val);
     } else if (stat != STAT_BF_KEY) {
         fatal("Syntax error : status error: %d", stat);
@@ -202,7 +203,7 @@ fconf_t* fconf_create(const char* path) {
 
     debug("file(%s) read success, size: %zu, content:%s", path, n, buf);
 
-    if (_parse_file(conf, buf, n) == -1) {
+    if (_parse_file(conf, buf, n + 1) == -1) {
         free(conf);
         conf = NULL;
     }
