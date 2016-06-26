@@ -96,6 +96,7 @@ private:
     struct Node* _nodes;
     size_t _node_num;
     size_t _node_space;
+    uint32_t _node_start_id;
 };
 
 extern Arranger g_ager;

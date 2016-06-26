@@ -19,6 +19,7 @@ void Arranger::init(ArrangerConf& conf) {
     _token_num = _conf._default_token_num;
     _node_num = _conf._default_worker_num;
     _node_space = min2level(_node_num);
+    _node_start_id = 1; // TODO..get from persist file
 
     _nodes = (Node*) fcalloc(_node_space, sizeof(struct Node));
     for (size_t i = 0; i < _node_num; ++i) {
@@ -57,7 +58,7 @@ struct Node* Arranger::add_node(struct Node* inode) {
     }
 
     struct Node* node = &_nodes[_node_num];
-    node->id = inode->id;
+    node->id = _node_start_id++;
     node->sockaddr = inode->sockaddr;
     node->last_report = inode->last_report;
     node->delay = inode->delay;
@@ -71,13 +72,15 @@ struct Node* Arranger::add_node(struct Node* inode) {
     ++_node_num;
     pthread_mutex_unlock(&_lock);
 
+    debug("add node success, id : %d, current node num : %z", node->id, _node_num);
+
     return node;
 }
 
 int Arranger::handle_node(struct Node* innode) {
     struct Node* node;
 
-    if (innode->id < 0 && innode->id >= _node_num) { // add new node
+    if (innode->id <= 0 && innode->id >= _node_num) { // add new node
         node = add_node(innode);
         check_null_oom(node, return -1, "handle node faild to add, ");
         return 0;
