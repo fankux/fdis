@@ -1,8 +1,9 @@
+#include "common/fmem.h"
 #include "arranger.h"
 
 namespace fankux {
 
-ArrangerConf& ArrangerConf::load(const std::string& path) {
+ArrangerConf* ArrangerConf::load(const std::string& path) {
     ArrangerConf* conf = new(std::nothrow) ArrangerConf;
     check_null_oom(conf, exit(EXIT_FAILURE), "arranger config");
 
@@ -16,7 +17,11 @@ ArrangerConf& ArrangerConf::load(const std::string& path) {
     conf->_threadpool_min = fconf_get_uint32(conf->_conf, "threadpool_min ");
     conf->_threadpool_max = fconf_get_uint32(conf->_conf, "threadpool_max ");
 
-    return *conf;
+    return conf;
+}
+
+void ArrangerConf::release(ArrangerConf* conf) {
+    delete conf;
 }
 
 }

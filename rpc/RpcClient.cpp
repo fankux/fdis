@@ -21,15 +21,15 @@ Map<procedure_id_t, MutexCond> RpcClient::_invoke_signals(FMAP_T_INT64, FMAP_DUP
 
 pthread_mutex_t RpcClient::_lock = PTHREAD_MUTEX_INITIALIZER;
 
-RpcClient::RpcClient(const std::string& addr, uint16_t port) : _evs(FMAP_T_INT64, FMAP_DUP_KEY) {
-    _addr = addr;
-    _port = port;
-    init();
-}
-
 RpcClient::~RpcClient() {
     event_stop(_netinf);
     pthread_join(_routine_pid, NULL);
+}
+
+void RpcClient::init(const std::string& addr, uint16_t port) {
+    _addr = addr;
+    _port = port;
+    _netinf = event_create(EVENT_LIST_MAX);
 }
 
 void RpcClient::run(bool background) {
@@ -316,13 +316,6 @@ int RpcClient::faild_callback(struct event* ev) {
     google::protobuf::MethodDescriptor* method =
             (google::protobuf::MethodDescriptor*) ev->faild_param;
 
-//    ev->recv_func = NULL;
-//    ev->send_func = NULL;
-//    ev->faild_func = NULL;
-//    ev->recv_param = NULL;
-//    ev->send_param = NULL;
-//    ev->faild_param = NULL;
-
     int service_id = method->service()->index();
     int method_id = method->index();
     procedure_id_t procedure_id = build_procedure_id(service_id, method_id);
@@ -409,7 +402,7 @@ int RpcClient::return_callback(struct event* ev) {
         return -1;
     }
     if (readlen < 8) {
-        error("return package too low, len:%zu", readlen);
+        error("return package too low, len:%z", readlen);
         ev->status = EVENT_STATUS_ERR;
         package->errmsg = "return package too low";
         package->status = FAILD;
@@ -422,7 +415,7 @@ int RpcClient::return_callback(struct event* ev) {
     int package_len = 0;
     memcpy(&package_len, package->recv_buffer, 4);
     if (package_len != readlen) {
-        error("package len incorrect, package len:%d, read len: %zu", package_len, readlen);
+        error("package len incorrect, package len:%d, read len: %z", package_len, readlen);
         ev->status = EVENT_STATUS_ERR;
         package->errmsg = "package len incorrect";
         package->status = FAILD;
@@ -468,9 +461,6 @@ int RpcClient::return_callback(struct event* ev) {
     return 0;
 }
 
-void RpcClient::init() {
-    _netinf = event_create(EVENT_LIST_MAX);
-}
 }
 
 #ifdef DEBUG_RPCCLIENT

@@ -9,10 +9,9 @@ namespace fankux {
 
 class Worker {
 public:
-    Worker(const std::string& addr, uint16_t client_port) : _id(0),
-                                                            _client(addr, client_port) {}
+    Worker() : _id(0), _client() {}
 
-    void init(uint16_t server_port);
+    void init(uint16_t server_port, const std::string& addr, uint16_t client_port);
 
     void run(bool background);
 

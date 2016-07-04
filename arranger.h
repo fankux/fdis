@@ -46,7 +46,9 @@ class ArrangerConf {
     friend class Arranger;
 
 public:
-    static ArrangerConf& load(const std::string& path);
+    static ArrangerConf* load(const std::string& path);
+
+    static void release(ArrangerConf* conf);
 
 private:
     ArrangerConf() {};

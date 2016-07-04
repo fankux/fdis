@@ -13,7 +13,8 @@ pthread_t Worker::_heartbeat_thread;
 void* Worker::hreatbeat_rountine(void* arg) {
     Worker* worker = (Worker*) arg;
 
-    ArrangerService_Stub* ager_service = new ArrangerService::Stub((google::protobuf::RpcChannel* )&worker->_client);
+    ArrangerService_Stub* ager_service = new ArrangerService::Stub(
+            (google::protobuf::RpcChannel*) &worker->_client);
 
     InvokeController controller;
     HeartbeatRequest request;
@@ -45,15 +46,17 @@ void* Worker::hreatbeat_rountine(void* arg) {
     return (void*) 0;
 }
 
-void Worker::init(uint16_t server_port) {
+void Worker::init(uint16_t server_port, const std::string& addr, uint16_t client_port) {
     info("worker init, id: %d", _id);
 
-    _client.run(true);
+    _client.init(addr, client_port);
     _server.init(server_port);
     sleep(3);
 }
 
 void Worker::run(bool background) {
+    _client.run(true);
+
     int ret = pthread_create(&Worker::_heartbeat_thread, NULL, Worker::hreatbeat_rountine, this);
     if (ret != 0) {
         error("hreatbreat rountine create error");
@@ -68,8 +71,8 @@ void Worker::run(bool background) {
 using namespace fankux;
 
 int main(void) {
-    Worker worker("127.0.0.1", 7234);
-    worker.init(7240);
+    Worker worker;
+    worker.init(7240, "127.0.0.1", 7234);
     worker.run(false);
 
     return 0;

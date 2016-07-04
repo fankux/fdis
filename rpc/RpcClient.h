@@ -27,9 +27,11 @@ struct InvokePackage {
 
 class RpcClient : public google::protobuf::RpcChannel {
 public:
-    RpcClient(const std::string& addr, uint16_t port);
+    RpcClient() : _evs(FMAP_T_INT64, FMAP_DUP_KEY) {}
 
     virtual ~RpcClient();
+
+    void init(const std::string& addr, uint16_t port);
 
     void run(bool background = false);
 
@@ -59,8 +61,6 @@ private:
     static int return_callback(struct event* ev);
 
     static int faild_callback(struct event* ev);
-
-    void init();
 
 private:
     uint16_t _port;

@@ -163,10 +163,11 @@ void Arranger::load_balance() {
 using namespace fankux;
 
 int main(void) {
-    ArrangerConf ager_conf = ArrangerConf::load("/home/fankux/app/fankux/webc/conf/arranger.conf");
-    g_ager.init(ager_conf);
+    ArrangerConf* ager_conf = ArrangerConf::load("/home/fankux/app/fankux/webc/conf/arranger.conf");
+    g_ager.init(*ager_conf);
     g_ager.run();
 
+    ArrangerConf::release(ager_conf);
     return 0;
 }
 
