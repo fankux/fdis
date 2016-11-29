@@ -1,8 +1,17 @@
-package fankux;
+package fdis;
 
 import "proto/heartbeat.proto";
 
 option cc_generic_services = true;
+
+message WriteBuffer {
+    required uint64 len = 1;
+    required bytes buffer = 2;
+}
+
+message WriteResponse {
+    required uint64 len = 1;
+}
 
 service WorkerService {
     rpc echo (HeartbeatRequest) returns (HeartbeatResponse);

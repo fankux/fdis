@@ -32,3 +32,4 @@
 *.dSYM/
 
 .idea
+cmake-build-debug

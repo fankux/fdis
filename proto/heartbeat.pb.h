@@ -26,7 +26,7 @@
 #include <google/protobuf/unknown_field_set.h>
 // @@protoc_insertion_point(includes)
 
-namespace fankux {
+namespace fdis {
 
 // Internal implementation detail -- do not call these.
 void  protobuf_AddDesc_proto_2fheartbeat_2eproto();
@@ -119,7 +119,7 @@ class HeartbeatRequest : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 port() const;
   inline void set_port(::google::protobuf::int32 value);
 
-  // @@protoc_insertion_point(class_scope:fankux.HeartbeatRequest)
+  // @@protoc_insertion_point(class_scope:fdis.HeartbeatRequest)
  private:
   inline void set_has_id();
   inline void clear_has_id();
@@ -226,7 +226,7 @@ class HeartbeatResponse : public ::google::protobuf::Message {
   inline ::std::string* release_type();
   inline void set_allocated_type(::std::string* type);
 
-  // @@protoc_insertion_point(class_scope:fankux.HeartbeatResponse)
+  // @@protoc_insertion_point(class_scope:fdis.HeartbeatResponse)
  private:
   inline void set_has_timestamp();
   inline void clear_has_timestamp();
@@ -271,13 +271,13 @@ inline void HeartbeatRequest::clear_id() {
   clear_has_id();
 }
 inline ::google::protobuf::int32 HeartbeatRequest::id() const {
-  // @@protoc_insertion_point(field_get:fankux.HeartbeatRequest.id)
+  // @@protoc_insertion_point(field_get:fdis.HeartbeatRequest.id)
   return id_;
 }
 inline void HeartbeatRequest::set_id(::google::protobuf::int32 value) {
   set_has_id();
   id_ = value;
-  // @@protoc_insertion_point(field_set:fankux.HeartbeatRequest.id)
+  // @@protoc_insertion_point(field_set:fdis.HeartbeatRequest.id)
 }
 
 // required int64 timestamp = 2;
@@ -295,13 +295,13 @@ inline void HeartbeatRequest::clear_timestamp() {
   clear_has_timestamp();
 }
 inline ::google::protobuf::int64 HeartbeatRequest::timestamp() const {
-  // @@protoc_insertion_point(field_get:fankux.HeartbeatRequest.timestamp)
+  // @@protoc_insertion_point(field_get:fdis.HeartbeatRequest.timestamp)
   return timestamp_;
 }
 inline void HeartbeatRequest::set_timestamp(::google::protobuf::int64 value) {
   set_has_timestamp();
   timestamp_ = value;
-  // @@protoc_insertion_point(field_set:fankux.HeartbeatRequest.timestamp)
+  // @@protoc_insertion_point(field_set:fdis.HeartbeatRequest.timestamp)
 }
 
 // required int64 timemills = 3;
@@ -319,13 +319,13 @@ inline void HeartbeatRequest::clear_timemills() {
   clear_has_timemills();
 }
 inline ::google::protobuf::int64 HeartbeatRequest::timemills() const {
-  // @@protoc_insertion_point(field_get:fankux.HeartbeatRequest.timemills)
+  // @@protoc_insertion_point(field_get:fdis.HeartbeatRequest.timemills)
   return timemills_;
 }
 inline void HeartbeatRequest::set_timemills(::google::protobuf::int64 value) {
   set_has_timemills();
   timemills_ = value;
-  // @@protoc_insertion_point(field_set:fankux.HeartbeatRequest.timemills)
+  // @@protoc_insertion_point(field_set:fdis.HeartbeatRequest.timemills)
 }
 
 // required int32 port = 4;
@@ -343,13 +343,13 @@ inline void HeartbeatRequest::clear_port() {
   clear_has_port();
 }
 inline ::google::protobuf::int32 HeartbeatRequest::port() const {
-  // @@protoc_insertion_point(field_get:fankux.HeartbeatRequest.port)
+  // @@protoc_insertion_point(field_get:fdis.HeartbeatRequest.port)
   return port_;
 }
 inline void HeartbeatRequest::set_port(::google::protobuf::int32 value) {
   set_has_port();
   port_ = value;
-  // @@protoc_insertion_point(field_set:fankux.HeartbeatRequest.port)
+  // @@protoc_insertion_point(field_set:fdis.HeartbeatRequest.port)
 }
 
 // -------------------------------------------------------------------
@@ -371,13 +371,13 @@ inline void HeartbeatResponse::clear_timestamp() {
   clear_has_timestamp();
 }
 inline ::google::protobuf::int64 HeartbeatResponse::timestamp() const {
-  // @@protoc_insertion_point(field_get:fankux.HeartbeatResponse.timestamp)
+  // @@protoc_insertion_point(field_get:fdis.HeartbeatResponse.timestamp)
   return timestamp_;
 }
 inline void HeartbeatResponse::set_timestamp(::google::protobuf::int64 value) {
   set_has_timestamp();
   timestamp_ = value;
-  // @@protoc_insertion_point(field_set:fankux.HeartbeatResponse.timestamp)
+  // @@protoc_insertion_point(field_set:fdis.HeartbeatResponse.timestamp)
 }
 
 // required int64 timemills = 2;
@@ -395,13 +395,13 @@ inline void HeartbeatResponse::clear_timemills() {
   clear_has_timemills();
 }
 inline ::google::protobuf::int64 HeartbeatResponse::timemills() const {
-  // @@protoc_insertion_point(field_get:fankux.HeartbeatResponse.timemills)
+  // @@protoc_insertion_point(field_get:fdis.HeartbeatResponse.timemills)
   return timemills_;
 }
 inline void HeartbeatResponse::set_timemills(::google::protobuf::int64 value) {
   set_has_timemills();
   timemills_ = value;
-  // @@protoc_insertion_point(field_set:fankux.HeartbeatResponse.timemills)
+  // @@protoc_insertion_point(field_set:fdis.HeartbeatResponse.timemills)
 }
 
 // required string type = 3;
@@ -421,7 +421,7 @@ inline void HeartbeatResponse::clear_type() {
   clear_has_type();
 }
 inline const ::std::string& HeartbeatResponse::type() const {
-  // @@protoc_insertion_point(field_get:fankux.HeartbeatResponse.type)
+  // @@protoc_insertion_point(field_get:fdis.HeartbeatResponse.type)
   return *type_;
 }
 inline void HeartbeatResponse::set_type(const ::std::string& value) {
@@ -430,7 +430,7 @@ inline void HeartbeatResponse::set_type(const ::std::string& value) {
     type_ = new ::std::string;
   }
   type_->assign(value);
-  // @@protoc_insertion_point(field_set:fankux.HeartbeatResponse.type)
+  // @@protoc_insertion_point(field_set:fdis.HeartbeatResponse.type)
 }
 inline void HeartbeatResponse::set_type(const char* value) {
   set_has_type();
@@ -438,7 +438,7 @@ inline void HeartbeatResponse::set_type(const char* value) {
     type_ = new ::std::string;
   }
   type_->assign(value);
-  // @@protoc_insertion_point(field_set_char:fankux.HeartbeatResponse.type)
+  // @@protoc_insertion_point(field_set_char:fdis.HeartbeatResponse.type)
 }
 inline void HeartbeatResponse::set_type(const char* value, size_t size) {
   set_has_type();
@@ -446,14 +446,14 @@ inline void HeartbeatResponse::set_type(const char* value, size_t size) {
     type_ = new ::std::string;
   }
   type_->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:fankux.HeartbeatResponse.type)
+  // @@protoc_insertion_point(field_set_pointer:fdis.HeartbeatResponse.type)
 }
 inline ::std::string* HeartbeatResponse::mutable_type() {
   set_has_type();
   if (type_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
     type_ = new ::std::string;
   }
-  // @@protoc_insertion_point(field_mutable:fankux.HeartbeatResponse.type)
+  // @@protoc_insertion_point(field_mutable:fdis.HeartbeatResponse.type)
   return type_;
 }
 inline ::std::string* HeartbeatResponse::release_type() {
@@ -477,13 +477,13 @@ inline void HeartbeatResponse::set_allocated_type(::std::string* type) {
     clear_has_type();
     type_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   }
-  // @@protoc_insertion_point(field_set_allocated:fankux.HeartbeatResponse.type)
+  // @@protoc_insertion_point(field_set_allocated:fdis.HeartbeatResponse.type)
 }
 
 
 // @@protoc_insertion_point(namespace_scope)
 
-}  // namespace fankux
+}  // namespace fdis
 
 #ifndef SWIG
 namespace google {

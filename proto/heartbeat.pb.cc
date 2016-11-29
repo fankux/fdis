@@ -16,7 +16,7 @@
 #include <google/protobuf/wire_format.h>
 // @@protoc_insertion_point(includes)
 
-namespace fankux {
+namespace fdis {
 
 namespace {
 
@@ -105,11 +105,11 @@ void protobuf_AddDesc_proto_2fheartbeat_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\025proto/heartbeat.proto\022\006fankux\"R\n\020Heart"
-    "beatRequest\022\n\n\002id\030\001 \002(\005\022\021\n\ttimestamp\030\002 \002"
-    "(\003\022\021\n\ttimemills\030\003 \002(\003\022\014\n\004port\030\004 \002(\005\"G\n\021H"
-    "eartbeatResponse\022\021\n\ttimestamp\030\001 \002(\003\022\021\n\tt"
-    "imemills\030\002 \002(\003\022\014\n\004type\030\003 \002(\t", 188);
+    "\n\025proto/heartbeat.proto\022\004fdis\"R\n\020Heartbe"
+    "atRequest\022\n\n\002id\030\001 \002(\005\022\021\n\ttimestamp\030\002 \002(\003"
+    "\022\021\n\ttimemills\030\003 \002(\003\022\014\n\004port\030\004 \002(\005\"G\n\021Hea"
+    "rtbeatResponse\022\021\n\ttimestamp\030\001 \002(\003\022\021\n\ttim"
+    "emills\030\002 \002(\003\022\014\n\004type\030\003 \002(\t", 186);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "proto/heartbeat.proto", &protobuf_RegisterTypes);
   HeartbeatRequest::default_instance_ = new HeartbeatRequest();
@@ -138,7 +138,7 @@ const int HeartbeatRequest::kPortFieldNumber;
 HeartbeatRequest::HeartbeatRequest()
   : ::google::protobuf::Message() {
   SharedCtor();
-  // @@protoc_insertion_point(constructor:fankux.HeartbeatRequest)
+  // @@protoc_insertion_point(constructor:fdis.HeartbeatRequest)
 }
 
 void HeartbeatRequest::InitAsDefaultInstance() {
@@ -148,7 +148,7 @@ HeartbeatRequest::HeartbeatRequest(const HeartbeatRequest& from)
   : ::google::protobuf::Message() {
   SharedCtor();
   MergeFrom(from);
-  // @@protoc_insertion_point(copy_constructor:fankux.HeartbeatRequest)
+  // @@protoc_insertion_point(copy_constructor:fdis.HeartbeatRequest)
 }
 
 void HeartbeatRequest::SharedCtor() {
@@ -161,7 +161,7 @@ void HeartbeatRequest::SharedCtor() {
 }
 
 HeartbeatRequest::~HeartbeatRequest() {
-  // @@protoc_insertion_point(destructor:fankux.HeartbeatRequest)
+  // @@protoc_insertion_point(destructor:fdis.HeartbeatRequest)
   SharedDtor();
 }
 
@@ -215,7 +215,7 @@ bool HeartbeatRequest::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
 #define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
-  // @@protoc_insertion_point(parse_start:fankux.HeartbeatRequest)
+  // @@protoc_insertion_point(parse_start:fdis.HeartbeatRequest)
   for (;;) {
     ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
     tag = p.first;
@@ -294,17 +294,17 @@ bool HeartbeatRequest::MergePartialFromCodedStream(
     }
   }
 success:
-  // @@protoc_insertion_point(parse_success:fankux.HeartbeatRequest)
+  // @@protoc_insertion_point(parse_success:fdis.HeartbeatRequest)
   return true;
 failure:
-  // @@protoc_insertion_point(parse_failure:fankux.HeartbeatRequest)
+  // @@protoc_insertion_point(parse_failure:fdis.HeartbeatRequest)
   return false;
 #undef DO_
 }
 
 void HeartbeatRequest::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
-  // @@protoc_insertion_point(serialize_start:fankux.HeartbeatRequest)
+  // @@protoc_insertion_point(serialize_start:fdis.HeartbeatRequest)
   // required int32 id = 1;
   if (has_id()) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->id(), output);
@@ -329,12 +329,12 @@ void HeartbeatRequest::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
   }
-  // @@protoc_insertion_point(serialize_end:fankux.HeartbeatRequest)
+  // @@protoc_insertion_point(serialize_end:fdis.HeartbeatRequest)
 }
 
 ::google::protobuf::uint8* HeartbeatRequest::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // @@protoc_insertion_point(serialize_to_array_start:fankux.HeartbeatRequest)
+  // @@protoc_insertion_point(serialize_to_array_start:fdis.HeartbeatRequest)
   // required int32 id = 1;
   if (has_id()) {
     target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->id(), target);
@@ -359,7 +359,7 @@ void HeartbeatRequest::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         unknown_fields(), target);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:fankux.HeartbeatRequest)
+  // @@protoc_insertion_point(serialize_to_array_end:fdis.HeartbeatRequest)
   return target;
 }
 
@@ -488,7 +488,7 @@ const int HeartbeatResponse::kTypeFieldNumber;
 HeartbeatResponse::HeartbeatResponse()
   : ::google::protobuf::Message() {
   SharedCtor();
-  // @@protoc_insertion_point(constructor:fankux.HeartbeatResponse)
+  // @@protoc_insertion_point(constructor:fdis.HeartbeatResponse)
 }
 
 void HeartbeatResponse::InitAsDefaultInstance() {
@@ -498,7 +498,7 @@ HeartbeatResponse::HeartbeatResponse(const HeartbeatResponse& from)
   : ::google::protobuf::Message() {
   SharedCtor();
   MergeFrom(from);
-  // @@protoc_insertion_point(copy_constructor:fankux.HeartbeatResponse)
+  // @@protoc_insertion_point(copy_constructor:fdis.HeartbeatResponse)
 }
 
 void HeartbeatResponse::SharedCtor() {
@@ -511,7 +511,7 @@ void HeartbeatResponse::SharedCtor() {
 }
 
 HeartbeatResponse::~HeartbeatResponse() {
-  // @@protoc_insertion_point(destructor:fankux.HeartbeatResponse)
+  // @@protoc_insertion_point(destructor:fdis.HeartbeatResponse)
   SharedDtor();
 }
 
@@ -575,7 +575,7 @@ bool HeartbeatResponse::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
 #define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
-  // @@protoc_insertion_point(parse_start:fankux.HeartbeatResponse)
+  // @@protoc_insertion_point(parse_start:fdis.HeartbeatResponse)
   for (;;) {
     ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
     tag = p.first;
@@ -641,17 +641,17 @@ bool HeartbeatResponse::MergePartialFromCodedStream(
     }
   }
 success:
-  // @@protoc_insertion_point(parse_success:fankux.HeartbeatResponse)
+  // @@protoc_insertion_point(parse_success:fdis.HeartbeatResponse)
   return true;
 failure:
-  // @@protoc_insertion_point(parse_failure:fankux.HeartbeatResponse)
+  // @@protoc_insertion_point(parse_failure:fdis.HeartbeatResponse)
   return false;
 #undef DO_
 }
 
 void HeartbeatResponse::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
-  // @@protoc_insertion_point(serialize_start:fankux.HeartbeatResponse)
+  // @@protoc_insertion_point(serialize_start:fdis.HeartbeatResponse)
   // required int64 timestamp = 1;
   if (has_timestamp()) {
     ::google::protobuf::internal::WireFormatLite::WriteInt64(1, this->timestamp(), output);
@@ -676,12 +676,12 @@ void HeartbeatResponse::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
   }
-  // @@protoc_insertion_point(serialize_end:fankux.HeartbeatResponse)
+  // @@protoc_insertion_point(serialize_end:fdis.HeartbeatResponse)
 }
 
 ::google::protobuf::uint8* HeartbeatResponse::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // @@protoc_insertion_point(serialize_to_array_start:fankux.HeartbeatResponse)
+  // @@protoc_insertion_point(serialize_to_array_start:fdis.HeartbeatResponse)
   // required int64 timestamp = 1;
   if (has_timestamp()) {
     target = ::google::protobuf::internal::WireFormatLite::WriteInt64ToArray(1, this->timestamp(), target);
@@ -707,7 +707,7 @@ void HeartbeatResponse::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         unknown_fields(), target);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:fankux.HeartbeatResponse)
+  // @@protoc_insertion_point(serialize_to_array_end:fdis.HeartbeatResponse)
   return target;
 }
 
@@ -816,6 +816,6 @@ void HeartbeatResponse::Swap(HeartbeatResponse* other) {
 
 // @@protoc_insertion_point(namespace_scope)
 
-}  // namespace fankux
+}  // namespace fdis
 
 // @@protoc_insertion_point(global_scope)

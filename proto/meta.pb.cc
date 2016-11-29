@@ -16,7 +16,7 @@
 #include <google/protobuf/wire_format.h>
 // @@protoc_insertion_point(includes)
 
-namespace fankux {
+namespace fdis {
 
 namespace {
 
@@ -55,7 +55,7 @@ void protobuf_AssignDesc_proto_2fmeta_2eproto() {
   ResponseStatus_descriptor_ = file->message_type(1);
   static const int ResponseStatus_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ResponseStatus, status_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ResponseStatus, msg_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(ResponseStatus, message_),
   };
   ResponseStatus_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -102,10 +102,10 @@ void protobuf_AddDesc_proto_2fmeta_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\020proto/meta.proto\022\006fankux\"4\n\013RequestMet"
-    "a\022\022\n\nservice_id\030\001 \002(\005\022\021\n\tmethod_id\030\002 \002(\005"
-    "\"-\n\016ResponseStatus\022\016\n\006status\030\001 \002(\005\022\013\n\003ms"
-    "g\030\002 \001(\t", 127);
+    "\n\020proto/meta.proto\022\004fdis\"4\n\013RequestMeta\022"
+    "\022\n\nservice_id\030\001 \002(\005\022\021\n\tmethod_id\030\002 \002(\005\"1"
+    "\n\016ResponseStatus\022\016\n\006status\030\001 \002(\005\022\017\n\007mess"
+    "age\030\002 \001(\t", 129);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "proto/meta.proto", &protobuf_RegisterTypes);
   RequestMeta::default_instance_ = new RequestMeta();
@@ -132,7 +132,7 @@ const int RequestMeta::kMethodIdFieldNumber;
 RequestMeta::RequestMeta()
   : ::google::protobuf::Message() {
   SharedCtor();
-  // @@protoc_insertion_point(constructor:fankux.RequestMeta)
+  // @@protoc_insertion_point(constructor:fdis.RequestMeta)
 }
 
 void RequestMeta::InitAsDefaultInstance() {
@@ -142,7 +142,7 @@ RequestMeta::RequestMeta(const RequestMeta& from)
   : ::google::protobuf::Message() {
   SharedCtor();
   MergeFrom(from);
-  // @@protoc_insertion_point(copy_constructor:fankux.RequestMeta)
+  // @@protoc_insertion_point(copy_constructor:fdis.RequestMeta)
 }
 
 void RequestMeta::SharedCtor() {
@@ -153,7 +153,7 @@ void RequestMeta::SharedCtor() {
 }
 
 RequestMeta::~RequestMeta() {
-  // @@protoc_insertion_point(destructor:fankux.RequestMeta)
+  // @@protoc_insertion_point(destructor:fdis.RequestMeta)
   SharedDtor();
 }
 
@@ -207,7 +207,7 @@ bool RequestMeta::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
 #define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
-  // @@protoc_insertion_point(parse_start:fankux.RequestMeta)
+  // @@protoc_insertion_point(parse_start:fdis.RequestMeta)
   for (;;) {
     ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
     tag = p.first;
@@ -256,17 +256,17 @@ bool RequestMeta::MergePartialFromCodedStream(
     }
   }
 success:
-  // @@protoc_insertion_point(parse_success:fankux.RequestMeta)
+  // @@protoc_insertion_point(parse_success:fdis.RequestMeta)
   return true;
 failure:
-  // @@protoc_insertion_point(parse_failure:fankux.RequestMeta)
+  // @@protoc_insertion_point(parse_failure:fdis.RequestMeta)
   return false;
 #undef DO_
 }
 
 void RequestMeta::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
-  // @@protoc_insertion_point(serialize_start:fankux.RequestMeta)
+  // @@protoc_insertion_point(serialize_start:fdis.RequestMeta)
   // required int32 service_id = 1;
   if (has_service_id()) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->service_id(), output);
@@ -281,12 +281,12 @@ void RequestMeta::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
   }
-  // @@protoc_insertion_point(serialize_end:fankux.RequestMeta)
+  // @@protoc_insertion_point(serialize_end:fdis.RequestMeta)
 }
 
 ::google::protobuf::uint8* RequestMeta::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // @@protoc_insertion_point(serialize_to_array_start:fankux.RequestMeta)
+  // @@protoc_insertion_point(serialize_to_array_start:fdis.RequestMeta)
   // required int32 service_id = 1;
   if (has_service_id()) {
     target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->service_id(), target);
@@ -301,7 +301,7 @@ void RequestMeta::SerializeWithCachedSizes(
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         unknown_fields(), target);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:fankux.RequestMeta)
+  // @@protoc_insertion_point(serialize_to_array_end:fdis.RequestMeta)
   return target;
 }
 
@@ -401,13 +401,13 @@ void RequestMeta::Swap(RequestMeta* other) {
 
 #ifndef _MSC_VER
 const int ResponseStatus::kStatusFieldNumber;
-const int ResponseStatus::kMsgFieldNumber;
+const int ResponseStatus::kMessageFieldNumber;
 #endif  // !_MSC_VER
 
 ResponseStatus::ResponseStatus()
   : ::google::protobuf::Message() {
   SharedCtor();
-  // @@protoc_insertion_point(constructor:fankux.ResponseStatus)
+  // @@protoc_insertion_point(constructor:fdis.ResponseStatus)
 }
 
 void ResponseStatus::InitAsDefaultInstance() {
@@ -417,25 +417,25 @@ ResponseStatus::ResponseStatus(const ResponseStatus& from)
   : ::google::protobuf::Message() {
   SharedCtor();
   MergeFrom(from);
-  // @@protoc_insertion_point(copy_constructor:fankux.ResponseStatus)
+  // @@protoc_insertion_point(copy_constructor:fdis.ResponseStatus)
 }
 
 void ResponseStatus::SharedCtor() {
   ::google::protobuf::internal::GetEmptyString();
   _cached_size_ = 0;
   status_ = 0;
-  msg_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  message_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
 ResponseStatus::~ResponseStatus() {
-  // @@protoc_insertion_point(destructor:fankux.ResponseStatus)
+  // @@protoc_insertion_point(destructor:fdis.ResponseStatus)
   SharedDtor();
 }
 
 void ResponseStatus::SharedDtor() {
-  if (msg_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    delete msg_;
+  if (message_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
+    delete message_;
   }
   if (this != default_instance_) {
   }
@@ -465,9 +465,9 @@ ResponseStatus* ResponseStatus::New() const {
 void ResponseStatus::Clear() {
   if (_has_bits_[0 / 32] & 3) {
     status_ = 0;
-    if (has_msg()) {
-      if (msg_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-        msg_->clear();
+    if (has_message()) {
+      if (message_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
+        message_->clear();
       }
     }
   }
@@ -479,7 +479,7 @@ bool ResponseStatus::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
 #define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
-  // @@protoc_insertion_point(parse_start:fankux.ResponseStatus)
+  // @@protoc_insertion_point(parse_start:fdis.ResponseStatus)
   for (;;) {
     ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
     tag = p.first;
@@ -495,20 +495,20 @@ bool ResponseStatus::MergePartialFromCodedStream(
         } else {
           goto handle_unusual;
         }
-        if (input->ExpectTag(18)) goto parse_msg;
+        if (input->ExpectTag(18)) goto parse_message;
         break;
       }
 
-      // optional string msg = 2;
+      // optional string message = 2;
       case 2: {
         if (tag == 18) {
-         parse_msg:
+         parse_message:
           DO_(::google::protobuf::internal::WireFormatLite::ReadString(
-                input, this->mutable_msg()));
+                input, this->mutable_message()));
           ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
-            this->msg().data(), this->msg().length(),
+            this->message().data(), this->message().length(),
             ::google::protobuf::internal::WireFormat::PARSE,
-            "msg");
+            "message");
         } else {
           goto handle_unusual;
         }
@@ -530,63 +530,63 @@ bool ResponseStatus::MergePartialFromCodedStream(
     }
   }
 success:
-  // @@protoc_insertion_point(parse_success:fankux.ResponseStatus)
+  // @@protoc_insertion_point(parse_success:fdis.ResponseStatus)
   return true;
 failure:
-  // @@protoc_insertion_point(parse_failure:fankux.ResponseStatus)
+  // @@protoc_insertion_point(parse_failure:fdis.ResponseStatus)
   return false;
 #undef DO_
 }
 
 void ResponseStatus::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
-  // @@protoc_insertion_point(serialize_start:fankux.ResponseStatus)
+  // @@protoc_insertion_point(serialize_start:fdis.ResponseStatus)
   // required int32 status = 1;
   if (has_status()) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(1, this->status(), output);
   }
 
-  // optional string msg = 2;
-  if (has_msg()) {
+  // optional string message = 2;
+  if (has_message()) {
     ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
-      this->msg().data(), this->msg().length(),
+      this->message().data(), this->message().length(),
       ::google::protobuf::internal::WireFormat::SERIALIZE,
-      "msg");
+      "message");
     ::google::protobuf::internal::WireFormatLite::WriteStringMaybeAliased(
-      2, this->msg(), output);
+      2, this->message(), output);
   }
 
   if (!unknown_fields().empty()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
   }
-  // @@protoc_insertion_point(serialize_end:fankux.ResponseStatus)
+  // @@protoc_insertion_point(serialize_end:fdis.ResponseStatus)
 }
 
 ::google::protobuf::uint8* ResponseStatus::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
-  // @@protoc_insertion_point(serialize_to_array_start:fankux.ResponseStatus)
+  // @@protoc_insertion_point(serialize_to_array_start:fdis.ResponseStatus)
   // required int32 status = 1;
   if (has_status()) {
     target = ::google::protobuf::internal::WireFormatLite::WriteInt32ToArray(1, this->status(), target);
   }
 
-  // optional string msg = 2;
-  if (has_msg()) {
+  // optional string message = 2;
+  if (has_message()) {
     ::google::protobuf::internal::WireFormat::VerifyUTF8StringNamedField(
-      this->msg().data(), this->msg().length(),
+      this->message().data(), this->message().length(),
       ::google::protobuf::internal::WireFormat::SERIALIZE,
-      "msg");
+      "message");
     target =
       ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
-        2, this->msg(), target);
+        2, this->message(), target);
   }
 
   if (!unknown_fields().empty()) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         unknown_fields(), target);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:fankux.ResponseStatus)
+  // @@protoc_insertion_point(serialize_to_array_end:fdis.ResponseStatus)
   return target;
 }
 
@@ -601,11 +601,11 @@ int ResponseStatus::ByteSize() const {
           this->status());
     }
 
-    // optional string msg = 2;
-    if (has_msg()) {
+    // optional string message = 2;
+    if (has_message()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::StringSize(
-          this->msg());
+          this->message());
     }
 
   }
@@ -638,8 +638,8 @@ void ResponseStatus::MergeFrom(const ResponseStatus& from) {
     if (from.has_status()) {
       set_status(from.status());
     }
-    if (from.has_msg()) {
-      set_msg(from.msg());
+    if (from.has_message()) {
+      set_message(from.message());
     }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
@@ -666,7 +666,7 @@ bool ResponseStatus::IsInitialized() const {
 void ResponseStatus::Swap(ResponseStatus* other) {
   if (other != this) {
     std::swap(status_, other->status_);
-    std::swap(msg_, other->msg_);
+    std::swap(message_, other->message_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -684,6 +684,6 @@ void ResponseStatus::Swap(ResponseStatus* other) {
 
 // @@protoc_insertion_point(namespace_scope)
 
-}  // namespace fankux
+}  // namespace fdis
 
 // @@protoc_insertion_point(global_scope)

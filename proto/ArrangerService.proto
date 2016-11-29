@@ -1,4 +1,4 @@
-package fankux;
+package fdis;
 
 import "proto/heartbeat.proto";
 

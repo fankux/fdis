@@ -26,7 +26,7 @@
 #include <google/protobuf/unknown_field_set.h>
 // @@protoc_insertion_point(includes)
 
-namespace fankux {
+namespace fdis {
 
 // Internal implementation detail -- do not call these.
 void  protobuf_AddDesc_proto_2fmeta_2eproto();
@@ -105,7 +105,7 @@ class RequestMeta : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 method_id() const;
   inline void set_method_id(::google::protobuf::int32 value);
 
-  // @@protoc_insertion_point(class_scope:fankux.RequestMeta)
+  // @@protoc_insertion_point(class_scope:fdis.RequestMeta)
  private:
   inline void set_has_service_id();
   inline void clear_has_service_id();
@@ -187,30 +187,30 @@ class ResponseStatus : public ::google::protobuf::Message {
   inline ::google::protobuf::int32 status() const;
   inline void set_status(::google::protobuf::int32 value);
 
-  // optional string msg = 2;
-  inline bool has_msg() const;
-  inline void clear_msg();
-  static const int kMsgFieldNumber = 2;
-  inline const ::std::string& msg() const;
-  inline void set_msg(const ::std::string& value);
-  inline void set_msg(const char* value);
-  inline void set_msg(const char* value, size_t size);
-  inline ::std::string* mutable_msg();
-  inline ::std::string* release_msg();
-  inline void set_allocated_msg(::std::string* msg);
+  // optional string message = 2;
+  inline bool has_message() const;
+  inline void clear_message();
+  static const int kMessageFieldNumber = 2;
+  inline const ::std::string& message() const;
+  inline void set_message(const ::std::string& value);
+  inline void set_message(const char* value);
+  inline void set_message(const char* value, size_t size);
+  inline ::std::string* mutable_message();
+  inline ::std::string* release_message();
+  inline void set_allocated_message(::std::string* message);
 
-  // @@protoc_insertion_point(class_scope:fankux.ResponseStatus)
+  // @@protoc_insertion_point(class_scope:fdis.ResponseStatus)
  private:
   inline void set_has_status();
   inline void clear_has_status();
-  inline void set_has_msg();
-  inline void clear_has_msg();
+  inline void set_has_message();
+  inline void clear_has_message();
 
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
 
   ::google::protobuf::uint32 _has_bits_[1];
   mutable int _cached_size_;
-  ::std::string* msg_;
+  ::std::string* message_;
   ::google::protobuf::int32 status_;
   friend void  protobuf_AddDesc_proto_2fmeta_2eproto();
   friend void protobuf_AssignDesc_proto_2fmeta_2eproto();
@@ -241,13 +241,13 @@ inline void RequestMeta::clear_service_id() {
   clear_has_service_id();
 }
 inline ::google::protobuf::int32 RequestMeta::service_id() const {
-  // @@protoc_insertion_point(field_get:fankux.RequestMeta.service_id)
+  // @@protoc_insertion_point(field_get:fdis.RequestMeta.service_id)
   return service_id_;
 }
 inline void RequestMeta::set_service_id(::google::protobuf::int32 value) {
   set_has_service_id();
   service_id_ = value;
-  // @@protoc_insertion_point(field_set:fankux.RequestMeta.service_id)
+  // @@protoc_insertion_point(field_set:fdis.RequestMeta.service_id)
 }
 
 // required int32 method_id = 2;
@@ -265,13 +265,13 @@ inline void RequestMeta::clear_method_id() {
   clear_has_method_id();
 }
 inline ::google::protobuf::int32 RequestMeta::method_id() const {
-  // @@protoc_insertion_point(field_get:fankux.RequestMeta.method_id)
+  // @@protoc_insertion_point(field_get:fdis.RequestMeta.method_id)
   return method_id_;
 }
 inline void RequestMeta::set_method_id(::google::protobuf::int32 value) {
   set_has_method_id();
   method_id_ = value;
-  // @@protoc_insertion_point(field_set:fankux.RequestMeta.method_id)
+  // @@protoc_insertion_point(field_set:fdis.RequestMeta.method_id)
 }
 
 // -------------------------------------------------------------------
@@ -293,95 +293,95 @@ inline void ResponseStatus::clear_status() {
   clear_has_status();
 }
 inline ::google::protobuf::int32 ResponseStatus::status() const {
-  // @@protoc_insertion_point(field_get:fankux.ResponseStatus.status)
+  // @@protoc_insertion_point(field_get:fdis.ResponseStatus.status)
   return status_;
 }
 inline void ResponseStatus::set_status(::google::protobuf::int32 value) {
   set_has_status();
   status_ = value;
-  // @@protoc_insertion_point(field_set:fankux.ResponseStatus.status)
+  // @@protoc_insertion_point(field_set:fdis.ResponseStatus.status)
 }
 
-// optional string msg = 2;
-inline bool ResponseStatus::has_msg() const {
+// optional string message = 2;
+inline bool ResponseStatus::has_message() const {
   return (_has_bits_[0] & 0x00000002u) != 0;
 }
-inline void ResponseStatus::set_has_msg() {
+inline void ResponseStatus::set_has_message() {
   _has_bits_[0] |= 0x00000002u;
 }
-inline void ResponseStatus::clear_has_msg() {
+inline void ResponseStatus::clear_has_message() {
   _has_bits_[0] &= ~0x00000002u;
 }
-inline void ResponseStatus::clear_msg() {
-  if (msg_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    msg_->clear();
+inline void ResponseStatus::clear_message() {
+  if (message_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
+    message_->clear();
   }
-  clear_has_msg();
+  clear_has_message();
 }
-inline const ::std::string& ResponseStatus::msg() const {
-  // @@protoc_insertion_point(field_get:fankux.ResponseStatus.msg)
-  return *msg_;
+inline const ::std::string& ResponseStatus::message() const {
+  // @@protoc_insertion_point(field_get:fdis.ResponseStatus.message)
+  return *message_;
 }
-inline void ResponseStatus::set_msg(const ::std::string& value) {
-  set_has_msg();
-  if (msg_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    msg_ = new ::std::string;
+inline void ResponseStatus::set_message(const ::std::string& value) {
+  set_has_message();
+  if (message_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
+    message_ = new ::std::string;
   }
-  msg_->assign(value);
-  // @@protoc_insertion_point(field_set:fankux.ResponseStatus.msg)
+  message_->assign(value);
+  // @@protoc_insertion_point(field_set:fdis.ResponseStatus.message)
 }
-inline void ResponseStatus::set_msg(const char* value) {
-  set_has_msg();
-  if (msg_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    msg_ = new ::std::string;
+inline void ResponseStatus::set_message(const char* value) {
+  set_has_message();
+  if (message_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
+    message_ = new ::std::string;
   }
-  msg_->assign(value);
-  // @@protoc_insertion_point(field_set_char:fankux.ResponseStatus.msg)
+  message_->assign(value);
+  // @@protoc_insertion_point(field_set_char:fdis.ResponseStatus.message)
 }
-inline void ResponseStatus::set_msg(const char* value, size_t size) {
-  set_has_msg();
-  if (msg_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    msg_ = new ::std::string;
+inline void ResponseStatus::set_message(const char* value, size_t size) {
+  set_has_message();
+  if (message_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
+    message_ = new ::std::string;
   }
-  msg_->assign(reinterpret_cast<const char*>(value), size);
-  // @@protoc_insertion_point(field_set_pointer:fankux.ResponseStatus.msg)
+  message_->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:fdis.ResponseStatus.message)
 }
-inline ::std::string* ResponseStatus::mutable_msg() {
-  set_has_msg();
-  if (msg_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    msg_ = new ::std::string;
+inline ::std::string* ResponseStatus::mutable_message() {
+  set_has_message();
+  if (message_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
+    message_ = new ::std::string;
   }
-  // @@protoc_insertion_point(field_mutable:fankux.ResponseStatus.msg)
-  return msg_;
+  // @@protoc_insertion_point(field_mutable:fdis.ResponseStatus.message)
+  return message_;
 }
-inline ::std::string* ResponseStatus::release_msg() {
-  clear_has_msg();
-  if (msg_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
+inline ::std::string* ResponseStatus::release_message() {
+  clear_has_message();
+  if (message_ == &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
     return NULL;
   } else {
-    ::std::string* temp = msg_;
-    msg_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+    ::std::string* temp = message_;
+    message_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
     return temp;
   }
 }
-inline void ResponseStatus::set_allocated_msg(::std::string* msg) {
-  if (msg_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    delete msg_;
+inline void ResponseStatus::set_allocated_message(::std::string* message) {
+  if (message_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
+    delete message_;
   }
-  if (msg) {
-    set_has_msg();
-    msg_ = msg;
+  if (message) {
+    set_has_message();
+    message_ = message;
   } else {
-    clear_has_msg();
-    msg_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+    clear_has_message();
+    message_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   }
-  // @@protoc_insertion_point(field_set_allocated:fankux.ResponseStatus.msg)
+  // @@protoc_insertion_point(field_set_allocated:fdis.ResponseStatus.message)
 }
 
 
 // @@protoc_insertion_point(namespace_scope)
 
-}  // namespace fankux
+}  // namespace fdis
 
 #ifndef SWIG
 namespace google {

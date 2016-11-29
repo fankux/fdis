@@ -16,7 +16,7 @@
 #include <google/protobuf/wire_format.h>
 // @@protoc_insertion_point(includes)
 
-namespace fankux {
+namespace fdis {
 
 namespace {
 
@@ -57,12 +57,12 @@ void protobuf_AddDesc_proto_2fArrangerService_2eproto() {
   already_here = true;
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-  ::fankux::protobuf_AddDesc_proto_2fheartbeat_2eproto();
+  ::fdis::protobuf_AddDesc_proto_2fheartbeat_2eproto();
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\033proto/ArrangerService.proto\022\006fankux\032\025p"
-    "roto/heartbeat.proto2N\n\017ArrangerService\022"
-    ";\n\004echo\022\030.fankux.HeartbeatRequest\032\031.fank"
-    "ux.HeartbeatResponseB\003\200\001\001", 145);
+    "\n\033proto/ArrangerService.proto\022\004fdis\032\025pro"
+    "to/heartbeat.proto2J\n\017ArrangerService\0227\n"
+    "\004echo\022\026.fdis.HeartbeatRequest\032\027.fdis.Hea"
+    "rtbeatResponseB\003\200\001\001", 139);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "proto/ArrangerService.proto", &protobuf_RegisterTypes);
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_proto_2fArrangerService_2eproto);
@@ -90,8 +90,8 @@ const ::google::protobuf::ServiceDescriptor* ArrangerService::GetDescriptor() {
 }
 
 void ArrangerService::echo(::google::protobuf::RpcController* controller,
-                         const ::fankux::HeartbeatRequest*,
-                         ::fankux::HeartbeatResponse*,
+                         const ::fdis::HeartbeatRequest*,
+                         ::fdis::HeartbeatResponse*,
                          ::google::protobuf::Closure* done) {
   controller->SetFailed("Method echo() not implemented.");
   done->Run();
@@ -106,8 +106,8 @@ void ArrangerService::CallMethod(const ::google::protobuf::MethodDescriptor* met
   switch(method->index()) {
     case 0:
       echo(controller,
-             ::google::protobuf::down_cast<const ::fankux::HeartbeatRequest*>(request),
-             ::google::protobuf::down_cast< ::fankux::HeartbeatResponse*>(response),
+             ::google::protobuf::down_cast<const ::fdis::HeartbeatRequest*>(request),
+             ::google::protobuf::down_cast< ::fdis::HeartbeatResponse*>(response),
              done);
       break;
     default:
@@ -121,7 +121,7 @@ const ::google::protobuf::Message& ArrangerService::GetRequestPrototype(
   GOOGLE_DCHECK_EQ(method->service(), descriptor());
   switch(method->index()) {
     case 0:
-      return ::fankux::HeartbeatRequest::default_instance();
+      return ::fdis::HeartbeatRequest::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
@@ -133,7 +133,7 @@ const ::google::protobuf::Message& ArrangerService::GetResponsePrototype(
   GOOGLE_DCHECK_EQ(method->service(), descriptor());
   switch(method->index()) {
     case 0:
-      return ::fankux::HeartbeatResponse::default_instance();
+      return ::fdis::HeartbeatResponse::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
       return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
@@ -152,8 +152,8 @@ ArrangerService_Stub::~ArrangerService_Stub() {
 }
 
 void ArrangerService_Stub::echo(::google::protobuf::RpcController* controller,
-                              const ::fankux::HeartbeatRequest* request,
-                              ::fankux::HeartbeatResponse* response,
+                              const ::fdis::HeartbeatRequest* request,
+                              ::fdis::HeartbeatResponse* response,
                               ::google::protobuf::Closure* done) {
   channel_->CallMethod(descriptor()->method(0),
                        controller, request, response, done);
@@ -161,6 +161,6 @@ void ArrangerService_Stub::echo(::google::protobuf::RpcController* controller,
 
 // @@protoc_insertion_point(namespace_scope)
 
-}  // namespace fankux
+}  // namespace fdis
 
 // @@protoc_insertion_point(global_scope)

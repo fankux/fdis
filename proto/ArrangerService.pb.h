@@ -26,7 +26,7 @@
 #include "proto/heartbeat.pb.h"
 // @@protoc_insertion_point(includes)
 
-namespace fankux {
+namespace fdis {
 
 // Internal implementation detail -- do not call these.
 void  protobuf_AddDesc_proto_2fArrangerService_2eproto();
@@ -53,8 +53,8 @@ class ArrangerService : public ::google::protobuf::Service {
   static const ::google::protobuf::ServiceDescriptor* descriptor();
 
   virtual void echo(::google::protobuf::RpcController* controller,
-                       const ::fankux::HeartbeatRequest* request,
-                       ::fankux::HeartbeatResponse* response,
+                       const ::fdis::HeartbeatRequest* request,
+                       ::fdis::HeartbeatResponse* response,
                        ::google::protobuf::Closure* done);
 
   // implements Service ----------------------------------------------
@@ -86,8 +86,8 @@ class ArrangerService_Stub : public ArrangerService {
   // implements ArrangerService ------------------------------------------
 
   void echo(::google::protobuf::RpcController* controller,
-                       const ::fankux::HeartbeatRequest* request,
-                       ::fankux::HeartbeatResponse* response,
+                       const ::fdis::HeartbeatRequest* request,
+                       ::fdis::HeartbeatResponse* response,
                        ::google::protobuf::Closure* done);
  private:
   ::google::protobuf::RpcChannel* channel_;
@@ -104,7 +104,7 @@ class ArrangerService_Stub : public ArrangerService {
 
 // @@protoc_insertion_point(namespace_scope)
 
-}  // namespace fankux
+}  // namespace fdis
 
 #ifndef SWIG
 namespace google {

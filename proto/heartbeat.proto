@@ -1,4 +1,4 @@
-package fankux;
+package fdis;
 
 message HeartbeatRequest {
     required int32 id = 1;

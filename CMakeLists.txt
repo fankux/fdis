@@ -1,86 +1,114 @@
 cmake_minimum_required(VERSION 2.8.4)
 project(webc)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++98 -pthread -fpermissive -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -fpermissive -fPIC")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -m64 -g -pthread")
 
 set(FMAP
-        common/fmap.h
-        common/fmap.hpp
-        common/fmap.c
+        src/common/fmap.h
+        src/common/fmap.hpp
+        src/common/fmap.c
+        )
+set(FSTR
+        src/common/fstr.h
+        src/common/fstr.hpp
+        src/common/fstr.c
+        )
+
+set(PROTO
+        proto/gen.sh
+        proto/meta.proto
+        proto/meta.pb.h
+        proto/meta.pb.cc
+        proto/heartbeat.proto
+        proto/heartbeat.pb.h
+        proto/heartbeat.pb.cc
+        proto/ArrangerService.proto
+        proto/ArrangerService.pb.h
+        proto/ArrangerService.pb.cc
+        proto/WorkerService.proto
+        proto/WorkerService.pb.h
+        proto/WorkerService.pb.cc
+        )
+
+set(FS
+        src/fs/file_access.h
         )
 
 set(MODULE_COMMON
-        common/common.h
-        common/common.c
-        common/flog.h
-        common/flog.c
-        common/fmem.h
-        common/fmem.c
-        common/fstr.h
-        common/fstr.c
-        common/flist.h
-        common/flist.c
-        common/flist.hpp
+        src/common/common.h
+        src/common/common.c
+        src/common/flog.h
+        src/common/flog.c
+        src/common/fmem.h
+        src/common/fmem.c
+        ${FSTR}
+        src/common/flist.h
+        src/common/flist.c
+        src/common/flist.hpp
         ${FMAP}
-        common/fbit.h
-        common/fbit.c
-        common/fqueue.h
-        common/fqueue.hpp
-        common/fqueue.c
-        common/check.h
+        src/common/fbit.h
+        src/common/fbit.c
+        src/common/fqueue.h
+        src/common/fqueue.hpp
+        src/common/fqueue.c
+        src/common/check.h
 
-        webc.h
-        webc.c
-        cmd.h
-        cmd.c
-        net.h
-        net.c
-        event.h
-        event.c
-        config.h
-        config.c
+        src/webc.h
+        src/webc.c
+        src/cmd.h
+        src/cmd.c
+        src/net.h
+        src/net.c
+        src/event.h
+        src/event.c
+        src/config.h
+        src/config.c
 
-        rpc/rpc.h
+        src/rpc/rpc.h
 
-        proto/meta.pb.h
-        proto/meta.pb.cc
-        proto/heartbeat.pb.h
-        proto/heartbeat.pb.cc
-        proto/ArrangerService.pb.h
-        proto/ArrangerService.pb.cc
+        src/threadpool.hpp
+        src/threadpool.h
+        src/threadpool.c
 
-        threadpool.hpp
-        threadpool.h
-        threadpool.c
+        ${PROTO}
+        ${FS}
         )
 
 set(WOKER
-        rpc/RpcServer.h
-        rpc/RpcServer.cpp
+        src/rpc/RpcServer.h
+        src/rpc/RpcServer.cpp
+        src/rpc/RpcClient.h
+        src/rpc/RpcClient.cpp
+        src/rpc/InvokeController.cpp
 
-        rpc/RpcClient.h
-        rpc/RpcClient.cpp
-        rpc/InvokeController.cpp
+        src/chunkServer.h
+        src/chunkServer.cpp
 
-        worker/worker.h
-        worker/worker.cpp
+        src/worker/worker.h
+        src/worker/worker.cpp
         )
 
 set(ARRANGER
-        rpc/RpcServer.h
-        rpc/RpcServer.cpp
+        src/rpc/RpcServer.h
+        src/rpc/RpcServer.cpp
 
-        arranger.h
-        arranger.cpp
-        ArrangerServer.h
-        ArrangerServer.cpp
-        ArrangerConf.cpp
+        src/arranger.h
+        src/arranger.cpp
+        src/ArrangerServer.h
+        src/ArrangerServer.cpp
+        src/ArrangerConf.cpp
+        )
+
+set(CLIENT
+        src/client.cpp
         )
 
 set(MODULE_COMMON_INC
         .
-        deps/src
+        src
+        src/deps/src
+        src/se
         )
 
 set(MODULE_COMMON_LIB
@@ -101,7 +129,9 @@ add_executable(threadpool ${MODULE_COMMON} ${THREADPOOL})
 add_executable(arranger ${MODULE_COMMON} ${ARRANGER})
 set_target_properties(arranger PROPERTIES COMPILE_FLAGS "-DDEBUG_ARRANGER -DLOG_LEVEL=10")
 
-add_executable(node ${MODULE_COMMON} ${WOKER})
-set_target_properties(node PROPERTIES COMPILE_FLAGS "-DDEBUG_WORKER -DLOG_LEVEL=10")
+add_executable(worker ${MODULE_COMMON} ${WOKER})
+set_target_properties(worker PROPERTIES COMPILE_FLAGS "-DDEBUG_WORKER -DLOG_LEVEL=10")
+
+add_executable(client ${MODULE_COMMON} ${CLIENT})
 
 add_custom_target(distclean rm CMakeFiles cmake_install.cmake CMakeCache.txt Makefile core)
