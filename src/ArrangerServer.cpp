@@ -5,7 +5,7 @@
 
 namespace fdis {
 
-void ArrangerServer::init() {
+void ArrangerServer::init(uint16_t port) {
     // TODO, port config
     int service_id = ArrangerService::descriptor()->index();
 
@@ -22,8 +22,12 @@ void ArrangerServer::init() {
         heartbeat->fail_dones.add(procedure_id, *RpcServer::default_fail);
     }
     _server.reg_provider(service_id, *heartbeat);
-    _server.init(7234);
+    _server.init(port);
     _server.run(true);
+}
+
+void ArrangerServer::stop(uint32_t mills) {
+    _server.stop(mills);
 }
 
 /**

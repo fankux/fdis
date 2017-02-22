@@ -3,8 +3,8 @@
 #include <sys/types.h>
 #include <ctype.h>
 
+#include "common.h"
 #include "fmap.h"
-#include "fmem.h"
 
 #ifdef __cplusplus
 namespace fdis{
@@ -14,11 +14,9 @@ static const unsigned int hash_seed = 5381;
 static const unsigned int hash_rand_seed = 5731;
 
 //private function
-static void _reset_header(struct fmap_header*);
+static void _reset_section(struct fmap_section*);
 
-static void _release_header(struct fmap_header*);
-
-static struct fmap_node* _find(struct fmap*, const void*, unsigned int*);
+static void _release_section(struct fmap_section*);
 
 static int _expand(struct fmap*, const size_t);
 
@@ -122,7 +120,7 @@ inline unsigned int int64_hash_func(const void* x) {
     key += ~(key << 27);
     key ^= (key >> 31);
 
-    return (unsigned int)key;
+    return (unsigned int) key;
 }
 
 /* djb hash */
@@ -130,9 +128,9 @@ inline unsigned int str_hash_func(const void* buf) {
     unsigned int hash = hash_seed;
     unsigned char* p = (unsigned char*) buf;
 
-    while (*p) /* hash = hash * 33 + c */
+    while (*p) { /* hash = hash * 33 + c */
         hash = ((hash << 5) + hash) + *p++;
-
+    }
     return hash;
 }
 
@@ -141,29 +139,28 @@ inline unsigned int strcase_hash_func(const void* buf) {
     unsigned int hash = hash_seed;
     unsigned char* p = (unsigned char*) buf;
 
-    while (*p) /* hash * 33 + c */
+    while (*p) { /* hash * 33 + c */
         hash = ((hash << 5) + hash) + (tolower(*p++));
+    }
     return hash;
 }
 
 /****************** API Implementations ********************/
-static void _reset_header(struct fmap_header* header) {
-    header->map = NULL;
-    header->size = 0;
-    header->size_mask = 0;
-    header->used = 0;
+static void _reset_section(struct fmap_section* section) {
+    memset(section, 0, sizeof(struct fmap_section));
 }
 
-static void _release_header(struct fmap_header* header) {
-    ffree(header->map);
-    _reset_header(header);
+static void _release_section(struct fmap_section* section) {
+    ffree(section->map);
+    _reset_section(section);
 }
 
-inline void fmap_init(struct fmap* map, fmap_key_type key_type, fmap_dup_type dup_mask) {
-    _reset_header(&map->header[0]);
-    _reset_header(&map->header[1]);
-    map->rehash_idx = -1;
-    map->iter_num = 0;
+void fmap_init(struct fmap* map, fmap_key_type key_type, fmap_dup_type dup_mask) {
+    _reset_section(&map->section[0]);
+    _reset_section(&map->section[1]);
+    map->rehash_flag = 0;
+    map->rehash_idx = 0;
+    map->lock = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
     memset(&map->type, 0, sizeof(map->type));
 
     switch (key_type) {
@@ -208,25 +205,33 @@ inline void fmap_init(struct fmap* map, fmap_key_type key_type, fmap_dup_type du
         map->type.desval = str_free_func;
     }
 
-    struct fmap_header* h = &map->header[0];
-    if ((h->map = fmalloc(FMAP_HEADER_INITIAL_SIZE * sizeof(struct fmap_node*))) == NULL) {
+    struct fmap_section* section = &map->section[0];
+    if ((section->map = fcalloc(FMAP_SECTION_INITIAL_SIZE, sizeof(struct fmap_slot))) == NULL) {
         return;
     }
 
-    fmemset(h->map, 0, FMAP_HEADER_INITIAL_SIZE * sizeof(struct fmap_node*));
-    h->size = FMAP_HEADER_INITIAL_SIZE;
-    h->size_mask = h->size - 1;
+    for (int i = 0; i < FMAP_SECTION_INITIAL_SIZE; ++i) {
+        memset(&section->map[i].entry, 0, sizeof(struct fmap_node));
+        section->map[i].lock = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+        section->map[i].size = 0;
+        section->map[i].tail = NULL;
+    }
 
+    section->used = 0;
+    section->size = FMAP_SECTION_INITIAL_SIZE;
+    section->size_mask = section->size - 1;
 }
 
 /*create a fmap which value linked */
 struct fmap* fmap_create(fmap_key_type key_type, fmap_dup_type dup_mask) {
     struct fmap* map;
-    if (!(map = fmalloc(sizeof(struct fmap)))) return NULL;
+    if ((map = fmalloc(sizeof(struct fmap))) == NULL) {
+        return NULL;
+    }
 
     fmap_init(map, key_type, dup_mask);
 
-    if (map->header[0].map == NULL) {
+    if (map->section[0].map == NULL) {
         ffree(map);
         return NULL;
     }
@@ -236,17 +241,16 @@ struct fmap* fmap_create(fmap_key_type key_type, fmap_dup_type dup_mask) {
 void fmap_empty(struct fmap* map) {
     struct fmap_node* p, * q;
     for (int j = 0; j < 2; ++j) {
-        struct fmap_header* h = &map->header[j];
+        struct fmap_section* h = &map->section[j];
         for (size_t i = 0; i < h->size; ++i) {
-            p = h->map[i];
+            p = h->map[i].entry.next;
             while (p) {
                 q = p;
                 p = p->next;
-                fmap_freekey(map, q);
-                fmap_freeval(map, q);
-                --h->used;
+                fmap_node_des(map, q);
+                DEC(h->used);
             }
-            h->map[i] = NULL;
+            h->map[i].entry.next = NULL;
         }
     }
 }
@@ -256,15 +260,14 @@ void fmap_free(struct fmap* map) {
 
     struct fmap_node* p, * q;
     for (int j = 0; j < 2; ++j) {
-        struct fmap_header* h = &map->header[j];
+        struct fmap_section* h = &map->section[j];
         for (size_t i = 0; i < h->size; ++i) {
-            p = h->map[i];
+            p = h->map[i].entry.next;
             while (p) {
                 q = p;
                 p = p->next;
-                fmap_freekey(map, q);
-                fmap_freeval(map, q);
-                --h->used;
+                fmap_node_des(map, q);
+                DEC(h->used);
             }
         }
         ffree(h->map);
@@ -272,9 +275,27 @@ void fmap_free(struct fmap* map) {
     ffree(map);
 }
 
+void* fmap_setkey(struct fmap* map, struct fmap_node* node, void* key) {
+    if (map->type.dupkey) {
+        node->key = map->type.dupkey(key);
+    } else {
+        node->key = key;
+    }
+    return node->key;
+}
+
+void* fmap_setval(struct fmap* map, struct fmap_node* node, void* value) {
+    if (map->type.dupval) {
+        map->type.dupval(node, value);
+    } else {
+        node->value = value;
+    }
+    return node->value;
+}
+
 static void _rehash_step(struct fmap* map, const int step) {
-    struct fmap_header* org = &map->header[0];
-    struct fmap_header* new = &map->header[1];
+    struct fmap_section* org = &map->section[0];
+    struct fmap_section* new = &map->section[1];
     struct fmap_node* p = NULL;
     size_t index;
     int i = 0;
@@ -282,32 +303,32 @@ static void _rehash_step(struct fmap* map, const int step) {
     if (!fmap_isrehash(map) || step == 0) return;
 
     while (i < step) {
-        p = org->map[map->rehash_idx];
+        p = org->map[map->rehash_idx].entry.next;
         while (p && i < step) {
-            org->map[map->rehash_idx] = p->next;
+            org->map[map->rehash_idx].entry.next = p->next;
             index = new->size_mask & fmap_hash(map, p->key);
-            p->next = new->map[index];
-            new->map[index] = p;
-            p = org->map[map->rehash_idx];
+            p->next = new->map[index].entry.next;
+            new->map[index].entry.next = p;
+            p = org->map[map->rehash_idx].entry.next;
 
             --org->used;
             ++new->used;
             ++i;
         }
-        if (org->map[map->rehash_idx]) continue;
+        if (org->map[map->rehash_idx].entry.next) continue;
 
         do {
             /* rehash complete */
             if (++map->rehash_idx >= org->size) {
                 map->rehash_idx = -1;
 
-                _release_header(&map->header[0]);
-                map->header[0] = map->header[1];
-                _reset_header(&map->header[1]);
+                _release_section(&map->section[0]);
+                map->section[0] = map->section[1];
+                _reset_section(&map->section[1]);
 
                 return;
             }
-        } while (!org->map[map->rehash_idx]);
+        } while (!org->map[map->rehash_idx].entry.next);
     }
 }
 
@@ -319,7 +340,7 @@ static int _expand(struct fmap* map, const size_t len) {
     if (!(new = fmalloc(len * sizeof(struct fmap_node*)))) return 0;
     fmemset(new, 0, len * sizeof(struct fmap_node*));
 
-    struct fmap_header* h = &map->header[1];
+    struct fmap_section* h = &map->section[1];
     h->map = new;
     h->size = len;
     h->size_mask = len - 1;
@@ -329,64 +350,52 @@ static int _expand(struct fmap* map, const size_t len) {
     return FMAP_OK;
 }
 
-/* find the key, the "hash" stores the key hash value */
-static struct fmap_node* _find(struct fmap* map, const void* key, unsigned int* hash) {
-    struct fmap_header* h = &map->header[0];
-    struct fmap_node* p;
-    unsigned int hash_code;
-    int flag, hflag = 1;
-
-    hash_code = fmap_hash(map, key);
-    if (hash) *hash = hash_code;
-
-    do {
-        p = h->map[(unsigned int) (h->size_mask & hash_code)];
-        while (p) {
-            if (0 == fmap_cmpkey(map, p->key, key))
-                return p;
-            p = p->next;
-        }
-        flag = 0;
-        if (fmap_isrehash(map) && hflag) {
-            h = &map->header[1];
-            flag = 1;
-            hflag = 0;
-        }
-    } while (flag);
-
-    return NULL;
+inline int fmap_isrehash(struct fmap* map) {
+    return map->rehash_flag;
 }
 
-/*
- * Add a key-value node at index of 'hash to index'.
- * Be sure that key's hash must be equal to p->key's
- */
-int fmap_addraw(struct fmap* map, const unsigned int hash, const void* key, void* value) {
-    struct fmap_header* h;
-    if (fmap_isrehash(map)) {
-        h = &map->header[1];
-    } else {
-        h = &map->header[0];
-    }
-
-    size_t index = hash & h->size_mask;
+int fmap_addraw(struct fmap* map, const void* key, void* value, int rep) {
     struct fmap_node* new;
-    if (!(new = fmalloc(sizeof(struct fmap_node))))
+    if ((new = fmalloc(sizeof(struct fmap_node))) == NULL)
         return FMAP_FAILD;/* allocate one */
 
     fmap_setkey(map, new, key);
-    if (map->type.dupkey != NULL && new->key == NULL) {
-        /* key never be null if key is string */
-        ffree(new);
-        return FMAP_FAILD;
-    }
     fmap_setval(map, new, value);
 
-    new->next = h->map[index];
-    h->map[index] = new;
-    ++h->used;
+    struct fmap_section* h;
+    if (fmap_isrehash(map)) {
+        h = &map->section[1];
+    } else {
+        h = &map->section[0];
+    }
 
-    if (h->used >= h->size) {
+    unsigned int hash = fmap_hash(map, key);
+    size_t slot = hash & h->size_mask;
+    struct fmap_node* p = h->map[slot].entry.next;
+    pthread_mutex_lock(&h->map[slot].lock);
+
+    while (p) {
+        if (fmap_cmpkey(map, p->key, key) == 0) {
+            if (rep == 0) {
+                pthread_mutex_unlock(&h->map[slot].lock);
+                return FMAP_EXIST;
+            }
+            fmap_freeval(map, p);
+            fmap_setval(map, p, value);
+            pthread_mutex_unlock(&h->map[slot].lock);
+            return FMAP_OK;
+        }
+        p = p->next;
+    }
+
+    if (h->map[slot].tail != NULL) {
+        h->map[slot].tail->next = new;
+    } else {
+        h->map[slot].entry.next = new;
+    }
+    h->map[slot].tail = new;
+
+    if (INC(h->used) >= h->size) {
         _expand(map, h->size << 1);
     }
 
@@ -395,152 +404,181 @@ int fmap_addraw(struct fmap* map, const unsigned int hash, const void* key, void
         _rehash_step(map, 1);
     }
 
+    pthread_mutex_unlock(&h->map[slot].lock);
     return FMAP_OK;
 }
 
 int fmap_add(struct fmap* map, const void* key, void* value) {
-    unsigned int hash;
-    struct fmap_node* p = _find(map, key, &hash);
-    if (p) return FMAP_EXIST;// this key already exist, add faild
-
-    return fmap_addraw(map, hash, key, value);
+    return fmap_addraw(map, key, value, 0);
 }
 
 int fmap_set(struct fmap* map, const void* key, void* value) {
-    unsigned int hash;
-    struct fmap_node* p = _find(map, key, &hash);
-    if (p) {
-        // this key already exist, free first
-        fmap_freeval(map, p);
-        fmap_setval(map, p, value);
-        return FMAP_OK;
-    }
-
-    return fmap_addraw(map, hash, key, value);
+    return fmap_addraw(map, key, value, 1);
 }
 
-inline struct fmap_node* fmap_get(struct fmap* hash, const void* key) {
-    return _find(hash, key, NULL);
+struct fmap_node* fmap_get(struct fmap* map, const void* key) {
+    struct fmap_section* h = &map->section[0];
+    struct fmap_slot* slot;
+    struct fmap_node* p;
+    unsigned int hash_code;
+    int flag;
+    int hflag = 1;
+
+    hash_code = fmap_hash(map, key);
+
+    do {
+        slot = &h->map[(unsigned int) (h->size_mask & hash_code)];
+        p = slot->entry.next;
+
+        pthread_mutex_lock(&slot->lock);
+        while (p) {
+            if (fmap_cmpkey(map, p->key, key) == 0) {
+                fmap_node_ref(p);
+                pthread_mutex_unlock(&slot->lock);
+                return p;
+            }
+            p = p->next;
+        }
+        flag = 0;
+        if (fmap_isrehash(map) && hflag) {
+            h = &map->section[1];
+            flag = 1;
+            hflag = 0;
+        }
+    } while (flag);
+
+    pthread_mutex_unlock(&slot->lock);
+
+    return NULL;
 }
 
 void* fmap_getvalue(struct fmap* map, const void* key) {
-    struct fmap_node* node = _find(map, key, NULL);
-    if (!node) return NULL;
+    struct fmap_node* node = fmap_get(map, key);
+    if (node == NULL) {
+        return NULL;
+    }
+
+    DEC((node)->ref);
     return node->value;
 }
 
-struct fmap_node* fmap_getslot(struct fmap* map, const void* key) {
-    struct fmap_header* h = &map->header[0];
+struct fmap_slot* fmap_getslot(struct fmap* map, const void* key) {
+    struct fmap_section* h = &map->section[0];
 
     unsigned int hash_code = fmap_hash(map, key);
 
-    return h->map[h->size_mask & hash_code];
+    struct fmap_slot* slot = &h->map[h->size_mask & hash_code];
+    pthread_mutex_lock(&slot->lock);
+    struct fmap_node* p = slot->entry.next;
+    while (p) {
+        fmap_node_ref(p);
+        p = p->next;
+    }
+    pthread_mutex_unlock(&slot->lock);
+
+    return slot;
 }
 
 /* pop a node,
 ** the memory should be controlled by caller manually */
 struct fmap_node* fmap_pop(struct fmap* hash, const void* key) {
-    struct fmap_header* h = NULL;
-    if (fmap_isrehash(hash)) h = &hash->header[1];
-    else h = &hash->header[0];
+    struct fmap_section* h = NULL;
+    if (fmap_isrehash(hash)) {
+        h = &hash->section[1];
+    } else {
+        h = &hash->section[0];
+    }
 
     size_t index = h->size_mask & fmap_hash(hash, key);
-    struct fmap_node* p = h->map[index];
+    struct fmap_slot* slot = &h->map[index];
+    pthread_mutex_lock(&slot->lock);
+
+    struct fmap_node* p = slot->entry.next;
     struct fmap_node* q = p;
     while (p) {
-        if (!fmap_cmpkey(hash, p->key, key)) break;
+        if (!fmap_cmpkey(hash, p->key, key)) {
+            break;
+        }
 
         q = p;
         p = p->next;
     }
 
-    //not exist
-    if (!p) return NULL;
+    // not exist
+    if (p == NULL) {
+        pthread_mutex_unlock(&slot->lock);
+        return NULL;
+    }
 
-    if (q != p) q->next = p->next;
-    else h->map[index] = p->next;
+    if (q != p) {
+        fmap_node_ref(p);
+        q->next = p->next;
+    } else {
+        h->map[index].entry.next = p->next;
+    }
 
-    --h->used;
+    DEC(h->used);
+    pthread_mutex_unlock(&slot->lock);
 
     return p;
 }
 
-int fmap_remove(struct fmap* hash, const void* key) {
-    struct fmap_node* p;
-    if (!(p = fmap_pop(hash, key))) return FMAP_NONE;
-
-    fmap_freeval(hash, p);
-    fmap_freekey(hash, p);
-
-    return FMAP_OK;
-}
-
 /**************** iterator implement ******************/
 /* pos is index of node where starting iter */
-hash_iter_t* fmap_iter_create(struct fmap* dict, size_t pos) {
+hash_iter_t fmap_iter_create(struct fmap* dict) {
     size_t i, level = 0;
-    hash_iter_t* iter;
-    struct fmap_header* h = &dict->header[0];
-
-    if (pos >= h->used) {
-        level = h->size;
-        pos -= h->used;
-        h = &dict->header[1];
-        if (pos >= h->used)
-            return NULL; /* out of range */
-    }
-    if (!(iter = fmalloc(sizeof(hash_iter_t)))) return NULL;
+    hash_iter_t iter;
+    struct fmap_section* h = &dict->section[0];
 
     for (i = 0; i < h->size; ++i) {
-        if (!h->map[i]) continue;
-        else break;
+        if (h->map[i].entry.next != NULL) {
+            break;
+        }
     }
 
-    iter->no = 0;
-    iter->iter_idx = i + level;
-    iter->current = h->map[i];
-
-    /* for(i = 0; i < pos; ++i) */
-    /* 	iter = fdict_iter_next(dict, iter); */
+    iter.no = 0;
+    iter.iter_idx = i + level;
+    iter.current = h->map[i].entry.next;
 
     return iter;
 }
 
 hash_iter_t* fmap_iter_next(struct fmap* hash, hash_iter_t* iter) {
-    struct fmap_header* h;
-    int flag = 0, hflag = 1;
-    size_t i, level = 0;
+    struct fmap_section* h;
+    int flag = 0;
+    int hflag = 1;
+    size_t i;
+    size_t header_size = 0;
 
     if (!iter) return NULL;
     /* no more */
-    if (iter->no >= hash->header[0].used + hash->header[1].used - 1) {
-        ffree(iter);
+    if (iter->no >= hash->section[0].used + hash->section[1].used - 1) {
         return NULL;
     }
 
-    h = &hash->header[0];
+    h = &hash->section[0];
     if (iter->iter_idx >= h->size) {
-        level = h->size;
-        h = &hash->header[1];
+        header_size = h->size;
+        h = &hash->section[1];
         hflag = 0;
     }
 
-    for (i = iter->iter_idx - level; i < h->size;) {
-        if (!h->map[i]) {
+    for (i = iter->iter_idx - header_size; i < h->size;) {
+        if (h->map[i].entry.next == NULL) {
             ++i;
             continue;
         }
 
         if (flag == 1) {
-            iter->current = h->map[i];
-            iter->iter_idx = i + level;
+            iter->current = h->map[i].entry.next;
+            iter->iter_idx = i + header_size;
             ++iter->no;
             return iter;
         }
 
         if (iter->current->next) {
             iter->current = iter->current->next;
-            iter->iter_idx = i + level;
+            iter->iter_idx = i + header_size;
             ++iter->no;
             return iter;
         } else {
@@ -549,33 +587,26 @@ hash_iter_t* fmap_iter_next(struct fmap* hash, hash_iter_t* iter) {
         }
 
         if (i == h->size && fmap_isrehash(hash) && hflag) {
-            h = &hash->header[1];
+            h = &hash->section[1];
             hflag = 0;
             i = 0;
-            level = hash->header[0].size;
+            header_size = hash->section[0].size;
         }
     }
 
-    /* iteration complete */
-    fmap_iter_cancel(hash, iter);
     return NULL;
-}
-
-void fmap_iter_cancel(struct fmap* hash, hash_iter_t* iter) {
-    __sync_sub_and_fetch(&hash->iter_num, 1);
-    ffree(iter);
 }
 
 /****************Test use ******************/
 void fmap_info_str(struct fmap* map) {
-    printf("rehash_idx:%li; iter_num:%lu\n", map->rehash_idx, map->iter_num);
-    struct fmap_header* h;
+    printf("rehash_idx:%li;\n", map->rehash_idx);
+    struct fmap_section* h;
     for (int j = 0; j < 2; ++j) {
-        h = &map->header[j];
+        h = &map->section[j];
         printf("header:%d: size:%lu; used:%lu\n", j, h->size, h->used);
 
         for (int i = 0; i < h->size; ++i) {
-            struct fmap_node* p = h->map[i];
+            struct fmap_node* p = h->map[i].entry.next;
             printf("%4d(p:%9d):", i, (int) p);
             while (p) {
                 printf("%s:%s->", (char*) p->key, (char*) p->value);
@@ -587,13 +618,13 @@ void fmap_info_str(struct fmap* map) {
 }
 
 void fmap_info_int(struct fmap* map) {
-    printf("rehash_idx:%li; iter_num:%lu\n", map->rehash_idx, map->iter_num);
-    struct fmap_header* h;
+    printf("rehash_idx:%li;\n", map->rehash_idx);
+    struct fmap_section* h;
     for (int j = 0; j < 2; ++j) {
-        h = &map->header[j];
+        h = &map->section[j];
         printf("h%d: size:%lu; used:%lu\n", j, h->size, h->used);
         for (int i = 0; i < h->size; ++i) {
-            struct fmap_node* p = h->map[i];
+            struct fmap_node* p = h->map[i].entry.next;
             printf("%4d(p:%9d):", i, (int) p);
             while (p) {
                 printf("%d:%d->", *((int*) p->key), (int) &p->value);

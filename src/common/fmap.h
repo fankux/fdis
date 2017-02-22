@@ -3,46 +3,59 @@
 
 #include <inttypes.h>
 #include <sys/types.h>
+#include <stdlib.h>
+#include <pthread.h>
+#include "fmem.h"
 
 #ifdef __cplusplus
 extern "C" {
 namespace fdis {
 #endif
 
-struct fmap_node {
-    void* key;
-    void* value;
-    struct fmap_node* next;
-};
-
-struct fmap_header {
-    struct fmap_node** map;
-    size_t size;
-    size_t size_mask;
-    size_t used;
-};
-
 typedef struct fmap_type {
     unsigned int (* hash_func)(const void* key);
 
-    int    (* cmpkey)(const void* key1, const void* key2);
+    int (* cmpkey)(const void* key1, const void* key2);
 
     void* (* dupkey)(const void* key);
 
-    void   (* dupval)(struct fmap_node* n, void* value);
+    void (* dupval)(struct fmap_node* n, void* value);
 
-    void   (* deskey)(void* key);
+    void (* deskey)(void* key);
 
-    void   (* desval)(void* value);
+    void (* desval)(void* value);
 } hash_type_t;
+
+struct fmap_node {
+    void* key;
+    void* value;
+    volatile int ref;
+    struct fmap_node* next;
+};
+
+struct fmap_slot {
+    struct fmap_node entry;
+    struct fmap_node* tail;
+    pthread_mutex_t lock;
+    size_t size;
+};
+
+struct fmap_section {
+    struct fmap_slot* map;
+    size_t size;
+    size_t size_mask;
+    volatile size_t used;
+};
 
 /* max size of hash is (SIZE_MAX-1),
  * because of SIZE_MAX(-1) means memory faild */
 typedef struct fmap {
-    struct fmap_header header[2];
-    ssize_t rehash_idx;     // if rehash needed */
-    size_t iter_num;        // iterators' number */
+    struct fmap_section section[2];
+    struct fmap_section trash;
+    volatile int rehash_flag;
+    size_t rehash_idx;     // if rehash needed */
     hash_type_t type;
+    pthread_mutex_t lock;
 } fmap_t;
 
 typedef struct fmap_iter {
@@ -71,18 +84,14 @@ typedef enum {
 #define FMAP_EXIST 2        /* already exist */
 
 /******************** constants **************************/
-#define FMAP_HEADER_INITIAL_SIZE 4
+#define FMAP_SECTION_INITIAL_SIZE 4
 /************************macros***************************/
 /* if dupkey is not null,
  * then means string should be duplicated,
  * either the string just linked */
-#define fmap_setkey(map, node, key) do{      \
-    if((map)->type.dupkey) (node)->key = (map)->type.dupkey(key); else (node)->key = key;     \
-}while(0)
+void* fmap_setkey(struct fmap* map, struct fmap_node* node, void* key);
 
-#define fmap_setval(map, node, value) do{    \
-    if((map)->type.dupval) (map)->type.dupval((node), (value)); else (node)->value = (value); \
-}while(0)
+void* fmap_setval(struct fmap* map, struct fmap_node* node, void* value);
 
 /* if deskey is not null,
  * means string had been duplicated,
@@ -98,11 +107,27 @@ typedef enum {
 
 #define fmap_cmpkey(map, key1, key2) ((map)->type.cmpkey(key1, key2))
 #define fmap_hash(map, key) ((map)->type.hash_func(key))
-#define fmap_isrehash(map) ((map)->rehash_idx != -1)
 #define fmap_isempty(map) ((map)->header[0].used + (map)->header[1].used == 0)
-#define fmap_size(map) ((map)->header[0].used + (map)->header[1].used)
+#define fmap_size(map) ((map)->section[0].used + (map)->section[1].used)
+
+#define fmap_node_ref(node) (node != NULL ? (INC(node->ref), node) : NULL)
+
+#define fmap_node_free(map, node) do {                  \
+    fmap_freekey(map, node);                            \
+    fmap_freeval(map, node);                            \
+    ffree(node);                                        \
+} while(0)
+
+#define fmap_node_des(map, node) do {                   \
+    if ((node) != NULL && DEC((node)->ref) == 0) {      \
+        fmap_node_free(map, node);                      \
+        (node) = NULL;                                  \
+    }                                                   \
+} while (0)
 
 /******************** API ****************************/
+int fmap_isrehash(struct fmap* map);
+
 void fmap_init(struct fmap* map, fmap_key_type key_type, fmap_dup_type dup_mask);
 
 struct fmap* fmap_create(fmap_key_type key_type, fmap_dup_type dup_mask);
@@ -111,7 +136,11 @@ void fmap_empty(struct fmap*);
 
 void fmap_free(struct fmap*);
 
-int fmap_addraw(struct fmap* map, const unsigned int hash_code, const void* key, void* value);
+/*
+ * Add a key-value node at index of 'hash to index'.
+ * Be sure that key's hash must be equal to p->key's
+ */
+int fmap_addraw(struct fmap* map, const void* key, void* value, int rep);
 
 int fmap_add(struct fmap* map, const void* key, void* value);
 
@@ -121,17 +150,15 @@ int fmap_remove(struct fmap* map, const void* key);
 
 struct fmap_node* fmap_pop(struct fmap* map, const void* key);
 
-struct fmap_node* fmap_get(struct fmap* hash, const void* key);
+struct fmap_node* fmap_get(struct fmap* map, const void* key);
 
 void* fmap_getvalue(struct fmap* map, const void* key);
 
-struct fmap_node* fmap_getslot(struct fmap* map, const void* key);
+struct fmap_slot* fmap_getslot(struct fmap* map, const void* key);
 
-hash_iter_t* fmap_iter_create(struct fmap* map, size_t pos);
+hash_iter_t fmap_iter_create(struct fmap* map);
 
 hash_iter_t* fmap_iter_next(struct fmap* map, hash_iter_t* iter);
-
-void fmap_iter_cancel(struct fmap* map, hash_iter_t* iter);
 
 void fmap_info_str(struct fmap* map);
 

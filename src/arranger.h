@@ -4,9 +4,10 @@
 #include <stddef.h>
 #include "common/fqueue.hpp"
 #include "rpc/RpcClient.h"
-#include "ArrangerServer.h"
 #include "config.h"
 #include "threadpool.hpp"
+#include "ArrangerServer.h"
+#include "chunkServer.h"
 
 namespace fdis {
 
@@ -56,6 +57,8 @@ private:
 private:
     fconf_t* _conf;
 
+    uint16_t _server_port;
+    uint16_t _chunk_port;
     uint32_t _default_token_num;
     uint32_t _default_worker_num;
     uint32_t _handle_retry;

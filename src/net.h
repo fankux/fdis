@@ -3,6 +3,10 @@
 
 #define TCP_PORT 7234
 
+#define NET_FAIL -1
+#define NET_YET -2
+#define NET_OK 0
+
 #ifdef __cplusplus
 extern "C" {
 namespace fdis {

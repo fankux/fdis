@@ -20,4 +20,9 @@ typedef google::protobuf::Message Message;
     (((__service_id__) << (sizeof(__service_id__) * 8)) | (__method_id__))
 }
 
+struct ServerConf {
+    uint16_t listen_port;
+    size_t recv_buf_size;
+};
+
 #endif // FDIS_RPC_H

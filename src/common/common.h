@@ -37,6 +37,17 @@ namespace fdis{
     while(x > 4 && (x & (x - 1))) x = x & (x - 1);  \
     (x <= 4 ? 4 : x << 1);                          \
 })
+
+#define AVOID_COPY(__clazz__)                   \
+private:                                        \
+    __clazz__(const __clazz__&);                \
+    __clazz__& operator=(const __clazz__&);     \
+
+
+#define INC(n) __sync_add_and_fetch(&n, 1)
+#define DEC(n) __sync_sub_and_fetch(&n, 1)
+#define CAS __sync_bool_compare_and_swap
+
 struct s_time {
     uint64_t stamp;
     uint64_t mills;

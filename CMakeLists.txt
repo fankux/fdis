@@ -98,7 +98,7 @@ set(ARRANGER
         src/ArrangerServer.h
         src/ArrangerServer.cpp
         src/ArrangerConf.cpp
-        )
+        test/fmap_test.cpp)
 
 set(CLIENT
         src/client.cpp
@@ -119,7 +119,7 @@ set(MODULE_COMMON_LIB
 include_directories(${MODULE_COMMON_INC})
 link_libraries(${MODULE_COMMON_LIB})
 
-add_executable(fmap ${FMAP} ${MODULE_COMMON})
+add_executable(fmap test/fmap_test.cpp ${FMAP} ${MODULE_COMMON})
 set_target_properties(fmap PROPERTIES COMPILE_FLAGS "-DDEBUG_FMAP -Wall")
 
 add_executable(webc ${MODULE_COMMON})

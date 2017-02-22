@@ -160,8 +160,8 @@ bool RpcClient::invoke(const google::protobuf::MethodDescriptor* method, std::st
 
         RpcClient::_evs.add(procedure_id, *ev);
         ev->flags = EVENT_REUSE | EVENT_WRITE;
-        ev->faild_func = failed_callback;
-        ev->faild_param = (void*) method;
+        ev->fail_func = failed_callback;
+        ev->fail_param = (void*) method;
         ev->send_func = invoke_callback;
         ev->send_param = (void*) method;
 
@@ -313,7 +313,7 @@ int RpcClient::failed_callback(struct event* ev) {
     debug("faild fired");
 
     google::protobuf::MethodDescriptor* method =
-            (google::protobuf::MethodDescriptor*) ev->faild_param;
+            (google::protobuf::MethodDescriptor*) ev->fail_param;
 
     int service_id = method->service()->index();
     int method_id = method->index();

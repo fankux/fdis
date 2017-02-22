@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include <google/protobuf/stubs/common.h>
+#include <google/protobuf/stubs/port.h>
 #include <google/protobuf/stubs/once.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/wire_format_lite_inl.h>
@@ -17,108 +18,116 @@
 // @@protoc_insertion_point(includes)
 
 namespace fdis {
+class WriteBufferDefaultTypeInternal : public ::google::protobuf::internal::ExplicitlyConstructed<WriteBuffer> {};
+WriteBufferDefaultTypeInternal _WriteBuffer_default_instance_;
+class WriteResponseDefaultTypeInternal : public ::google::protobuf::internal::ExplicitlyConstructed<WriteResponse> {};
+WriteResponseDefaultTypeInternal _WriteResponse_default_instance_;
 
 namespace {
 
-const ::google::protobuf::Descriptor* WriteBuffer_descriptor_ = NULL;
-const ::google::protobuf::internal::GeneratedMessageReflection*
-  WriteBuffer_reflection_ = NULL;
-const ::google::protobuf::Descriptor* WriteResponse_descriptor_ = NULL;
-const ::google::protobuf::internal::GeneratedMessageReflection*
-  WriteResponse_reflection_ = NULL;
-const ::google::protobuf::ServiceDescriptor* WorkerService_descriptor_ = NULL;
+::google::protobuf::Metadata file_level_metadata[2];
+const ::google::protobuf::ServiceDescriptor* file_level_service_descriptors[1];
 
 }  // namespace
 
 
-void protobuf_AssignDesc_proto_2fWorkerService_2eproto() {
-  protobuf_AddDesc_proto_2fWorkerService_2eproto();
-  const ::google::protobuf::FileDescriptor* file =
-    ::google::protobuf::DescriptorPool::generated_pool()->FindFileByName(
-      "proto/WorkerService.proto");
-  GOOGLE_CHECK(file != NULL);
-  WriteBuffer_descriptor_ = file->message_type(0);
-  static const int WriteBuffer_offsets_[2] = {
+const ::google::protobuf::uint32* protobuf_Offsets_proto_2fWorkerService_2eproto() GOOGLE_ATTRIBUTE_COLD;
+const ::google::protobuf::uint32* protobuf_Offsets_proto_2fWorkerService_2eproto() {
+  static const ::google::protobuf::uint32 offsets[] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(WriteBuffer, _has_bits_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(WriteBuffer, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(WriteBuffer, len_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(WriteBuffer, buffer_),
-  };
-  WriteBuffer_reflection_ =
-    new ::google::protobuf::internal::GeneratedMessageReflection(
-      WriteBuffer_descriptor_,
-      WriteBuffer::default_instance_,
-      WriteBuffer_offsets_,
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(WriteBuffer, _has_bits_[0]),
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(WriteBuffer, _unknown_fields_),
-      -1,
-      ::google::protobuf::DescriptorPool::generated_pool(),
-      ::google::protobuf::MessageFactory::generated_factory(),
-      sizeof(WriteBuffer));
-  WriteResponse_descriptor_ = file->message_type(1);
-  static const int WriteResponse_offsets_[1] = {
+    1,
+    0,
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(WriteResponse, _has_bits_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(WriteResponse, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(WriteResponse, len_),
+    0,
   };
-  WriteResponse_reflection_ =
-    new ::google::protobuf::internal::GeneratedMessageReflection(
-      WriteResponse_descriptor_,
-      WriteResponse::default_instance_,
-      WriteResponse_offsets_,
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(WriteResponse, _has_bits_[0]),
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(WriteResponse, _unknown_fields_),
-      -1,
-      ::google::protobuf::DescriptorPool::generated_pool(),
-      ::google::protobuf::MessageFactory::generated_factory(),
-      sizeof(WriteResponse));
-  WorkerService_descriptor_ = file->service(0);
+  return offsets;
 }
+
+static const ::google::protobuf::internal::MigrationSchema schemas[] = {
+  { 0, 6, sizeof(WriteBuffer)},
+  { 8, 13, sizeof(WriteResponse)},
+};
+
+static const ::google::protobuf::internal::DefaultInstanceData file_default_instances[] = {
+  {reinterpret_cast<const ::google::protobuf::Message*>(&_WriteBuffer_default_instance_), NULL},
+  {reinterpret_cast<const ::google::protobuf::Message*>(&_WriteResponse_default_instance_), NULL},
+};
 
 namespace {
 
-GOOGLE_PROTOBUF_DECLARE_ONCE(protobuf_AssignDescriptors_once_);
-inline void protobuf_AssignDescriptorsOnce() {
-  ::google::protobuf::GoogleOnceInit(&protobuf_AssignDescriptors_once_,
-                 &protobuf_AssignDesc_proto_2fWorkerService_2eproto);
+void protobuf_AssignDescriptors() {
+  protobuf_AddDesc_proto_2fWorkerService_2eproto();
+  ::google::protobuf::MessageFactory* factory = NULL;
+  AssignDescriptors(
+      "proto/WorkerService.proto", schemas, file_default_instances, protobuf_Offsets_proto_2fWorkerService_2eproto(), factory,
+      file_level_metadata, NULL, file_level_service_descriptors);
 }
 
+void protobuf_AssignDescriptorsOnce() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &protobuf_AssignDescriptors);
+}
+
+void protobuf_RegisterTypes(const ::std::string&) GOOGLE_ATTRIBUTE_COLD;
 void protobuf_RegisterTypes(const ::std::string&) {
   protobuf_AssignDescriptorsOnce();
-  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
-    WriteBuffer_descriptor_, &WriteBuffer::default_instance());
-  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
-    WriteResponse_descriptor_, &WriteResponse::default_instance());
+  ::google::protobuf::internal::RegisterAllTypes(file_level_metadata, 2);
 }
 
 }  // namespace
 
 void protobuf_ShutdownFile_proto_2fWorkerService_2eproto() {
-  delete WriteBuffer::default_instance_;
-  delete WriteBuffer_reflection_;
-  delete WriteResponse::default_instance_;
-  delete WriteResponse_reflection_;
+  _WriteBuffer_default_instance_.Shutdown();
+  delete file_level_metadata[0].reflection;
+  _WriteResponse_default_instance_.Shutdown();
+  delete file_level_metadata[1].reflection;
 }
 
-void protobuf_AddDesc_proto_2fWorkerService_2eproto() {
-  static bool already_here = false;
-  if (already_here) return;
-  already_here = true;
+void protobuf_InitDefaults_proto_2fWorkerService_2eproto_impl() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-  ::fdis::protobuf_AddDesc_proto_2fheartbeat_2eproto();
+  ::fdis::protobuf_InitDefaults_proto_2fheartbeat_2eproto();
+  ::google::protobuf::internal::InitProtobufDefaults();
+  _WriteBuffer_default_instance_.DefaultConstruct();
+  _WriteResponse_default_instance_.DefaultConstruct();
+}
+
+void protobuf_InitDefaults_proto_2fWorkerService_2eproto() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &protobuf_InitDefaults_proto_2fWorkerService_2eproto_impl);
+}
+void protobuf_AddDesc_proto_2fWorkerService_2eproto_impl() {
+  protobuf_InitDefaults_proto_2fWorkerService_2eproto();
+  static const char descriptor[] = {
+      "\n\031proto/WorkerService.proto\022\004fdis\032\025proto"
+      "/heartbeat.proto\"*\n\013WriteBuffer\022\013\n\003len\030\001"
+      " \002(\004\022\016\n\006buffer\030\002 \002(\014\"\034\n\rWriteResponse\022\013\n"
+      "\003len\030\001 \002(\0042H\n\rWorkerService\0227\n\004echo\022\026.fd"
+      "is.HeartbeatRequest\032\027.fdis.HeartbeatResp"
+      "onseB\003\200\001\001"
+  };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\031proto/WorkerService.proto\022\004fdis\032\025proto"
-    "/heartbeat.proto\"*\n\013WriteBuffer\022\013\n\003len\030\001"
-    " \002(\004\022\016\n\006buffer\030\002 \002(\014\"\034\n\rWriteResponse\022\013\n"
-    "\003len\030\001 \002(\0042H\n\rWorkerService\0227\n\004echo\022\026.fd"
-    "is.HeartbeatRequest\032\027.fdis.HeartbeatResp"
-    "onseB\003\200\001\001", 209);
+      descriptor, 209);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "proto/WorkerService.proto", &protobuf_RegisterTypes);
-  WriteBuffer::default_instance_ = new WriteBuffer();
-  WriteResponse::default_instance_ = new WriteResponse();
-  WriteBuffer::default_instance_->InitAsDefaultInstance();
-  WriteResponse::default_instance_->InitAsDefaultInstance();
+  ::fdis::protobuf_AddDesc_proto_2fheartbeat_2eproto();
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_proto_2fWorkerService_2eproto);
 }
 
+GOOGLE_PROTOBUF_DECLARE_ONCE(protobuf_AddDesc_proto_2fWorkerService_2eproto_once_);
+void protobuf_AddDesc_proto_2fWorkerService_2eproto() {
+  ::google::protobuf::GoogleOnceInit(&protobuf_AddDesc_proto_2fWorkerService_2eproto_once_,
+                 &protobuf_AddDesc_proto_2fWorkerService_2eproto_impl);
+}
 // Force AddDescriptors() to be called at static initialization time.
 struct StaticDescriptorInitializer_proto_2fWorkerService_2eproto {
   StaticDescriptorInitializer_proto_2fWorkerService_2eproto() {
@@ -128,33 +137,37 @@ struct StaticDescriptorInitializer_proto_2fWorkerService_2eproto {
 
 // ===================================================================
 
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int WriteBuffer::kLenFieldNumber;
 const int WriteBuffer::kBufferFieldNumber;
-#endif  // !_MSC_VER
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 WriteBuffer::WriteBuffer()
-  : ::google::protobuf::Message() {
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    protobuf_InitDefaults_proto_2fWorkerService_2eproto();
+  }
   SharedCtor();
   // @@protoc_insertion_point(constructor:fdis.WriteBuffer)
 }
-
-void WriteBuffer::InitAsDefaultInstance() {
-}
-
 WriteBuffer::WriteBuffer(const WriteBuffer& from)
-  : ::google::protobuf::Message() {
-  SharedCtor();
-  MergeFrom(from);
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _has_bits_(from._has_bits_),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  buffer_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  if (from.has_buffer()) {
+    buffer_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.buffer_);
+  }
+  len_ = from.len_;
   // @@protoc_insertion_point(copy_constructor:fdis.WriteBuffer)
 }
 
 void WriteBuffer::SharedCtor() {
-  ::google::protobuf::internal::GetEmptyString();
   _cached_size_ = 0;
+  buffer_.UnsafeSetDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
   len_ = GOOGLE_ULONGLONG(0);
-  buffer_ = const_cast< ::std::string*>(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
-  ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
 WriteBuffer::~WriteBuffer() {
@@ -163,11 +176,7 @@ WriteBuffer::~WriteBuffer() {
 }
 
 void WriteBuffer::SharedDtor() {
-  if (buffer_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-    delete buffer_;
-  }
-  if (this != default_instance_) {
-  }
+  buffer_.DestroyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
 }
 
 void WriteBuffer::SetCachedSize(int size) const {
@@ -177,67 +186,64 @@ void WriteBuffer::SetCachedSize(int size) const {
 }
 const ::google::protobuf::Descriptor* WriteBuffer::descriptor() {
   protobuf_AssignDescriptorsOnce();
-  return WriteBuffer_descriptor_;
+  return file_level_metadata[0].descriptor;
 }
 
 const WriteBuffer& WriteBuffer::default_instance() {
-  if (default_instance_ == NULL) protobuf_AddDesc_proto_2fWorkerService_2eproto();
-  return *default_instance_;
+  protobuf_InitDefaults_proto_2fWorkerService_2eproto();
+  return *internal_default_instance();
 }
 
-WriteBuffer* WriteBuffer::default_instance_ = NULL;
-
-WriteBuffer* WriteBuffer::New() const {
-  return new WriteBuffer;
+WriteBuffer* WriteBuffer::New(::google::protobuf::Arena* arena) const {
+  WriteBuffer* n = new WriteBuffer;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
 }
 
 void WriteBuffer::Clear() {
-  if (_has_bits_[0 / 32] & 3) {
-    len_ = GOOGLE_ULONGLONG(0);
-    if (has_buffer()) {
-      if (buffer_ != &::google::protobuf::internal::GetEmptyStringAlreadyInited()) {
-        buffer_->clear();
-      }
-    }
+// @@protoc_insertion_point(message_clear_start:fdis.WriteBuffer)
+  if (has_buffer()) {
+    GOOGLE_DCHECK(!buffer_.IsDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited()));
+    (*buffer_.UnsafeRawStringPointer())->clear();
   }
-  ::memset(_has_bits_, 0, sizeof(_has_bits_));
-  mutable_unknown_fields()->Clear();
+  len_ = GOOGLE_ULONGLONG(0);
+  _has_bits_.Clear();
+  _internal_metadata_.Clear();
 }
 
 bool WriteBuffer::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
-#define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
   // @@protoc_insertion_point(parse_start:fdis.WriteBuffer)
   for (;;) {
-    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
       // required uint64 len = 1;
       case 1: {
-        if (tag == 8) {
+        if (tag == 8u) {
+          set_has_len();
           DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
                    ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
                  input, &len_)));
-          set_has_len();
         } else {
           goto handle_unusual;
         }
-        if (input->ExpectTag(18)) goto parse_buffer;
         break;
       }
 
       // required bytes buffer = 2;
       case 2: {
-        if (tag == 18) {
-         parse_buffer:
+        if (tag == 18u) {
           DO_(::google::protobuf::internal::WireFormatLite::ReadBytes(
                 input, this->mutable_buffer()));
         } else {
           goto handle_unusual;
         }
-        if (input->ExpectAtEnd()) goto success;
         break;
       }
 
@@ -277,15 +283,16 @@ void WriteBuffer::SerializeWithCachedSizes(
       2, this->buffer(), output);
   }
 
-  if (!unknown_fields().empty()) {
+  if (_internal_metadata_.have_unknown_fields()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
   }
   // @@protoc_insertion_point(serialize_end:fdis.WriteBuffer)
 }
 
-::google::protobuf::uint8* WriteBuffer::SerializeWithCachedSizesToArray(
-    ::google::protobuf::uint8* target) const {
+::google::protobuf::uint8* WriteBuffer::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
   // @@protoc_insertion_point(serialize_to_array_start:fdis.WriteBuffer)
   // required uint64 len = 1;
   if (has_len()) {
@@ -299,7 +306,7 @@ void WriteBuffer::SerializeWithCachedSizes(
         2, this->buffer(), target);
   }
 
-  if (!unknown_fields().empty()) {
+  if (_internal_metadata_.have_unknown_fields()) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         unknown_fields(), target);
   }
@@ -307,68 +314,95 @@ void WriteBuffer::SerializeWithCachedSizes(
   return target;
 }
 
-int WriteBuffer::ByteSize() const {
-  int total_size = 0;
+size_t WriteBuffer::RequiredFieldsByteSizeFallback() const {
+// @@protoc_insertion_point(required_fields_byte_size_fallback_start:fdis.WriteBuffer)
+  size_t total_size = 0;
 
-  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required uint64 len = 1;
-    if (has_len()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::UInt64Size(
-          this->len());
-    }
-
+  if (has_buffer()) {
     // required bytes buffer = 2;
-    if (has_buffer()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::BytesSize(
-          this->buffer());
-    }
-
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::BytesSize(
+        this->buffer());
   }
-  if (!unknown_fields().empty()) {
+
+  if (has_len()) {
+    // required uint64 len = 1;
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->len());
+  }
+
+  return total_size;
+}
+size_t WriteBuffer::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:fdis.WriteBuffer)
+  size_t total_size = 0;
+
+  if (_internal_metadata_.have_unknown_fields()) {
     total_size +=
       ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
         unknown_fields());
   }
+  if (((_has_bits_[0] & 0x00000003) ^ 0x00000003) == 0) {  // All required fields are present.
+    // required bytes buffer = 2;
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::BytesSize(
+        this->buffer());
+
+    // required uint64 len = 1;
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->len());
+
+  } else {
+    total_size += RequiredFieldsByteSizeFallback();
+  }
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
   GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = total_size;
+  _cached_size_ = cached_size;
   GOOGLE_SAFE_CONCURRENT_WRITES_END();
   return total_size;
 }
 
 void WriteBuffer::MergeFrom(const ::google::protobuf::Message& from) {
-  GOOGLE_CHECK_NE(&from, this);
+// @@protoc_insertion_point(generalized_merge_from_start:fdis.WriteBuffer)
+  GOOGLE_DCHECK_NE(&from, this);
   const WriteBuffer* source =
-    ::google::protobuf::internal::dynamic_cast_if_available<const WriteBuffer*>(
-      &from);
+      ::google::protobuf::internal::DynamicCastToGenerated<const WriteBuffer>(
+          &from);
   if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:fdis.WriteBuffer)
     ::google::protobuf::internal::ReflectionOps::Merge(from, this);
   } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:fdis.WriteBuffer)
     MergeFrom(*source);
   }
 }
 
 void WriteBuffer::MergeFrom(const WriteBuffer& from) {
-  GOOGLE_CHECK_NE(&from, this);
-  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+// @@protoc_insertion_point(class_specific_merge_from_start:fdis.WriteBuffer)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  if (from._has_bits_[0 / 32] & 3u) {
+    if (from.has_buffer()) {
+      set_has_buffer();
+      buffer_.AssignWithDefault(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), from.buffer_);
+    }
     if (from.has_len()) {
       set_len(from.len());
     }
-    if (from.has_buffer()) {
-      set_buffer(from.buffer());
-    }
   }
-  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
 
 void WriteBuffer::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:fdis.WriteBuffer)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
 void WriteBuffer::CopyFrom(const WriteBuffer& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:fdis.WriteBuffer)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -376,55 +410,136 @@ void WriteBuffer::CopyFrom(const WriteBuffer& from) {
 
 bool WriteBuffer::IsInitialized() const {
   if ((_has_bits_[0] & 0x00000003) != 0x00000003) return false;
-
   return true;
 }
 
 void WriteBuffer::Swap(WriteBuffer* other) {
-  if (other != this) {
-    std::swap(len_, other->len_);
-    std::swap(buffer_, other->buffer_);
-    std::swap(_has_bits_[0], other->_has_bits_[0]);
-    _unknown_fields_.Swap(&other->_unknown_fields_);
-    std::swap(_cached_size_, other->_cached_size_);
-  }
+  if (other == this) return;
+  InternalSwap(other);
+}
+void WriteBuffer::InternalSwap(WriteBuffer* other) {
+  buffer_.Swap(&other->buffer_);
+  std::swap(len_, other->len_);
+  std::swap(_has_bits_[0], other->_has_bits_[0]);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  std::swap(_cached_size_, other->_cached_size_);
 }
 
 ::google::protobuf::Metadata WriteBuffer::GetMetadata() const {
   protobuf_AssignDescriptorsOnce();
-  ::google::protobuf::Metadata metadata;
-  metadata.descriptor = WriteBuffer_descriptor_;
-  metadata.reflection = WriteBuffer_reflection_;
-  return metadata;
+  return file_level_metadata[0];
 }
 
+#if PROTOBUF_INLINE_NOT_IN_HEADERS
+// WriteBuffer
+
+// required uint64 len = 1;
+bool WriteBuffer::has_len() const {
+  return (_has_bits_[0] & 0x00000002u) != 0;
+}
+void WriteBuffer::set_has_len() {
+  _has_bits_[0] |= 0x00000002u;
+}
+void WriteBuffer::clear_has_len() {
+  _has_bits_[0] &= ~0x00000002u;
+}
+void WriteBuffer::clear_len() {
+  len_ = GOOGLE_ULONGLONG(0);
+  clear_has_len();
+}
+::google::protobuf::uint64 WriteBuffer::len() const {
+  // @@protoc_insertion_point(field_get:fdis.WriteBuffer.len)
+  return len_;
+}
+void WriteBuffer::set_len(::google::protobuf::uint64 value) {
+  set_has_len();
+  len_ = value;
+  // @@protoc_insertion_point(field_set:fdis.WriteBuffer.len)
+}
+
+// required bytes buffer = 2;
+bool WriteBuffer::has_buffer() const {
+  return (_has_bits_[0] & 0x00000001u) != 0;
+}
+void WriteBuffer::set_has_buffer() {
+  _has_bits_[0] |= 0x00000001u;
+}
+void WriteBuffer::clear_has_buffer() {
+  _has_bits_[0] &= ~0x00000001u;
+}
+void WriteBuffer::clear_buffer() {
+  buffer_.ClearToEmptyNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+  clear_has_buffer();
+}
+const ::std::string& WriteBuffer::buffer() const {
+  // @@protoc_insertion_point(field_get:fdis.WriteBuffer.buffer)
+  return buffer_.GetNoArena();
+}
+void WriteBuffer::set_buffer(const ::std::string& value) {
+  set_has_buffer();
+  buffer_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), value);
+  // @@protoc_insertion_point(field_set:fdis.WriteBuffer.buffer)
+}
+void WriteBuffer::set_buffer(const char* value) {
+  set_has_buffer();
+  buffer_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), ::std::string(value));
+  // @@protoc_insertion_point(field_set_char:fdis.WriteBuffer.buffer)
+}
+void WriteBuffer::set_buffer(const void* value, size_t size) {
+  set_has_buffer();
+  buffer_.SetNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(),
+      ::std::string(reinterpret_cast<const char*>(value), size));
+  // @@protoc_insertion_point(field_set_pointer:fdis.WriteBuffer.buffer)
+}
+::std::string* WriteBuffer::mutable_buffer() {
+  set_has_buffer();
+  // @@protoc_insertion_point(field_mutable:fdis.WriteBuffer.buffer)
+  return buffer_.MutableNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+::std::string* WriteBuffer::release_buffer() {
+  // @@protoc_insertion_point(field_release:fdis.WriteBuffer.buffer)
+  clear_has_buffer();
+  return buffer_.ReleaseNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited());
+}
+void WriteBuffer::set_allocated_buffer(::std::string* buffer) {
+  if (buffer != NULL) {
+    set_has_buffer();
+  } else {
+    clear_has_buffer();
+  }
+  buffer_.SetAllocatedNoArena(&::google::protobuf::internal::GetEmptyStringAlreadyInited(), buffer);
+  // @@protoc_insertion_point(field_set_allocated:fdis.WriteBuffer.buffer)
+}
+
+#endif  // PROTOBUF_INLINE_NOT_IN_HEADERS
 
 // ===================================================================
 
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) || _MSC_VER >= 1900
 const int WriteResponse::kLenFieldNumber;
-#endif  // !_MSC_VER
+#endif  // !defined(_MSC_VER) || _MSC_VER >= 1900
 
 WriteResponse::WriteResponse()
-  : ::google::protobuf::Message() {
+  : ::google::protobuf::Message(), _internal_metadata_(NULL) {
+  if (GOOGLE_PREDICT_TRUE(this != internal_default_instance())) {
+    protobuf_InitDefaults_proto_2fWorkerService_2eproto();
+  }
   SharedCtor();
   // @@protoc_insertion_point(constructor:fdis.WriteResponse)
 }
-
-void WriteResponse::InitAsDefaultInstance() {
-}
-
 WriteResponse::WriteResponse(const WriteResponse& from)
-  : ::google::protobuf::Message() {
-  SharedCtor();
-  MergeFrom(from);
+  : ::google::protobuf::Message(),
+      _internal_metadata_(NULL),
+      _has_bits_(from._has_bits_),
+      _cached_size_(0) {
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  len_ = from.len_;
   // @@protoc_insertion_point(copy_constructor:fdis.WriteResponse)
 }
 
 void WriteResponse::SharedCtor() {
   _cached_size_ = 0;
   len_ = GOOGLE_ULONGLONG(0);
-  ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
 WriteResponse::~WriteResponse() {
@@ -433,8 +548,6 @@ WriteResponse::~WriteResponse() {
 }
 
 void WriteResponse::SharedDtor() {
-  if (this != default_instance_) {
-  }
 }
 
 void WriteResponse::SetCachedSize(int size) const {
@@ -444,47 +557,49 @@ void WriteResponse::SetCachedSize(int size) const {
 }
 const ::google::protobuf::Descriptor* WriteResponse::descriptor() {
   protobuf_AssignDescriptorsOnce();
-  return WriteResponse_descriptor_;
+  return file_level_metadata[1].descriptor;
 }
 
 const WriteResponse& WriteResponse::default_instance() {
-  if (default_instance_ == NULL) protobuf_AddDesc_proto_2fWorkerService_2eproto();
-  return *default_instance_;
+  protobuf_InitDefaults_proto_2fWorkerService_2eproto();
+  return *internal_default_instance();
 }
 
-WriteResponse* WriteResponse::default_instance_ = NULL;
-
-WriteResponse* WriteResponse::New() const {
-  return new WriteResponse;
+WriteResponse* WriteResponse::New(::google::protobuf::Arena* arena) const {
+  WriteResponse* n = new WriteResponse;
+  if (arena != NULL) {
+    arena->Own(n);
+  }
+  return n;
 }
 
 void WriteResponse::Clear() {
+// @@protoc_insertion_point(message_clear_start:fdis.WriteResponse)
   len_ = GOOGLE_ULONGLONG(0);
-  ::memset(_has_bits_, 0, sizeof(_has_bits_));
-  mutable_unknown_fields()->Clear();
+  _has_bits_.Clear();
+  _internal_metadata_.Clear();
 }
 
 bool WriteResponse::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
-#define DO_(EXPRESSION) if (!(EXPRESSION)) goto failure
+#define DO_(EXPRESSION) if (!GOOGLE_PREDICT_TRUE(EXPRESSION)) goto failure
   ::google::protobuf::uint32 tag;
   // @@protoc_insertion_point(parse_start:fdis.WriteResponse)
   for (;;) {
-    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoff(127);
+    ::std::pair< ::google::protobuf::uint32, bool> p = input->ReadTagWithCutoffNoLastTag(127u);
     tag = p.first;
     if (!p.second) goto handle_unusual;
     switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
       // required uint64 len = 1;
       case 1: {
-        if (tag == 8) {
+        if (tag == 8u) {
+          set_has_len();
           DO_((::google::protobuf::internal::WireFormatLite::ReadPrimitive<
                    ::google::protobuf::uint64, ::google::protobuf::internal::WireFormatLite::TYPE_UINT64>(
                  input, &len_)));
-          set_has_len();
         } else {
           goto handle_unusual;
         }
-        if (input->ExpectAtEnd()) goto success;
         break;
       }
 
@@ -518,22 +633,23 @@ void WriteResponse::SerializeWithCachedSizes(
     ::google::protobuf::internal::WireFormatLite::WriteUInt64(1, this->len(), output);
   }
 
-  if (!unknown_fields().empty()) {
+  if (_internal_metadata_.have_unknown_fields()) {
     ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
         unknown_fields(), output);
   }
   // @@protoc_insertion_point(serialize_end:fdis.WriteResponse)
 }
 
-::google::protobuf::uint8* WriteResponse::SerializeWithCachedSizesToArray(
-    ::google::protobuf::uint8* target) const {
+::google::protobuf::uint8* WriteResponse::InternalSerializeWithCachedSizesToArray(
+    bool deterministic, ::google::protobuf::uint8* target) const {
+  (void)deterministic; // Unused
   // @@protoc_insertion_point(serialize_to_array_start:fdis.WriteResponse)
   // required uint64 len = 1;
   if (has_len()) {
     target = ::google::protobuf::internal::WireFormatLite::WriteUInt64ToArray(1, this->len(), target);
   }
 
-  if (!unknown_fields().empty()) {
+  if (_internal_metadata_.have_unknown_fields()) {
     target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
         unknown_fields(), target);
   }
@@ -541,58 +657,61 @@ void WriteResponse::SerializeWithCachedSizes(
   return target;
 }
 
-int WriteResponse::ByteSize() const {
-  int total_size = 0;
+size_t WriteResponse::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:fdis.WriteResponse)
+  size_t total_size = 0;
 
-  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    // required uint64 len = 1;
-    if (has_len()) {
-      total_size += 1 +
-        ::google::protobuf::internal::WireFormatLite::UInt64Size(
-          this->len());
-    }
-
-  }
-  if (!unknown_fields().empty()) {
+  if (_internal_metadata_.have_unknown_fields()) {
     total_size +=
       ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
         unknown_fields());
   }
+  // required uint64 len = 1;
+  if (has_len()) {
+    total_size += 1 +
+      ::google::protobuf::internal::WireFormatLite::UInt64Size(
+        this->len());
+  }
+  int cached_size = ::google::protobuf::internal::ToCachedSize(total_size);
   GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
-  _cached_size_ = total_size;
+  _cached_size_ = cached_size;
   GOOGLE_SAFE_CONCURRENT_WRITES_END();
   return total_size;
 }
 
 void WriteResponse::MergeFrom(const ::google::protobuf::Message& from) {
-  GOOGLE_CHECK_NE(&from, this);
+// @@protoc_insertion_point(generalized_merge_from_start:fdis.WriteResponse)
+  GOOGLE_DCHECK_NE(&from, this);
   const WriteResponse* source =
-    ::google::protobuf::internal::dynamic_cast_if_available<const WriteResponse*>(
-      &from);
+      ::google::protobuf::internal::DynamicCastToGenerated<const WriteResponse>(
+          &from);
   if (source == NULL) {
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:fdis.WriteResponse)
     ::google::protobuf::internal::ReflectionOps::Merge(from, this);
   } else {
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:fdis.WriteResponse)
     MergeFrom(*source);
   }
 }
 
 void WriteResponse::MergeFrom(const WriteResponse& from) {
-  GOOGLE_CHECK_NE(&from, this);
-  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
-    if (from.has_len()) {
-      set_len(from.len());
-    }
+// @@protoc_insertion_point(class_specific_merge_from_start:fdis.WriteResponse)
+  GOOGLE_DCHECK_NE(&from, this);
+  _internal_metadata_.MergeFrom(from._internal_metadata_);
+  if (from.has_len()) {
+    set_len(from.len());
   }
-  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
 
 void WriteResponse::CopyFrom(const ::google::protobuf::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:fdis.WriteResponse)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
 void WriteResponse::CopyFrom(const WriteResponse& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:fdis.WriteResponse)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
@@ -600,27 +719,53 @@ void WriteResponse::CopyFrom(const WriteResponse& from) {
 
 bool WriteResponse::IsInitialized() const {
   if ((_has_bits_[0] & 0x00000001) != 0x00000001) return false;
-
   return true;
 }
 
 void WriteResponse::Swap(WriteResponse* other) {
-  if (other != this) {
-    std::swap(len_, other->len_);
-    std::swap(_has_bits_[0], other->_has_bits_[0]);
-    _unknown_fields_.Swap(&other->_unknown_fields_);
-    std::swap(_cached_size_, other->_cached_size_);
-  }
+  if (other == this) return;
+  InternalSwap(other);
+}
+void WriteResponse::InternalSwap(WriteResponse* other) {
+  std::swap(len_, other->len_);
+  std::swap(_has_bits_[0], other->_has_bits_[0]);
+  _internal_metadata_.Swap(&other->_internal_metadata_);
+  std::swap(_cached_size_, other->_cached_size_);
 }
 
 ::google::protobuf::Metadata WriteResponse::GetMetadata() const {
   protobuf_AssignDescriptorsOnce();
-  ::google::protobuf::Metadata metadata;
-  metadata.descriptor = WriteResponse_descriptor_;
-  metadata.reflection = WriteResponse_reflection_;
-  return metadata;
+  return file_level_metadata[1];
 }
 
+#if PROTOBUF_INLINE_NOT_IN_HEADERS
+// WriteResponse
+
+// required uint64 len = 1;
+bool WriteResponse::has_len() const {
+  return (_has_bits_[0] & 0x00000001u) != 0;
+}
+void WriteResponse::set_has_len() {
+  _has_bits_[0] |= 0x00000001u;
+}
+void WriteResponse::clear_has_len() {
+  _has_bits_[0] &= ~0x00000001u;
+}
+void WriteResponse::clear_len() {
+  len_ = GOOGLE_ULONGLONG(0);
+  clear_has_len();
+}
+::google::protobuf::uint64 WriteResponse::len() const {
+  // @@protoc_insertion_point(field_get:fdis.WriteResponse.len)
+  return len_;
+}
+void WriteResponse::set_len(::google::protobuf::uint64 value) {
+  set_has_len();
+  len_ = value;
+  // @@protoc_insertion_point(field_set:fdis.WriteResponse.len)
+}
+
+#endif  // PROTOBUF_INLINE_NOT_IN_HEADERS
 
 // ===================================================================
 
@@ -628,12 +773,11 @@ WorkerService::~WorkerService() {}
 
 const ::google::protobuf::ServiceDescriptor* WorkerService::descriptor() {
   protobuf_AssignDescriptorsOnce();
-  return WorkerService_descriptor_;
+  return file_level_service_descriptors[0];
 }
 
 const ::google::protobuf::ServiceDescriptor* WorkerService::GetDescriptor() {
-  protobuf_AssignDescriptorsOnce();
-  return WorkerService_descriptor_;
+  return descriptor();
 }
 
 void WorkerService::echo(::google::protobuf::RpcController* controller,
@@ -649,7 +793,7 @@ void WorkerService::CallMethod(const ::google::protobuf::MethodDescriptor* metho
                              const ::google::protobuf::Message* request,
                              ::google::protobuf::Message* response,
                              ::google::protobuf::Closure* done) {
-  GOOGLE_DCHECK_EQ(method->service(), WorkerService_descriptor_);
+  GOOGLE_DCHECK_EQ(method->service(), file_level_service_descriptors[0]);
   switch(method->index()) {
     case 0:
       echo(controller,
@@ -671,7 +815,8 @@ const ::google::protobuf::Message& WorkerService::GetRequestPrototype(
       return ::fdis::HeartbeatRequest::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
-      return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
+      return *::google::protobuf::MessageFactory::generated_factory()
+          ->GetPrototype(method->input_type());
   }
 }
 
@@ -683,7 +828,8 @@ const ::google::protobuf::Message& WorkerService::GetResponsePrototype(
       return ::fdis::HeartbeatResponse::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
-      return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
+      return *::google::protobuf::MessageFactory::generated_factory()
+          ->GetPrototype(method->output_type());
   }
 }
 

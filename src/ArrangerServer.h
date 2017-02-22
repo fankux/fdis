@@ -9,7 +9,9 @@ class ArrangerServer : public ArrangerService {
 public:
     ArrangerServer() : _server() {}
 
-    void init();
+    void init(uint16_t port);
+
+    void stop(uint32_t mills);
 
     void echo(::google::protobuf::RpcController* controller,
             const HeartbeatRequest* request, HeartbeatResponse* response, Closure* done);

@@ -40,6 +40,8 @@ public:
 
     void run(bool background = false);
 
+    int stop(uint32_t mills);
+
     void reg_provider(const int id, Provider& provider);
 
     Provider* get_provider(const int id);

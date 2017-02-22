@@ -218,9 +218,27 @@ char* fconf_get(fconf_t* conf, const char* key) {
     return node->value;
 }
 
+int16_t fconf_get_int16(fconf_t* conf, const char* key) {
+    char* value = fmap_getvalue(conf->data, key);
+    if (!value) return 0;
+    return (int16_t) atoi(value);
+}
+
+int16_t fconf_get_int16_dft(fconf_t* conf, const char* key, int16_t dft) {
+    char* value = fmap_getvalue(conf->data, key);
+    if (!value) return dft;
+    return (int16_t) atoi(value);
+}
+
 int32_t fconf_get_int32(fconf_t* conf, const char* key) {
     char* value = fmap_getvalue(conf->data, key);
     if (!value) return 0;
+    return atoi(value);
+}
+
+int32_t fconf_get_int32_dft(fconf_t* conf, const char* key, int32_t dft) {
+    char* value = fmap_getvalue(conf->data, key);
+    if (!value) return dft;
     return atoi(value);
 }
 
@@ -230,12 +248,34 @@ int64_t fconf_get_int64(fconf_t* conf, const char* key) {
     return atoll(value);
 }
 
+int64_t fconf_get_int64_dft(fconf_t* conf, const char* key, int64_t dft) {
+    char* value = fmap_getvalue(conf->data, key);
+    if (!value) return dft;
+    return atoll(value);
+}
+
+uint16_t fconf_get_uint16(fconf_t* conf, const char* key) {
+    return (uint16_t) fconf_get_int16(conf, key);
+}
+
+uint16_t fconf_get_uint16_dft(fconf_t* conf, const char* key, uint16_t dft) {
+    return (uint16_t) fconf_get_int16_dft(conf, key, dft);
+}
+
 uint32_t fconf_get_uint32(fconf_t* conf, const char* key) {
     return (uint32_t) fconf_get_int32(conf, key);
 }
 
+uint32_t fconf_get_uint32_dft(fconf_t* conf, const char* key, uint32_t dft) {
+    return (uint32_t) fconf_get_int32_dft(conf, key, dft);
+}
+
 uint64_t fconf_get_uint64(fconf_t* conf, const char* key) {
     return (uint64_t) fconf_get_int64(conf, key);
+}
+
+uint64_t fconf_get_uint64_dft(fconf_t* conf, const char* key, uint64_t dft) {
+    return (uint64_t) fconf_get_int64_dft(conf, key, dft);
 }
 
 double fconf_get_float(fconf_t* conf, const char* key) {

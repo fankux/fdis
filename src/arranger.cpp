@@ -30,7 +30,7 @@ void Arranger::init(ArrangerConf& conf) {
     struct Token* token = (Token*) fcalloc(_token_num, sizeof(struct Token));
     // TODO.. field
 
-    _server.init();
+    _server.init(conf._server_port);
 
     // TODO.. check service init status
 

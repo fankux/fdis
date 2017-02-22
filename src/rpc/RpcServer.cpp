@@ -16,7 +16,7 @@ Closure* RpcServer::default_succ = google::protobuf::NewCallback(RpcServer::defa
 
 Closure* RpcServer::default_fail = google::protobuf::NewCallback(RpcServer::default_fail_func);
 
-pthread_t RpcServer::_routine_pid;
+pthread_t RpcServer::_routine_pid = 0;
 
 RpcServer::~RpcServer() {
     event_stop(_netinf);
@@ -31,10 +31,25 @@ void* RpcServer::poll_routine(void* arg) {
 
 void RpcServer::run(bool background) {
     if (background) {
-        pthread_create(&_routine_pid, NULL, poll_routine, _netinf);
+        pthread_create(&RpcServer::_routine_pid, NULL, poll_routine, _netinf);
     } else {
         poll_routine(_netinf);
     }
+}
+
+int RpcServer::stop(uint32_t mills) {
+    if (RpcServer::_routine_pid != 0) {
+        if (mills == 0) {
+            pthread_join(RpcServer::_routine_pid, NULL);
+            return 0;
+        } else {
+            timespec tm_spec;
+            tm_spec.tv_sec = mills / 1000;
+            tm_spec.tv_nsec = (mills % 1000) * 1000;
+            return pthread_timedjoin_np(RpcServer::_routine_pid, NULL, &tm_spec);
+        }
+    }
+    return 0;
 }
 
 void RpcServer::init(const uint16_t port) {
@@ -213,7 +228,8 @@ void RpcServer::reg_provider(const int id, Provider& provider) {
             fatal("server request alloc faild");
             delete in_data;
             exit(EXIT_FAILURE);
-        }        Message* response = service->GetResponsePrototype(method).New();
+        }
+        Message* response = service->GetResponsePrototype(method).New();
         if (response == NULL) {
             fatal("server response alloc faild");
             delete in_data;

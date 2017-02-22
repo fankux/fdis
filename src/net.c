@@ -4,7 +4,6 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
-#include <stdio.h>
 
 #include "net.h"
 
@@ -80,17 +79,14 @@ int accept_tcp(int fd, struct sock_info* info) {
 ssize_t read_tcp(int fd, char* buf, size_t buflen) {
     ssize_t n = 0;
     ssize_t nread;
-    while ((nread = read(fd, buf + n, buflen - 1)) > 0) {
+    while (n >= buflen && (nread = read(fd, buf + n, buflen - 1)) > 0) {
         n += nread;
     }
     if (nread == -1) {
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
-            return -1;
+            return NET_FAIL;
         }
-        return n;
-    }
-    if (nread == 0) {
-        return -1;
+        return NET_YET;
     }
     return n;
 }

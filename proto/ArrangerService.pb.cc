@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include <google/protobuf/stubs/common.h>
+#include <google/protobuf/stubs/port.h>
 #include <google/protobuf/stubs/once.h>
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/wire_format_lite_inl.h>
@@ -20,28 +21,29 @@ namespace fdis {
 
 namespace {
 
-const ::google::protobuf::ServiceDescriptor* ArrangerService_descriptor_ = NULL;
+const ::google::protobuf::ServiceDescriptor* file_level_service_descriptors[1];
 
 }  // namespace
 
-
-void protobuf_AssignDesc_proto_2fArrangerService_2eproto() {
-  protobuf_AddDesc_proto_2fArrangerService_2eproto();
-  const ::google::protobuf::FileDescriptor* file =
-    ::google::protobuf::DescriptorPool::generated_pool()->FindFileByName(
-      "proto/ArrangerService.proto");
-  GOOGLE_CHECK(file != NULL);
-  ArrangerService_descriptor_ = file->service(0);
-}
-
+inline ::google::protobuf::uint32* protobuf_Offsets_proto_2fArrangerService_2eproto() { return NULL; }
+static const ::google::protobuf::internal::MigrationSchema* schemas = NULL;
+static const ::google::protobuf::internal::DefaultInstanceData* file_default_instances = NULL;
 namespace {
 
-GOOGLE_PROTOBUF_DECLARE_ONCE(protobuf_AssignDescriptors_once_);
-inline void protobuf_AssignDescriptorsOnce() {
-  ::google::protobuf::GoogleOnceInit(&protobuf_AssignDescriptors_once_,
-                 &protobuf_AssignDesc_proto_2fArrangerService_2eproto);
+void protobuf_AssignDescriptors() {
+  protobuf_AddDesc_proto_2fArrangerService_2eproto();
+  ::google::protobuf::MessageFactory* factory = NULL;
+  AssignDescriptors(
+      "proto/ArrangerService.proto", schemas, file_default_instances, protobuf_Offsets_proto_2fArrangerService_2eproto(), factory,
+      NULL, NULL, file_level_service_descriptors);
 }
 
+void protobuf_AssignDescriptorsOnce() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &protobuf_AssignDescriptors);
+}
+
+void protobuf_RegisterTypes(const ::std::string&) GOOGLE_ATTRIBUTE_COLD;
 void protobuf_RegisterTypes(const ::std::string&) {
   protobuf_AssignDescriptorsOnce();
 }
@@ -51,23 +53,38 @@ void protobuf_RegisterTypes(const ::std::string&) {
 void protobuf_ShutdownFile_proto_2fArrangerService_2eproto() {
 }
 
-void protobuf_AddDesc_proto_2fArrangerService_2eproto() {
-  static bool already_here = false;
-  if (already_here) return;
-  already_here = true;
+void protobuf_InitDefaults_proto_2fArrangerService_2eproto_impl() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-  ::fdis::protobuf_AddDesc_proto_2fheartbeat_2eproto();
+  ::fdis::protobuf_InitDefaults_proto_2fheartbeat_2eproto();
+  ::google::protobuf::internal::InitProtobufDefaults();
+}
+
+void protobuf_InitDefaults_proto_2fArrangerService_2eproto() {
+  static GOOGLE_PROTOBUF_DECLARE_ONCE(once);
+  ::google::protobuf::GoogleOnceInit(&once, &protobuf_InitDefaults_proto_2fArrangerService_2eproto_impl);
+}
+void protobuf_AddDesc_proto_2fArrangerService_2eproto_impl() {
+  protobuf_InitDefaults_proto_2fArrangerService_2eproto();
+  static const char descriptor[] = {
+      "\n\033proto/ArrangerService.proto\022\004fdis\032\025pro"
+      "to/heartbeat.proto2J\n\017ArrangerService\0227\n"
+      "\004echo\022\026.fdis.HeartbeatRequest\032\027.fdis.Hea"
+      "rtbeatResponseB\003\200\001\001"
+  };
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\033proto/ArrangerService.proto\022\004fdis\032\025pro"
-    "to/heartbeat.proto2J\n\017ArrangerService\0227\n"
-    "\004echo\022\026.fdis.HeartbeatRequest\032\027.fdis.Hea"
-    "rtbeatResponseB\003\200\001\001", 139);
+      descriptor, 139);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "proto/ArrangerService.proto", &protobuf_RegisterTypes);
+  ::fdis::protobuf_AddDesc_proto_2fheartbeat_2eproto();
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_proto_2fArrangerService_2eproto);
 }
 
+GOOGLE_PROTOBUF_DECLARE_ONCE(protobuf_AddDesc_proto_2fArrangerService_2eproto_once_);
+void protobuf_AddDesc_proto_2fArrangerService_2eproto() {
+  ::google::protobuf::GoogleOnceInit(&protobuf_AddDesc_proto_2fArrangerService_2eproto_once_,
+                 &protobuf_AddDesc_proto_2fArrangerService_2eproto_impl);
+}
 // Force AddDescriptors() to be called at static initialization time.
 struct StaticDescriptorInitializer_proto_2fArrangerService_2eproto {
   StaticDescriptorInitializer_proto_2fArrangerService_2eproto() {
@@ -81,12 +98,11 @@ ArrangerService::~ArrangerService() {}
 
 const ::google::protobuf::ServiceDescriptor* ArrangerService::descriptor() {
   protobuf_AssignDescriptorsOnce();
-  return ArrangerService_descriptor_;
+  return file_level_service_descriptors[0];
 }
 
 const ::google::protobuf::ServiceDescriptor* ArrangerService::GetDescriptor() {
-  protobuf_AssignDescriptorsOnce();
-  return ArrangerService_descriptor_;
+  return descriptor();
 }
 
 void ArrangerService::echo(::google::protobuf::RpcController* controller,
@@ -102,7 +118,7 @@ void ArrangerService::CallMethod(const ::google::protobuf::MethodDescriptor* met
                              const ::google::protobuf::Message* request,
                              ::google::protobuf::Message* response,
                              ::google::protobuf::Closure* done) {
-  GOOGLE_DCHECK_EQ(method->service(), ArrangerService_descriptor_);
+  GOOGLE_DCHECK_EQ(method->service(), file_level_service_descriptors[0]);
   switch(method->index()) {
     case 0:
       echo(controller,
@@ -124,7 +140,8 @@ const ::google::protobuf::Message& ArrangerService::GetRequestPrototype(
       return ::fdis::HeartbeatRequest::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
-      return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
+      return *::google::protobuf::MessageFactory::generated_factory()
+          ->GetPrototype(method->input_type());
   }
 }
 
@@ -136,7 +153,8 @@ const ::google::protobuf::Message& ArrangerService::GetResponsePrototype(
       return ::fdis::HeartbeatResponse::default_instance();
     default:
       GOOGLE_LOG(FATAL) << "Bad method index; this should never happen.";
-      return *reinterpret_cast< ::google::protobuf::Message*>(NULL);
+      return *::google::protobuf::MessageFactory::generated_factory()
+          ->GetPrototype(method->output_type());
   }
 }
 
