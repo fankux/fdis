@@ -3,6 +3,9 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <errno.h>
+
+#define __USE_MISC
+
 #include <unistd.h>
 
 #include "net.h"
@@ -89,6 +92,16 @@ ssize_t read_tcp(int fd, char* buf, size_t buflen) {
         return NET_YET;
     }
     return n;
+}
+
+ssize_t read_tcp_retry(int fd, char* buf, size_t buflen, int n, __useconds_t intval_mills) {
+    int count = 0;
+    ssize_t nread;
+    if ((nread = read_tcp(fd, buf, buflen)) == NET_YET && count < n) {
+        usleep(intval_mills);
+        ++count;
+    }
+    return nread;
 }
 
 ssize_t write_tcp(int fd, const char* buf, size_t buflen) {

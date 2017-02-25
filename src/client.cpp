@@ -23,7 +23,7 @@ int main() {
         return -1;
     }
 
-    FILE* fp = fopen("./content.txt", "r");
+    FILE* fp = fopen("./testconf.conf", "r");
     if (fp == NULL) {
         printf("open failed");
         return -1;

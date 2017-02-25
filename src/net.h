@@ -1,5 +1,5 @@
-#ifndef NET_H
-#define NET_H
+#ifndef FDIS_NET_H
+#define FDIS_NET_H
 
 #define TCP_PORT 7234
 
@@ -27,9 +27,11 @@ int accept_tcp(int fd, struct sock_info* info);
 
 ssize_t read_tcp(int fd, char* buf, size_t buflen);
 
+ssize_t read_tcp_retry(int fd, char* buf, size_t buflen, int n, __useconds_t intval_mills);
+
 ssize_t write_tcp(int fd, const char* buf, size_t buflen);
 
-#endif /* NET_H */
+#endif /* FDIS_NET_H */
 
 #ifdef __cplusplus
 }

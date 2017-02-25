@@ -51,7 +51,11 @@ void Worker::init(uint16_t server_port, const std::string& addr, uint16_t client
 
     _client.init(addr, client_port);
 //    _server.init(server_port);
-    _chunk_server.init(7380);
+
+    struct ServerConf conf;
+    conf.listen_port = 7380;
+    conf.recv_buf_size = 8192;
+    _chunk_server.init(conf);
     sleep(3);
 }
 
