@@ -1,20 +1,44 @@
+#define _DEFAULT_SOURCE
+
+#include <endian.h>
 #include "common.h"
+#include "fmem.h"
 
 #ifdef __cplusplus
 namespace fdis {
 #endif
 
-/* parse key, syntax: key:[num_index]:2nd level key,
-** key length limited to 128 charactors
-** "sec_len" is section length,
-** "start" section start index,
-** "next" section start index,
-** return 1, string key, there may be still next section
-** return 2, number index, there may be still next section
-** return -1, syntax error,
-** return -2, number index that should be in [ ] is not number */
+uint64_t get_field_length(unsigned char** packet) {
+    unsigned char* pos = *packet;
+    uint64_t temp = 0;
+    if (*pos < 251) {
+        (*packet)++;
+        return *pos;
+    }
+    if (*pos == 251) {
+        (*packet)++;
+        return ((uint64_t) ~0);//NULL_LENGTH;
+    }
+    if (*pos == 252) {
+        (*packet) += 3;
+        memcpy(&temp, pos + 1, 2);
+        temp = le32toh(temp);
+        return (uint64_t) temp;
+    }
+    if (*pos == 253) {
+        (*packet) += 4;
+        memcpy(&temp, pos + 1, 3);
+        temp = le32toh(temp);
+        return (uint64_t) temp;
+    }
+    (*packet) += 8;                                 /* Must be 254 when here */
+    memcpy(&temp, pos + 1, 4);
+    temp = le32toh(temp);
+    return (uint64_t) temp;
+}
+
 int keysplit(char* buf, size_t* sec_len,
-        char** start, char** next) {
+             char** start, char** next) {
     size_t len = 0;
     char end;
 
@@ -46,25 +70,8 @@ int keysplit(char* buf, size_t* sec_len,
     return 1;
 }
 
-/* split command value string like ,
-** "abc" "def"\0, abc def\0, abc "def"\0 to
-** "abc\0 "def\0, abc\0def\0, abc\0"def\0.
-** by spaces, each call of this function while get next section
-** divided by spaces, note that buf poniter will be moved after
-** each calling, each section end up whth '\0' which overwriting
-** the section end space or end ".
-** use loop struct to call this function
-** section like "123", 32a or a32 is string, but 123 means number
-** "" means null type, spaces will be skip, so some converter needed
-** "sec_len" output section length,
-** "start" section start index,
-** "next" next section start index,
-** if success, string section, return 1,
-** if success, number section, return 2,
-** if buf end, return 0;
-** if syntax error, return -1 */
 int valuesplit(char* buf, size_t* sec_len,
-        char** start, char** next) {
+               char** start, char** next) {
     char* s;
     char end;
     size_t len = 0, num_flag = 1;
@@ -75,8 +82,7 @@ int valuesplit(char* buf, size_t* sec_len,
     if ('\"' == *buf) {
         end = '\"';
         ++buf;
-    }
-    else end = ' ';
+    } else end = ' ';
     if (start) *start = buf;
     s = buf;
     while (*buf != end) {

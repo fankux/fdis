@@ -329,7 +329,7 @@ int RpcClient::failed_callback(struct event* ev) {
     package->status = FAILD;
     if (package->async) {
         int ret = wakeup_invoke(procedure_id, &RpcClient::_invoke_signals);
-        check_cond(ret == 0, return 0,
+        check_cond_fatal(ret == 0, return 0,
                 "provider signal invalid, service id:%d, method id:%d, provider id : %d",
                 service_id, method_id, procedure_id);
     }

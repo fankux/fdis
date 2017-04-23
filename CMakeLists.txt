@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.4)
 project(webc)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread -fpermissive -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -m64 -pthread -fpermissive -fPIC")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -m64 -g -pthread")
 
 set(FMAP

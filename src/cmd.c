@@ -95,7 +95,7 @@ struct webc_mutation *cmd_parse(char *buf) {
     int re;
 
     re = valuesplit(buf, &sec_len, &start, &next);
-    check_cond(re == 1, return NULL, "command parse fiald, re:%d", re);
+    check_cond_fatal(re == 1, return NULL, "command parse fiald, re:%d", re);
 
     cpystr(key_buf, start, sec_len);
 

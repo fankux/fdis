@@ -53,8 +53,66 @@ struct s_time {
     uint64_t mills;
 };
 
+typedef struct packint {
+    union {
+        uint8_t i8;
+        uint16_t i16;
+        uint32_t i24;
+        uint64_t i64;
+    } i;
+} packint_t;
+
+#define PACKINT_MAX_SIZE sizeof(struct packint)
+
+/**
+ * @brief from mysql source
+ * An integer that consumes 1, 3, 4, or 9 bytes, depending on its numeric value
+ * To convert a number value into a length-encoded integer:
+ * If the value is < 251, it is stored as a 1-byte integer.
+ * If the value is ≥ 251 and < (216), it is stored as fc + 2-byte integer.
+ * If the value is ≥ (216) and < (224), it is stored as fd + 3-byte integer.
+ * If the value is ≥ (224) and < (264) it is stored as fe + 8-byte integer.
+
+  @param  packet pointer to a buffer containing the field in a row.
+  @return pos    length of the next field
+*/
+uint64_t get_field_length(unsigned char** packet);
+
+/**
+ * @brief   parse key, syntax: key:[num_index]:2nd level key, key length limited to 128 charactors
+ *
+ * @param   buf
+ * @param   sec_len section length
+ * @param   start section start index
+ * @param   next next section start index
+ * @return  1, string key, there may be still next section
+            2, number index, there may be still next section
+            -1, syntax error,
+            -2, number index that should be in [ ] is not number
+ */
 int keysplit(char* buf, size_t* sec_len, char** start, char** next);
 
+/**
+ @brief split command value string like ,
+ "abc" "def"\0, abc def\0, abc "def"\0 to
+ "abc\0 "def\0, abc\0def\0, abc\0"def\0.
+ by spaces, each call of this function while get next section
+ divided by spaces, note that buf poniter will be moved after
+ each calling, each section end up whth '\0' which overwriting
+ the section end space or end ".
+ use loop struct to call this function
+ section like "123", 32a or a32 is string, but 123 means number
+ "" means null type, spaces will be skip, so some converter needed
+
+ * @param buf
+ * @param       sec_len     output section length
+ * @param       start       section start index
+ * @param       next        next section start index
+ * @return      if success, string section, return 1,
+                if success, number section, return 2,
+                if buf end, return 0;
+                if syntax error, return -1
+ */
 int valuesplit(char* buf, size_t* sec_len, char** start, char** next);
 
 int timeval_subtract(struct timeval* re, struct timeval* start, struct timeval* end);

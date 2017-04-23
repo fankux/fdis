@@ -21,9 +21,9 @@ if((var) == (typeof(var))NULL) {                            \
     action;                                                \
 }
 
-#define check_cond(condition, action, format, ...)          \
+#define check_cond_fatal(condition, action, format, ...)    \
 if(!(condition)) {                                          \
-    fatal(format, ##__VA_ARGS__);                          \
+    fatal(format, ##__VA_ARGS__);                           \
     action;                                                 \
 }                                                           \
 

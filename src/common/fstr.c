@@ -60,6 +60,28 @@ inline void fstr_freestr(char* buf) {
     free(fstr_getpt(buf));
 }
 
+struct fstr* fstr_reserve(struct fstr* a, const size_t len) {
+    struct fstr* p = a;
+    int newfree = a->free - len;
+    int flag = 0;
+
+    /* space not enough,realloc double space of which needed */
+    if (a->free < len) {
+        if (!(p = malloc(sizeof(struct fstr) + ((p->len + len) << 2) + 1)))
+            return NULL;
+        memcpy(p->buf, a->buf, a->len);
+        newfree = a->len + len;
+        flag = 1;
+    }
+
+    p->len = a->len + len;
+    p->free = newfree;
+
+    if (flag) free(a);
+
+    return p;
+}
+
 struct fstr* fstr_catlen(struct fstr* a, const char* b, const size_t len) {
     struct fstr* p = a;
     int newfree = a->free - len;
@@ -212,7 +234,7 @@ struct fstr* fstr_dup_endpoint(struct fstr* b, const char c) {
 }
 
 struct fstr* fstr_replacelen(struct fstr* a, char* b,
-        const size_t pos, const size_t len) {
+                             const size_t pos, const size_t len) {
     if (pos >= a->len) return NULL;
 
     size_t str_len = strlen(b);
@@ -229,7 +251,7 @@ struct fstr* fstr_replace(struct fstr* a, char* b, const size_t pos) {
 }
 
 struct fstr* fstr_insertlen(struct fstr* a, char* b, const size_t pos,
-        const size_t len) {
+                            const size_t len) {
     size_t str_len;
     struct fstr* p;
 

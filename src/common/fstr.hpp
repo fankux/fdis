@@ -47,13 +47,17 @@ public:
     }
 
     str& operator+(const std::string std_string) {
-        fstr_catlen(_fstr, std_string.c_str(), std_string.size());
+        _fstr = fstr_catlen(_fstr, std_string.c_str(), std_string.size());
         return *this;
     }
 
     str& operator+(const char* buf) {
         fstr_cat(_fstr, buf);
         return *this;
+    }
+
+    char operator[](size_t idx) {
+        return _fstr->buf[idx];
     }
 
     const size_t size() const {
@@ -64,8 +68,16 @@ public:
         return _fstr->buf;
     }
 
-    char operator[](size_t idx) {
-        return _fstr->buf[idx];
+    char* data() {
+        return _fstr->buf;
+    }
+
+    bool isempty() const {
+        return size() == 0;
+    }
+
+    void reserve(const size_t size) {
+        _fstr = fstr_reserve(_fstr, size);
     }
 
 private:

@@ -186,7 +186,7 @@ int RpcServer::response_handler(struct event* ev) {
     memcpy(ssend, &package_len, 4);
     memcpy(ssend + 4, &status_len, 4);
     int ret = response->SerializeToArray(ssend + 8 + status_len, response_len);
-    check_cond(ret, return -1, "serialize response faild");
+    check_cond_fatal(ret, return -1, "serialize response faild");
 
     ssize_t write_len = write_tcp(ev->fd, ssend, (size_t) package_len);
     if (write_len == -1) {

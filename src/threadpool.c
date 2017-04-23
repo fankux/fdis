@@ -146,7 +146,7 @@ static inline struct threaditem* _thread_init(threadpool_t* pool, int tno) {
     thread->task_queue = pool->tasks[tno];
     thread->status = THREAD_READY;
     status = pthread_create(&thread->tid, NULL, thread->routine, &pool->args[tno]);
-    check_cond(status == 0, goto faild, "faild to create thread, tno:%d, errno:%d, error:%s",
+    check_cond_fatal(status == 0, goto faild, "faild to create thread, tno:%d, errno:%d, error:%s",
             tno, errno, strerror(errno));
 
     return thread;

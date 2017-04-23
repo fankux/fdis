@@ -33,6 +33,8 @@ void fstr_free(struct fstr* str);
 
 void fstr_freestr(char* buf);
 
+struct fstr* fstr_reserve(struct fstr* a, const size_t len);
+
 struct fstr* fstr_catlen(struct fstr* a, const char* b, const size_t len);
 
 struct fstr* fstr_cat(struct fstr* a, const char* b);
