@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
-namespace fdis{
+namespace fdis {
 #endif
 
 struct fstr { //string

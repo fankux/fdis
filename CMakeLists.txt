@@ -6,13 +6,13 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -m64 -g -pthread")
 
 set(FMAP
         src/common/fmap.h
-        src/common/fmap.hpp
         src/common/fmap.c
+        src/common/fmap.hpp
         )
 set(FSTR
         src/common/fstr.h
-        src/common/fstr.hpp
         src/common/fstr.c
+        src/common/fstr.hpp
         )
 
 set(PROTO
@@ -53,6 +53,9 @@ set(MODULE_COMMON
         src/common/fqueue.hpp
         src/common/fqueue.c
         src/common/check.h
+
+        src/common/bytes.h
+        src/common/bytes.cpp
 
         src/webc.h
         src/webc.c
@@ -98,7 +101,8 @@ set(ARRANGER
         src/ArrangerServer.h
         src/ArrangerServer.cpp
         src/ArrangerConf.cpp
-        test/fmap_test.cpp)
+        test/fmap_test.cpp
+        )
 
 set(CLIENT
         src/client.cpp

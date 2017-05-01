@@ -53,31 +53,6 @@ struct s_time {
     uint64_t mills;
 };
 
-typedef struct packint {
-    union {
-        uint8_t i8;
-        uint16_t i16;
-        uint32_t i24;
-        uint64_t i64;
-    } i;
-} packint_t;
-
-#define PACKINT_MAX_SIZE sizeof(struct packint)
-
-/**
- * @brief from mysql source
- * An integer that consumes 1, 3, 4, or 9 bytes, depending on its numeric value
- * To convert a number value into a length-encoded integer:
- * If the value is < 251, it is stored as a 1-byte integer.
- * If the value is ≥ 251 and < (216), it is stored as fc + 2-byte integer.
- * If the value is ≥ (216) and < (224), it is stored as fd + 3-byte integer.
- * If the value is ≥ (224) and < (264) it is stored as fe + 8-byte integer.
-
-  @param  packet pointer to a buffer containing the field in a row.
-  @return pos    length of the next field
-*/
-uint64_t get_field_length(unsigned char** packet);
-
 /**
  * @brief   parse key, syntax: key:[num_index]:2nd level key, key length limited to 128 charactors
  *

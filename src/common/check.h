@@ -17,7 +17,7 @@ if((var) == (typeof(var))NULL) {                            \
 
 #define check_null_oom(var, action, format, ...)           \
 if((var) == (typeof(var))NULL) {                            \
-    fatal("!!!OUT OF MEMORY!!! "#format"memory allocate faild!", ##__VA_ARGS__);  \
+    fatal("!!!OUT OF MEMORY!!! "#format" memory allocate faild!", ##__VA_ARGS__);  \
     action;                                                \
 }
 

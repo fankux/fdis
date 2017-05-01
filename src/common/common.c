@@ -8,35 +8,6 @@
 namespace fdis {
 #endif
 
-uint64_t get_field_length(unsigned char** packet) {
-    unsigned char* pos = *packet;
-    uint64_t temp = 0;
-    if (*pos < 251) {
-        (*packet)++;
-        return *pos;
-    }
-    if (*pos == 251) {
-        (*packet)++;
-        return ((uint64_t) ~0);//NULL_LENGTH;
-    }
-    if (*pos == 252) {
-        (*packet) += 3;
-        memcpy(&temp, pos + 1, 2);
-        temp = le32toh(temp);
-        return (uint64_t) temp;
-    }
-    if (*pos == 253) {
-        (*packet) += 4;
-        memcpy(&temp, pos + 1, 3);
-        temp = le32toh(temp);
-        return (uint64_t) temp;
-    }
-    (*packet) += 8;                                 /* Must be 254 when here */
-    memcpy(&temp, pos + 1, 4);
-    temp = le32toh(temp);
-    return (uint64_t) temp;
-}
-
 int keysplit(char* buf, size_t* sec_len,
              char** start, char** next) {
     size_t len = 0;

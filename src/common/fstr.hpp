@@ -2,8 +2,8 @@
 // Created by fankux on 16-11-30.
 //
 
-#ifndef WEBC_FSTR_HPP
-#define WEBC_FSTR_HPP
+#ifndef FDIS_FSTR_HPP
+#define FDIS_FSTR_HPP
 
 #include <string>
 #include "fstr.h"
@@ -80,10 +80,13 @@ public:
         _fstr = fstr_reserve(_fstr, size);
     }
 
+    void assign(const char* buf, size_t size) {
+        _fstr = fstr_setlen(_fstr, buf, 0, size);
+    }
+
 private:
     struct fstr* _fstr;
 };
+}
 
-};
-
-#endif //WEBC_FSTR_HPP
+#endif // FDIS_FSTR_HPP
