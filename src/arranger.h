@@ -41,32 +41,6 @@ struct Token {
     struct Node* node;
 };
 
-class Arranger;
-
-class ArrangerConf {
-    friend class Arranger;
-
-public:
-    static ArrangerConf* load(const std::string& path);
-
-    static void release(ArrangerConf* conf);
-
-private:
-    ArrangerConf() {};
-
-private:
-    fconf_t* _conf;
-
-    uint16_t _server_port;
-    uint16_t _chunk_port;
-    uint32_t _default_token_num;
-    uint32_t _default_worker_num;
-    uint32_t _handle_retry;
-    uint32_t _lease_time;
-    uint32_t _threadpool_min;
-    uint32_t _threadpool_max;
-};
-
 class Arranger {
 public:
     Arranger();

@@ -110,7 +110,7 @@ void* fmap_setval(struct fmap* map, struct fmap_node* node, void* value);
 #define fmap_isempty(map) ((map)->header[0].used + (map)->header[1].used == 0)
 #define fmap_size(map) ((map)->section[0].used + (map)->section[1].used)
 
-#define fmap_node_ref(node) (node != NULL ? (INC(node->ref), node) : NULL)
+#define fmap_node_ref(node) ((node) != NULL ? (INC((node)->ref), (node)) : NULL)
 
 #define fmap_node_free(map, node) do {                  \
     fmap_freekey(map, node);                            \
@@ -119,11 +119,13 @@ void* fmap_setval(struct fmap* map, struct fmap_node* node, void* value);
 } while(0)
 
 #define fmap_node_des(map, node) do {                   \
+    printf("ref: %d\n", node->ref);                     \
     if ((node) != NULL && DEC((node)->ref) == 0) {      \
         fmap_node_free(map, node);                      \
         (node) = NULL;                                  \
     }                                                   \
 } while (0)
+//        printf("key:%s free\n", (char*)(node)->key);    \
 
 /******************** API ****************************/
 int fmap_isrehash(struct fmap* map);
@@ -133,6 +135,8 @@ void fmap_init(struct fmap* map, fmap_key_type key_type, fmap_dup_type dup_mask)
 struct fmap* fmap_create(fmap_key_type key_type, fmap_dup_type dup_mask);
 
 void fmap_empty(struct fmap*);
+
+void fmap_clear(struct fmap*);
 
 void fmap_free(struct fmap*);
 

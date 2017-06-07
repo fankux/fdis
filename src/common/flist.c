@@ -56,7 +56,7 @@ void flist_clear(struct flist* list) {
 ** FLIST_NONE, pivot not exist,
 ** FLIST_OK, action done */
 int flist_insert(struct flist* list, void* value, void* pivot,
-        const uint8_t aorb) {
+                 const uint8_t aorb) {
     int flag = 0;
     struct flist_node* p = list->head;
     struct flist_node* new;
@@ -97,7 +97,6 @@ int flist_insert(struct flist* list, void* value, void* pivot,
 
     return FLIST_OK;
 }
-
 
 /* get a node by 'value', if not exist, return FLIST_NONE
 ** else set p to it */
@@ -395,98 +394,50 @@ char* flist_info(struct flist* p, int simplify) {
     return s;
 }
 
-/********** iterator implements, pos is 0 base TODO..to be redesign **********/
-struct flist_iter* flist_iter_create(struct flist* list, const uint8_t direct,
-        const size_t pos) {
-    struct flist_iter* iter;
-    size_t i;
+/********** iterator implements, pos is 0 base **********/
+struct flist_iter flist_iter_start(struct flist* list, const uint8_t direct, const size_t pos) {
 
-    if (flist_isempty(list) || pos >= flist_len(list))
-        return NULL;
+    struct flist_iter iter = FLIST_ITER_INITIALIZER;
+    if (flist_isempty(list) || pos >= flist_len(list)) {
+        return iter;
+    }
 
-    if (!(iter = (struct flist_iter*) fmalloc(sizeof(struct flist_iter))))
-        return NULL;
+    iter.direct = direct;
+    if (direct == FLIST_START_HEAD) {
+        iter.next = list->head;
+    } else if (direct == FLIST_START_TAIL) {
+        iter.next = list->tail;
+    }
 
-    iter->direct = direct;
-    iter->rank = -1; /* note that iter->rank is size_t */
-    if (direct == FDLIST_START_HEAD)
-        iter->next = list->head;
-    else if (direct == FDLIST_START_TAIL)
-        iter->next = list->tail;
-
-    /* there wouldn't be in condition that 'next' is NULL
-    ** in case of that 'pos' be ensured being in bound */
-    for (i = 0; i < pos; ++i) {
-        flist_iter_next(iter);
+    for (size_t i = 0; i < pos; ++i) {
+        if (flist_iter_next(&iter) == NULL) {
+            break;
+        }
     }
 
     return iter;
 }
 
 struct flist_node* flist_iter_next(struct flist_iter* iter) {
-    struct flist_node* p;
-
     if (!iter->next) {
-        flist_iter_cancel(iter);
         return NULL;
     }
 
-    p = iter->next;
-    ++iter->rank;
-
-    if (iter->direct == FDLIST_START_HEAD)
+    struct flist_node* p = iter->next;
+    iter->current = p;
+    if (iter->direct == FLIST_START_HEAD)
         iter->next = p->next;
-    else if (iter->direct == FDLIST_START_TAIL)
+    else if (iter->direct == FLIST_START_TAIL)
         iter->next = p->prev;
 
     return p;
 }
 
-/* rewind the iterator as it's direction */
-void flist_iter_rewind(struct flist* list, struct flist_iter* iter) {
-    if (flist_isempty(list)) {
-        flist_iter_cancel(iter);
-        return;
-    }
-
-    iter->rank = -1;
-    /* if(iter->direct == FDLIST_START_HEAD) */
-    iter->next = list->head;/* head first is default */
-    if (iter->direct == FDLIST_START_TAIL)
-        iter->next = list->tail;
-
-    return;
-}
-
-void flist_iter_cancel(struct flist_iter* iter) {
-    ffree(iter);
-}
-
 struct flist_node* flist_get_index(struct flist* list, const size_t index) {
     if (index >= flist_len(list)) return NULL;
 
-    struct flist_iter* iter;
-    struct flist_node* p;
-    if (!(iter = flist_iter_create(list, FDLIST_START_HEAD,
-            index)))
-        return NULL;
-    p = flist_iter_next(iter);
-    flist_iter_cancel(iter);
-
-    return p;
-
-}
-
-struct flist_node* fdListGetRandom(struct flist* list, const int seed) {
-    srand(seed);
-    size_t pos = rand() % flist_len(list);
-    struct flist_iter* iter;
-    struct flist_node* p;
-    if (!(iter = flist_iter_create(list, FDLIST_START_HEAD, pos)))
-        return NULL;
-    p = flist_iter_next(iter);
-    flist_iter_cancel(iter);
-
+    struct flist_iter iter = flist_iter_start(list, FLIST_START_HEAD, index);
+    struct flist_node* p = flist_iter_next(&iter);
     return p;
 }
 

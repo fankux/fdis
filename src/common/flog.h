@@ -19,10 +19,6 @@ namespace fdis{
 extern time_t __now__;
 extern char __tm_buffer__[20];
 
-#define ERRHOLD ", errno : %d, error : %s"
-#define ERRSIGN errno, strerror(errno)
-#define ERRPAD ERRHOLD, ERRSIGN
-
 #if LOG_LEVEL > 4
 #define debug(format, ...) do { \
     __now__ = time(NULL);       \

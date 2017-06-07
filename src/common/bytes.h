@@ -21,8 +21,6 @@ struct packint {
     } i;
 } packint;
 
-typedef struct str packstr;
-
 #define PACKINT_MIN_SIZE 1
 #define PACKINT_MAX_SIZE sizeof(struct packint)
 
@@ -48,9 +46,9 @@ public:
 
     static struct packint readpackint(char** buf);
 
-    static void readpackstr(char** buf, packstr& pstr);
+    static void readpackstr(char** buf, str& s);
 
-    static struct timespec readtime(char** buf);
+    static struct timeval readtime(char** buf);
 };
 }
 

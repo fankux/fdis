@@ -8,7 +8,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-namespace fdis{
+namespace fdis {
 #endif
 
 #ifdef UNUSED

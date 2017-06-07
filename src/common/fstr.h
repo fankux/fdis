@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
+extern "C" {
 namespace fdis {
 #endif
 
@@ -67,8 +68,9 @@ int fstr_compare(struct fstr* a, struct fstr* b);
 
 void fstr_info(struct fstr* str);
 
+#ifdef __cplusplus
+}
+};
 #endif
 
-#ifdef __cplusplus
-namespace fdis{
 #endif

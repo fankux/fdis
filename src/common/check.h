@@ -1,7 +1,7 @@
-#ifndef UTEST_H
-#define UTEST_H
+#ifndef FDIS_CHECK_H
+#define FDIS_CHECK_H
 
-#include "flog.h"
+#include "common/flog.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,4 +53,4 @@ if(!(condition)) {                                          \
 };
 #endif
 
-#endif //UTEST_H
+#endif // FDIS_CHECK_H

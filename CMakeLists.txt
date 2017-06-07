@@ -4,15 +4,46 @@ project(webc)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -m64 -pthread -fpermissive -fPIC")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -m64 -g -pthread")
 
+set(FSTR
+        src/common/fstr.h
+        src/common/fstr.c
+        src/common/fstr.hpp
+        )
+set(LIST
+        ${FSTR}
+        src/common/flist.h
+        src/common/flist.c
+        src/common/flist.hpp
+
+        src/common/fmap.h
+        src/common/fmap.c
+        src/common/sortlist.hpp
+        )
 set(FMAP
         src/common/fmap.h
         src/common/fmap.c
         src/common/fmap.hpp
         )
-set(FSTR
-        src/common/fstr.h
-        src/common/fstr.c
-        src/common/fstr.hpp
+
+set(COMMON
+        src/common/common.h
+        src/common/common.c
+        src/common/flog.h
+        src/common/flog.c
+        src/common/fmem.h
+        src/common/fmem.c
+        ${FSTR}
+        ${LIST}
+        ${FMAP}
+        src/common/fbit.h
+        src/common/fbit.c
+        src/common/fqueue.h
+        src/common/fqueue.hpp
+        src/common/fqueue.c
+        src/common/check.h
+
+        src/common/bytes.h
+        src/common/bytes.cpp
         )
 
 set(PROTO
@@ -35,50 +66,9 @@ set(FS
         src/fs/file_access.h
         )
 
-set(MODULE_COMMON
-        src/common/common.h
-        src/common/common.c
-        src/common/flog.h
-        src/common/flog.c
-        src/common/fmem.h
-        src/common/fmem.c
-        ${FSTR}
-        src/common/flist.h
-        src/common/flist.c
-        src/common/flist.hpp
-        ${FMAP}
-        src/common/fbit.h
-        src/common/fbit.c
-        src/common/fqueue.h
-        src/common/fqueue.hpp
-        src/common/fqueue.c
-        src/common/check.h
-
-        src/common/bytes.h
-        src/common/bytes.cpp
-
-        src/webc.h
-        src/webc.c
-        src/cmd.h
-        src/cmd.c
-        src/net.h
-        src/net.c
-        src/event.h
-        src/event.c
-        src/config.h
-        src/config.c
-
-        src/rpc/rpc.h
-
-        src/threadpool.hpp
-        src/threadpool.h
-        src/threadpool.c
-
-        ${PROTO}
-        ${FS}
-        )
-
 set(WOKER
+        ${COMMON}
+
         src/rpc/RpcServer.h
         src/rpc/RpcServer.cpp
         src/rpc/RpcClient.h
@@ -93,6 +83,8 @@ set(WOKER
         )
 
 set(ARRANGER
+        ${COMMON}
+
         src/rpc/RpcServer.h
         src/rpc/RpcServer.cpp
 
@@ -101,41 +93,72 @@ set(ARRANGER
         src/ArrangerServer.h
         src/ArrangerServer.cpp
         src/ArrangerConf.cpp
-        test/fmap_test.cpp
+        src/ArrangerConf.h
         )
 
 set(CLIENT
+        ${COMMON}
+
         src/client.cpp
         )
 
-set(MODULE_COMMON_INC
+set(THREADPOOL
+        src/threadpool.h
+        src/threadpool.c
+        src/threadpool.hpp
+        )
+
+set(FDIS
+        ${COMMON}
+
+        src/webc.h
+        src/webc.c
+        src/cmd.h
+        src/cmd.c
+        src/net.h
+        src/net.c
+        src/event.h
+        src/event.c
+        src/config.h
+        src/config.c
+
+        src/rpc/rpc.h
+
+        ${PROTO}
+        ${FS}
+        )
+
+set(FDIS_INC
         .
         src
         src/deps/src
         src/se
         )
 
-set(MODULE_COMMON_LIB
+set(FDIS_LIB
         /usr/local/lib/libprotoc.a
         /usr/local/lib/libprotobuf.a
         )
 
-include_directories(${MODULE_COMMON_INC})
-link_libraries(${MODULE_COMMON_LIB})
+include_directories(${FDIS_INC})
+link_libraries(${MFDIS_LIB})
 
-add_executable(fmap test/fmap_test.cpp ${FMAP} ${MODULE_COMMON})
-set_target_properties(fmap PROPERTIES COMPILE_FLAGS "-DDEBUG_FMAP -Wall")
+add_executable(threadpool ${THREADPOOL})
 
-add_executable(webc ${MODULE_COMMON})
-
-add_executable(threadpool ${MODULE_COMMON} ${THREADPOOL})
-
-add_executable(arranger ${MODULE_COMMON} ${ARRANGER})
+add_executable(arranger ${ARRANGER})
 set_target_properties(arranger PROPERTIES COMPILE_FLAGS "-DDEBUG_ARRANGER -DLOG_LEVEL=10")
 
-add_executable(worker ${MODULE_COMMON} ${WOKER})
+add_executable(worker ${WOKER})
 set_target_properties(worker PROPERTIES COMPILE_FLAGS "-DDEBUG_WORKER -DLOG_LEVEL=10")
 
-add_executable(client ${MODULE_COMMON} ${CLIENT})
+add_executable(client ${CLIENT})
+
+add_executable(fdis ${FDIS})
+
+add_executable(fmap_test test/fmap_test.cpp ${FMAP})
+set_target_properties(fmap_test PROPERTIES COMPILE_FLAGS "-DDEBUG_FMAP -Wall")
+
+add_executable(list_test test/list_test.cpp ${LIST})
+set_target_properties(list_test PROPERTIES COMPILE_FLAGS "-DDEBUG_FLIST -Wall")
 
 add_custom_target(distclean rm CMakeFiles cmake_install.cmake CMakeCache.txt Makefile core)

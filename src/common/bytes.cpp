@@ -91,15 +91,15 @@ struct packint Bytes::readpackint(char** buf) {
     return val;
 }
 
-static void Bytes::readpackstr(char** buf, packstr& pstr) {
+static void Bytes::readpackstr(char** buf, str& s) {
     struct packint size = readpackint(buf);
-    pstr.assign(*buf, size.i.i64);
+    s.assign(*buf, size.i.i64);
     (*buf) += size.i.i64;
 }
 
-static struct timespec Bytes::readtime(char** buf) {
-    struct timespec time;
-    time.tv_nsec = readuint32(buf);
+static struct timeval Bytes::readtime(char** buf) {
+    struct timeval time;
+    time.tv_usec = readuint32(buf);
     time.tv_sec = readuint32(buf);
     return time;
 }

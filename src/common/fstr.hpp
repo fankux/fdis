@@ -1,10 +1,7 @@
-//
-// Created by fankux on 16-11-30.
-//
-
 #ifndef FDIS_FSTR_HPP
 #define FDIS_FSTR_HPP
 
+#include <string.h>
 #include <string>
 #include "fstr.h"
 
@@ -14,7 +11,7 @@ class str {
 public:
     str() {
         _fstr = fstr_createlen(NULL, 32);
-    };
+    }
 
     ~str() {
         fstr_free(_fstr);
@@ -39,11 +36,11 @@ public:
     }
 
     bool operator==(const str& rhs) const {
-        return _fstr == rhs._fstr;
+        return strcmp(buf(), rhs.buf()) == 0;
     }
 
     bool operator!=(const str& rhs) const {
-        return !(rhs == *this);
+        return strcmp(buf(), rhs.buf()) != 0;
     }
 
     str& operator+(const std::string std_string) {
@@ -87,6 +84,7 @@ public:
 private:
     struct fstr* _fstr;
 };
+
 }
 
 #endif // FDIS_FSTR_HPP

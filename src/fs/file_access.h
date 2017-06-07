@@ -8,26 +8,26 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sys/stat.h>
-#include <src/common/bytes.h>
+#include <dirent.h>
+#include <error.h>
 #include "common/common.h"
+#include "common/check.h"
 #include "common/bytes.h"
 #include "common/fstr.hpp"
 #include "common/flist.hpp"
 #include "common/fmap.hpp"
-#include "common/flog.h"
-#include "common/check.h"
-#include "common/bytes.h"
+#include "ArrangerConf.h"
 
 namespace fdis {
-class LocalFile {
+class LocalFileAccess {
 public:
-    LocalFile(const str& str = "", const str& mode = "r") : _fp(NULL) {
+    LocalFileAccess(const str& str = "", const str& mode = "r") : _fp(NULL) {
         if (!str.isempty()) {
             open(str, mode);
         }
     }
 
-    ~LocalFile() {
+    ~LocalFileAccess() {
         if (_fp != NULL) {
             close();
         }
@@ -37,17 +37,43 @@ public:
         return _fp != NULL;
     }
 
-    int open(const str& str, const str& mode = "r") {
+    bool update() {
+        int fd = fileno(_fp);
+        if (fd == -1) {
+            fclose(_fp);
+            _fp = NULL;
+            fatal("fp to fd failed, error : (%d)%s", errno, strerror(errno));
+            return -1;
+        }
+        if (fstat(fd, &_stat) != 0) {
+            fclose(_fp);
+            _fp = NULL;
+            fatal("%s get stat failed, error : (%d)%s", _name.buf(), errno, strerror(errno));
+            return -1;
+        }
+        return true;
+    }
+
+    bool open(const str& s, const str& mode = "r") {
+        _name = s;
         if (_fp != NULL) {
             close();
         }
 
-        _name = str;
-        _fp = fopen(str.buf(), mode.buf());
+        _name = s;
+        _fp = fopen(s.buf(), mode.buf());
         if (_fp == NULL) {
-            return -1;
+            return false;
         }
-        return 0;
+
+        if (!update()) {
+            return false;
+        }
+        return true;
+    }
+
+    uint64_t file_size() {
+        return (uint64_t) _stat.st_size;
     }
 
     bool read(char* buf, const size_t size) {
@@ -140,9 +166,12 @@ public:
         return true;
     }
 
-    int write(const char* buf, const size_t size, int direct = 0) {
+    int64_t write(const char* buf, const size_t size) {
         fwrite(buf, size, 1, _fp);
         if (ferror(_fp)) {
+            return -1;
+        }
+        if (!update()) {
             return -1;
         }
         return 0;
@@ -157,12 +186,18 @@ public:
 
 private:
     FILE* _fp;
+    struct stat _stat;
     str _name;
 };
 
-
 class Chunk {
+    friend class FileMeta;
+
 public:
+    Chunk(const uint32_t size) {
+        _size = size;
+    }
+
     /**
         chunk0_file_path            packed_str
         -----------------------------------------
@@ -179,8 +214,94 @@ private:
     str _name;
     uint32_t _pos;
     uint32_t _size;
+};
 
-    LocalFile _fd;
+class ChunkSlot {
+public:
+    ChunkSlot(uint32_t chunk_size, uint64_t file_size) {
+
+    }
+
+private:
+};
+
+class ChunkProducer {
+public:
+    static ChunkProducer instance() {
+        static ChunkProducer producer;
+        return producer;
+    }
+
+    bool init(ArrangerConf& conf) {
+        _data_path = conf.get_persist_path();
+        _data_prefix = conf.get_persist_prefix();
+        _seq = 0;
+
+        DIR* dir = opendir(_data_path.buf());
+        check_null(dir, return false, "open dir %s failed, error : (%d)%s", _data_path.buf(),
+                errno, strerror(errno));
+
+        str max_file_name;
+        dirent* entry = NULL;
+        errno = 0;
+        while ((entry = readdir(dir)) != NULL) {
+            if (entry->d_type != DT_REG) {
+                continue;
+            }
+            if (strncmp(entry->d_name, _data_prefix.buf(), _data_prefix.size()) != 0) {
+                continue;
+            }
+
+            uint32_t suffix_idx = (uint32_t) atol(entry->d_name + _data_prefix.size());
+            if (suffix_idx > _seq) {
+                _seq = suffix_idx;
+                max_file_name = entry->d_name;
+            }
+        }
+        if (errno != 0) {
+            closedir(dir);
+            fatal("chunk log load failed : (%d)%s ", error, strerror(errno));
+            return false;
+        }
+        closedir(dir);
+
+        if (!_lfs.open(max_file_name, "w+")) {
+            fatal("open chunk log %s failed", max_file_name.buf());
+            return false;
+        }
+
+        return true;
+    }
+
+    bool rotate() {
+
+    }
+
+    int64_t write(const str& s) {
+        if (MAX_FILE_SIZE - _lfs.file_size() < s.size()) {
+            if (!rotate()) {
+                fatal("rotate chunk log failed");
+                return -1;
+            }
+        }
+
+        int64_t wsize = _lfs.write(s.buf(), s.size());
+        return wsize;
+    }
+
+private:
+    ChunkProducer() {}
+
+    static const uint32_t MAX_CHUNK_SIZE = 64 * 1024 * 1024; // 64MB
+    static const uint64_t MAX_FILE_SIZE = UINT32_MAX;
+
+
+    str _data_path;
+    str _data_prefix;
+    uint64_t _seq;
+
+    LocalFileAccess _lfs;
+
 };
 
 #define LFS_R_INT_RETB(__type__, __val__) {      \
@@ -195,123 +316,53 @@ private:
     }                                                   \
 }
 
-typedef enum {
-    FILE_T_DEL = 0,
-    FILE_T_ITEM,
-    FILE_T_DIR,
-    FILE_T_LINK,
+enum class FileDesc {
+    SUID = 04000,
+    SGID = 02000,
+    SVTX = 01000,
+    RUSR = 00400,
+    WUSR = 00200,
+    XUSR = 00100,
+    RGRP = 00040,
+    WGRP = 00020,
+    XGRP = 00010,
+    ROTH = 00004,
+    WOTH = 00002,
+    XOTH = 00001,
+    DEFAULT = 0775
 };
 
-#define META_PERSIST_HEADER_SIZE 8
-
-/**
- * @brief minium length of a file meta buffer
- *
- * file_type(1) + mode(4) + uid(4) + gid(4) + create_time(8) + access_time(8) + change_time(8) +
- * modify_time(8) + min(file_name) + min(file_size) + min(chunk_number)
- */
-#define FILE_META_PAYLOAD_MIN_SIZE (1 + 4 + 4 + 4 + 8 + 8 + 8 + 8 + PACKSTR_MIN_SIZE + \
-        PACKINT_MIN_SIZE + PACKINT_MIN_SIZE)
-
-/**
- * @brief minium length of a meta persist payload buffer
- *
- * min(file_meta_number) + FILE_META_PAYLOAD_MIN_SIZE
- */
-#define META_PERSIST_PAYLOAD_MIN_SIZE (PACKINT_MIN_SIZE + FILE_META_PAYLOAD_MIN_SIZE)
-
-class FileMeta;
-
-class FileArranger {
-public:
-
-    /**
-
-     meta_persist_header:
-
-     header_size                  4
-     ====================================================
-     meta_persist_payload_size    4
-     ====================================================
-
-     payloads:
-
-     file_meta_number           packed_num
-     ====================================================
-     file 1 payload
-     ====================================================
-     file 2 payload
-     ====================================================
-     ...
-     ====================================================
-     file N payload:
-     ====================================================
-     */
-    bool init(const str& str) {
-        if (_persist.open(str) != 0) {
-            return false;
-        }
-
-        struct stat st;
-        if (stat(str.buf(), &st) != 0) {
-            fatal("meta file %s stat failed, errno : %d, error : %s"
-                    ERRHOLD, str.buf(), ERRSIGN);
-            return false;
-        }
-        check_cond_fatal(st.st_size > META_PERSIST_HEADER_SIZE, return false,
-                "meta file too short, size: %d", st.st_size);
-
-        char persist_head_buf[META_PERSIST_HEADER_SIZE];
-        int ret = _persist.read(persist_head_buf, sizeof(persist_head_buf));
-        check_cond_fatal(ret == 0, return false, "read header failed"
-                ERRPAD);
-
-
-        char** buf = (char**) &persist_head_buf;
-        uint32_t header_size = Bytes::readuint32(buf);
-        uint32_t meta_persist_payload_size = Bytes::readuint32(buf);
-
-        check_cond_fatal(meta_persist_payload_size >= META_PERSIST_PAYLOAD_MIN_SIZE, return false,
-                "meta_persist_payload_size : %u to short, META_PERSIST_PAYLOAD_MIN_SIZE is %u",
-                meta_persist_payload_size, META_PERSIST_PAYLOAD_MIN_SIZE);
-        info("read meta_persist_payload_size : %u", meta_persist_payload_size);
-
-        char* payload_buf = (char*) fmalloc(meta_persist_payload_size);
-        check_null_oom(payload_buf, return false, "payload buf");
-        ret = _persist.read(payload_buf, meta_persist_payload_size);
-        check_cond_fatal(ret == 0, return false, "read payload failed"
-                ERRPAD);
-        buf = &payload_buf;
-
-        struct packint file_meta_num = Bytes::readpackint(buf);
-        for (uint64_t i = 0; i < file_meta_num.i.i64; ++i) {
-            uint32_t current_offset = (uint32_t) ((*buf) - payload_buf);
-            if (meta_persist_payload_size - current_offset < FILE_META_PAYLOAD_MIN_SIZE) {
-                fatal("meta persist file rest size too short, file corrupt, "
-                        "could not read file meta info continue, current payload offset : %u",
-                        current_offset);
-                return true;
-            }
-
-            FileMeta* file_meta = (FileMeta*) fmalloc(sizeof(FileMeta));
-            if (!file_meta->parse_from_stream(buf)) {
-                return false;
-            }
-
-            _file_metas.add(file_meta->get_name(), *file_meta);
-        }
-
-        return true;
-    }
-
-private:
-    Map<str, FileMeta> _file_metas;
-
-    LocalFile _persist;
+enum class FileType {
+    FILE = 0,
+    DIR = 1,
+    LINK = 2
 };
 
 class FileMeta {
 public:
+    FileMeta(const str& name) {
+        _name = name;
+
+        _file_size = 0;
+        _chunk_number = 0;
+        _type = (uint8_t) FileType::FILE;
+        _mode = (uint32_t) FileDesc::DEFAULT;
+        _uid = 0;
+        _gid = 0;
+
+        struct timeval tm;
+        gettimeofday(&tm, NULL);
+        _create_time = tm;
+        _access_time = tm;
+        _change_time = tm;
+        _modify_time = tm;
+    }
+
+    int64_t write(const str& s, const char* mode = "a") {
+        for (auto& chunk : _chunks) {
+        }
+    }
+
     /**
      * @brief
 
@@ -389,7 +440,7 @@ public:
         return true;
     }
 
-    const packstr& get_name() const {
+    const str& get_name() const {
         return _name;
     }
 
@@ -398,15 +449,122 @@ private:
     uint32_t _mode;
     uint32_t _uid;
     uint32_t _gid;
-    struct timespec _create_time;
-    struct timespec _access_time;
-    struct timespec _change_time;
-    struct timespec _modify_time;
-    packstr _name;
+    struct timeval _create_time;
+    struct timeval _access_time;
+    struct timeval _change_time;
+    struct timeval _modify_time;
+    str _name;
     uint64_t _file_size;
     uint64_t _chunk_number;
 
+    /**********  *********/
     List<Chunk> _chunks;
+};
+
+#define META_PERSIST_HEADER_SIZE 8
+
+/**
+ * @brief minium length of a file meta buffer
+ *
+ * file_type(1) + mode(4) + uid(4) + gid(4) + create_time(8) + access_time(8) + change_time(8) +
+ * modify_time(8) + min(file_name) + min(file_size) + min(chunk_number)
+ */
+#define FILE_META_PAYLOAD_MIN_SIZE (1 + 4 + 4 + 4 + 8 + 8 + 8 + 8 + PACKSTR_MIN_SIZE + \
+        PACKINT_MIN_SIZE + PACKINT_MIN_SIZE)
+
+/**
+ * @brief minium length of a meta persist payload buffer
+ *
+ * min(file_meta_number) + FILE_META_PAYLOAD_MIN_SIZE
+ */
+#define META_PERSIST_PAYLOAD_MIN_SIZE (PACKINT_MIN_SIZE + FILE_META_PAYLOAD_MIN_SIZE)
+
+class FileArranger {
+public:
+
+    /**
+
+     meta_persist_header:
+
+     header_size                  4
+     ====================================================
+     meta_persist_payload_size    4
+     ====================================================
+
+     payloads:
+
+     file_meta_number           packed_num
+     ====================================================
+     file 1 payload
+     ====================================================
+     file 2 payload
+     ====================================================
+     ...
+     ====================================================
+     file N payload:
+     ====================================================
+     */
+    bool init(const str& name) {
+        if (_persist.open(name) != 0) {
+            return false;
+        }
+
+        struct stat st;
+        if (stat(name.buf(), &st) != 0) {
+            fatal("meta file %s stat failed, errno : %d, error : %s"
+                    ERRHOLD, name.buf(), ERRSIGN);
+            return false;
+        }
+        check_cond_fatal(st.st_size > META_PERSIST_HEADER_SIZE, return false,
+                "meta file too short, size: %d", st.st_size);
+
+        char persist_head_buf[META_PERSIST_HEADER_SIZE];
+        int ret = _persist.read(persist_head_buf, sizeof(persist_head_buf));
+        check_cond_fatal(ret == 0, return false, "read header failed"
+                ERRPAD);
+
+
+        char** buf = (char**) &persist_head_buf;
+        uint32_t header_size = Bytes::readuint32(buf);
+        uint32_t meta_persist_payload_size = Bytes::readuint32(buf);
+
+        check_cond_fatal(meta_persist_payload_size >= META_PERSIST_PAYLOAD_MIN_SIZE, return false,
+                "meta_persist_payload_size : %u to short, META_PERSIST_PAYLOAD_MIN_SIZE is %u",
+                meta_persist_payload_size, META_PERSIST_PAYLOAD_MIN_SIZE);
+        info("read meta_persist_payload_size : %u", meta_persist_payload_size);
+
+        char* payload_buf = (char*) fmalloc(meta_persist_payload_size);
+        check_null_oom(payload_buf, return false, "payload buf");
+        ret = _persist.read(payload_buf, meta_persist_payload_size);
+        check_cond_fatal(ret == 0, return false, "read payload failed"
+                ERRPAD);
+        buf = &payload_buf;
+
+        struct packint file_meta_num = Bytes::readpackint(buf);
+        for (uint64_t i = 0; i < file_meta_num.i.i64; ++i) {
+            uint32_t current_offset = (uint32_t) ((*buf) - payload_buf);
+            if (meta_persist_payload_size - current_offset < FILE_META_PAYLOAD_MIN_SIZE) {
+                fatal("meta persist file rest size too short, file corrupt, "
+                        "could not read file meta info continue, current payload offset : %u",
+                        current_offset);
+                return true;
+            }
+
+            FileMeta* file_meta = (FileMeta*) fmalloc(sizeof(FileMeta));
+            if (!file_meta->parse_from_stream(buf)) {
+                return false;
+            }
+
+            _file_metas.add(file_meta->get_name(), *file_meta);
+        }
+
+        return true;
+    }
+
+private:
+    Map<str, FileMeta> _file_metas;
+
+    LocalFileAccess _persist;
 };
 
 class LocalFilePack {
@@ -430,7 +588,7 @@ public:
         _type = type;
     }
 
-    LocalFile* create_file() {
+    LocalFileAccess* create_file() {
     }
 
 private:

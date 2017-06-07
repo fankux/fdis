@@ -6,7 +6,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-namespace fdis{
+namespace fdis {
 #endif
 
 #define FQUEUE_OK 0

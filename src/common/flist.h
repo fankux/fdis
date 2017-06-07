@@ -6,7 +6,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-namespace fdis{
+namespace fdis {
 #endif
 
 /* error code */
@@ -37,16 +37,16 @@ struct flist {
 };
 
 /* iter direction */
-#define FDLIST_START_HEAD 0
-#define FDLIST_START_TAIL 1
+#define FLIST_START_HEAD 0
+#define FLIST_START_TAIL 1
 
 struct flist_iter {
     int direct;
-    size_t rank;
-    struct flist_node* prev;
+    struct flist_node* current;
     struct flist_node* next;
 };
 
+#define FLIST_ITER_INITIALIZER {FLIST_START_HEAD, NULL, NULL}
 
 /* macros */
 #define flist_isempty(list) ((list)->len == 0)
@@ -95,14 +95,9 @@ struct flist_node* flist_get_index(struct flist* list, const size_t index);
 
 int flist_indexof(struct flist* list, void* value);
 
-struct flist_iter* flist_iter_create(struct flist* p, const uint8_t direct,
-        const size_t start_pos);
+struct flist_iter flist_iter_start(struct flist* p, const uint8_t direct, const size_t start_pos);
 
 struct flist_node* flist_iter_next(struct flist_iter* iter);
-
-void flist_iter_cancel(struct flist_iter* iter);
-
-void flist_iter_rewind(struct flist* list, struct flist_iter* iter);
 
 char* flist_info(struct flist* list, int simplify);
 
@@ -118,4 +113,4 @@ extern int flist_cmp_casestr_func(void* a, void* b);
 };
 #endif
 
-#endif //FQUEUE_H
+#endif // FLIST_H

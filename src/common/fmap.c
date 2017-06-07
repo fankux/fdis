@@ -14,9 +14,6 @@ static const unsigned int hash_seed = 5381;
 static const unsigned int hash_rand_seed = 5731;
 
 //private function
-static void _reset_section(struct fmap_section*);
-
-static void _release_section(struct fmap_section*);
 
 static int _expand(struct fmap*, const size_t);
 
@@ -255,6 +252,25 @@ void fmap_empty(struct fmap* map) {
     }
 }
 
+void fmap_clear(struct fmap* map) {
+    if (map == NULL) return;
+
+    struct fmap_node* p, * q;
+    for (int j = 0; j < 2; ++j) {
+        struct fmap_section* h = &map->section[j];
+        for (size_t i = 0; i < h->size; ++i) {
+            p = h->map[i].entry.next;
+            while (p) {
+                q = p;
+                p = p->next;
+                fmap_node_des(map, q);
+                DEC(h->used);
+            }
+        }
+        ffree(h->map);
+    }
+}
+
 void fmap_free(struct fmap* map) {
     if (map == NULL) return;
 
@@ -294,6 +310,7 @@ void* fmap_setval(struct fmap* map, struct fmap_node* node, void* value) {
 }
 
 static void _rehash_step(struct fmap* map, const int step) {
+    return;
     struct fmap_section* org = &map->section[0];
     struct fmap_section* new = &map->section[1];
     struct fmap_node* p = NULL;
@@ -333,20 +350,28 @@ static void _rehash_step(struct fmap* map, const int step) {
 }
 
 static int _expand(struct fmap* map, const size_t len) {
+    return FMAP_OK;
     //is rehash, expand action denied
     if (fmap_isrehash(map)) return FMAP_OK;
 
-    struct fmap_node** new = NULL;
-    if (!(new = fmalloc(len * sizeof(struct fmap_node*)))) return 0;
-    fmemset(new, 0, len * sizeof(struct fmap_node*));
+    struct fmap_section* section = &map->section[1];
+    if ((section->map = fcalloc(len, sizeof(struct fmap_slot))) == NULL) {
+        return FMAP_FAILD;
+    }
 
-    struct fmap_section* h = &map->section[1];
-    h->map = new;
-    h->size = len;
-    h->size_mask = len - 1;
-    h->used = 0;
+    for (int i = 0; i < len; ++i) {
+        memset(&section->map[i].entry, 0, sizeof(struct fmap_node));
+        section->map[i].lock = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
+        section->map[i].size = 0;
+        section->map[i].tail = NULL;
+    }
+
+    section->used = 0;
+    section->size = len;
+    section->size_mask = section->size - 1;
 
     map->rehash_idx = 0;
+
     return FMAP_OK;
 }
 
@@ -355,13 +380,6 @@ inline int fmap_isrehash(struct fmap* map) {
 }
 
 int fmap_addraw(struct fmap* map, const void* key, void* value, int rep) {
-    struct fmap_node* new;
-    if ((new = fmalloc(sizeof(struct fmap_node))) == NULL)
-        return FMAP_FAILD;/* allocate one */
-
-    fmap_setkey(map, new, key);
-    fmap_setval(map, new, value);
-
     struct fmap_section* h;
     if (fmap_isrehash(map)) {
         h = &map->section[1];
@@ -371,12 +389,13 @@ int fmap_addraw(struct fmap* map, const void* key, void* value, int rep) {
 
     unsigned int hash = fmap_hash(map, key);
     size_t slot = hash & h->size_mask;
-    struct fmap_node* p = h->map[slot].entry.next;
-    pthread_mutex_lock(&h->map[slot].lock);
+    struct fmap_node* p = fmap_node_ref(h->map[slot].entry.next);
 
+    pthread_mutex_lock(&h->map[slot].lock);
     while (p) {
         if (fmap_cmpkey(map, p->key, key) == 0) {
             if (rep == 0) {
+                fmap_node_des(map, p);
                 pthread_mutex_unlock(&h->map[slot].lock);
                 return FMAP_EXIST;
             }
@@ -385,15 +404,26 @@ int fmap_addraw(struct fmap* map, const void* key, void* value, int rep) {
             pthread_mutex_unlock(&h->map[slot].lock);
             return FMAP_OK;
         }
-        p = p->next;
+        struct fmap_node* q = p;
+        p = fmap_node_ref(p->next);
+        fmap_node_des(map, q);
     }
 
+    struct fmap_node* node;
+    if ((node = fmalloc(sizeof(struct fmap_node))) == NULL)
+        return FMAP_FAILD;/* allocate one */
+    node->next = 0;
+    node->ref = 1;
+
+    fmap_setkey(map, node, key);
+    fmap_setval(map, node, value);
+
     if (h->map[slot].tail != NULL) {
-        h->map[slot].tail->next = new;
+        h->map[slot].tail->next = node;
     } else {
-        h->map[slot].entry.next = new;
+        h->map[slot].entry.next = node;
     }
-    h->map[slot].tail = new;
+    h->map[slot].tail = node;
 
     if (INC(h->used) >= h->size) {
         _expand(map, h->size << 1);
@@ -427,17 +457,18 @@ struct fmap_node* fmap_get(struct fmap* map, const void* key) {
     hash_code = fmap_hash(map, key);
 
     do {
-        slot = &h->map[(unsigned int) (h->size_mask & hash_code)];
-        p = slot->entry.next;
+        slot = &h->map[h->size_mask & hash_code];
+        p = fmap_node_ref(slot->entry.next);
 
         pthread_mutex_lock(&slot->lock);
         while (p) {
             if (fmap_cmpkey(map, p->key, key) == 0) {
-                fmap_node_ref(p);
                 pthread_mutex_unlock(&slot->lock);
                 return p;
             }
-            p = p->next;
+            struct fmap_node* q = p;
+            p = fmap_node_ref(p->next);
+            fmap_node_des(map, q);
         }
         flag = 0;
         if (fmap_isrehash(map) && hflag) {
@@ -458,50 +489,60 @@ void* fmap_getvalue(struct fmap* map, const void* key) {
         return NULL;
     }
 
-    DEC((node)->ref);
-    return node->value;
+    void* val = node->value;
+    fmap_node_des(map, node);
+    return val;
 }
 
 struct fmap_slot* fmap_getslot(struct fmap* map, const void* key) {
     struct fmap_section* h = &map->section[0];
 
     unsigned int hash_code = fmap_hash(map, key);
-
     struct fmap_slot* slot = &h->map[h->size_mask & hash_code];
+
     pthread_mutex_lock(&slot->lock);
-    struct fmap_node* p = slot->entry.next;
+    struct fmap_node* p = fmap_node_ref(slot->entry.next);
     while (p) {
-        fmap_node_ref(p);
-        p = p->next;
+        p = fmap_node_ref(p->next);
     }
     pthread_mutex_unlock(&slot->lock);
 
     return slot;
 }
 
+int fmap_remove(struct fmap* map, const void* key) {
+    struct fmap_node* node = fmap_pop(map, key);
+    if (node == NULL) {
+        return FMAP_NONE;
+    }
+    fmap_node_des(map, node);
+    return FMAP_OK;
+}
+
 /* pop a node,
 ** the memory should be controlled by caller manually */
-struct fmap_node* fmap_pop(struct fmap* hash, const void* key) {
+struct fmap_node* fmap_pop(struct fmap* map, const void* key) {
     struct fmap_section* h = NULL;
-    if (fmap_isrehash(hash)) {
-        h = &hash->section[1];
+    if (fmap_isrehash(map)) {
+        h = &map->section[1];
     } else {
-        h = &hash->section[0];
+        h = &map->section[0];
     }
 
-    size_t index = h->size_mask & fmap_hash(hash, key);
+    size_t index = h->size_mask & fmap_hash(map, key);
     struct fmap_slot* slot = &h->map[index];
-    pthread_mutex_lock(&slot->lock);
 
-    struct fmap_node* p = slot->entry.next;
+    pthread_mutex_lock(&slot->lock);
+    struct fmap_node* p = fmap_node_ref(slot->entry.next);
     struct fmap_node* q = p;
     while (p) {
-        if (!fmap_cmpkey(hash, p->key, key)) {
+        if (!fmap_cmpkey(map, p->key, key)) {
             break;
         }
 
         q = p;
-        p = p->next;
+        p = fmap_node_ref(p->next);
+        fmap_node_des(map, q);
     }
 
     // not exist
@@ -510,12 +551,16 @@ struct fmap_node* fmap_pop(struct fmap* hash, const void* key) {
         return NULL;
     }
 
-    if (q != p) {
-        fmap_node_ref(p);
-        q->next = p->next;
-    } else {
+    if (q == p) {
         h->map[index].entry.next = p->next;
+    } else {
+        q->next = p->next;
+        fmap_node_des(map, q);
     }
+    if (p->next == NULL) {
+        h->map[index].tail = NULL;
+    }
+    fmap_node_des(map, p);
 
     DEC(h->used);
     pthread_mutex_unlock(&slot->lock);
