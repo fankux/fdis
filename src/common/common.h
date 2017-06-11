@@ -44,8 +44,8 @@ private:                                        \
     __clazz__& operator=(const __clazz__&);     \
 
 
-#define INC(n) __sync_add_and_fetch(&n, 1)
-#define DEC(n) __sync_sub_and_fetch(&n, 1)
+#define INC(n) (__sync_add_and_fetch(&n, 1))
+#define DEC(n) (__sync_sub_and_fetch(&n, 1))
 #define CAS __sync_bool_compare_and_swap
 
 struct s_time {

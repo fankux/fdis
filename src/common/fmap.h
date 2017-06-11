@@ -12,6 +12,13 @@ extern "C" {
 namespace fdis {
 #endif
 
+struct fmap_node {
+    void* key;
+    void* value;
+    volatile int ref;
+    struct fmap_node* next;
+};
+
 typedef struct fmap_type {
     unsigned int (* hash_func)(const void* key);
 
@@ -25,13 +32,6 @@ typedef struct fmap_type {
 
     void (* desval)(void* value);
 } hash_type_t;
-
-struct fmap_node {
-    void* key;
-    void* value;
-    volatile int ref;
-    struct fmap_node* next;
-};
 
 struct fmap_slot {
     struct fmap_node entry;
@@ -125,7 +125,7 @@ void* fmap_setval(struct fmap* map, struct fmap_node* node, void* value);
         (node) = NULL;                                  \
     }                                                   \
 } while (0)
-//        printf("key:%s free\n", (char*)(node)->key);    \
+//        printf("key:%s free\n", (char*)(node)->key);
 
 /******************** API ****************************/
 int fmap_isrehash(struct fmap* map);

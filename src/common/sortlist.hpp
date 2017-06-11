@@ -189,7 +189,6 @@ public:
                 _current = _next;
                 _next = _next->next;
             }
-
             return *this;
         }
 

@@ -81,6 +81,13 @@ public:
         _fstr = fstr_setlen(_fstr, buf, 0, size);
     }
 
+    void pop_back() {
+        if (size() == 0) {
+            return;
+        }
+        fstr_removelen(_fstr, size() - 1, 1);
+    }
+
 private:
     struct fstr* _fstr;
 };

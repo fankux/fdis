@@ -2,7 +2,6 @@
 // Created by fankux on 16-12-11.
 //
 
-#define DEBUG_FMAP
 #ifdef DEBUG_FMAP
 
 #include "common/common.h"

@@ -11,7 +11,6 @@ namespace fdis{
 #endif
 
 static const unsigned int hash_seed = 5381;
-static const unsigned int hash_rand_seed = 5731;
 
 //private function
 
@@ -415,7 +414,7 @@ int fmap_addraw(struct fmap* map, const void* key, void* value, int rep) {
     node->next = 0;
     node->ref = 1;
 
-    fmap_setkey(map, node, key);
+    fmap_setkey(map, node, (void*) key);
     fmap_setval(map, node, value);
 
     if (h->map[slot].tail != NULL) {

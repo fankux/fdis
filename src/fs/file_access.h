@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <error.h>
+#include <src/common/sortlist.hpp>
 #include "common/common.h"
 #include "common/check.h"
 #include "common/bytes.h"
@@ -66,10 +67,7 @@ public:
             return false;
         }
 
-        if (!update()) {
-            return false;
-        }
-        return true;
+        return update();
     }
 
     uint64_t file_size() {
@@ -167,6 +165,7 @@ public:
     }
 
     int64_t write(const char* buf, const size_t size) {
+        // TODO.. retry
         fwrite(buf, size, 1, _fp);
         if (ferror(_fp)) {
             return -1;
@@ -194,7 +193,8 @@ class Chunk {
     friend class FileMeta;
 
 public:
-    Chunk(const uint32_t size) {
+    Chunk(const uint64_t pos, const uint32_t size) {
+        _pos = pos;
         _size = size;
     }
 
@@ -212,17 +212,68 @@ public:
 
 private:
     str _name;
-    uint32_t _pos;
+    uint64_t _pos;
     uint32_t _size;
 };
 
 class ChunkSlot {
 public:
-    ChunkSlot(uint32_t chunk_size, uint64_t file_size) {
+    friend class ChunkProducer;
 
+    ChunkSlot(str& name, uint64_t size) {
+        _name = name;
+        _size = size;
+        _used_size = 0;
+    }
+
+    bool operator<=(const ChunkSlot& rhs) const {
+        return _used_size <= rhs._used_size;
+    }
+
+    bool operator==(const ChunkSlot& rhs) const {
+        return _used_size == rhs._used_size;
+    }
+
+    const uint64_t hash_code() const {
+        return str_hash_func(_name.buf());
+    }
+
+    uint64_t get_free_size() const {
+        return _size - _used_size;
+    }
+
+    bool init() {
+        return _lfs.open(_name, "a+");
+    }
+
+    void reserve(uint64_t size) {
+        _used_size += size;
+    }
+
+    uint64_t get_offset() {
+        return _used_size;
+    }
+
+    int64_t write(const str& s) {
+        if (!_lfs.good()) {
+            if (!init()) {
+                fatal("init slot file: %s failed", _name.buf());
+                return -1;
+            }
+        }
+
+        if (get_free_size() < s.size()) {
+            fatal("slot size not enough");
+            return -1;
+        }
+        return _lfs.write(s.buf(), s.size());
     }
 
 private:
+    str _name;
+    uint64_t _size;
+    uint64_t _used_size;
+    LocalFileAccess _lfs;
 };
 
 class ChunkProducer {
@@ -235,7 +286,11 @@ public:
     bool init(ArrangerConf& conf) {
         _data_path = conf.get_persist_path();
         _data_prefix = conf.get_persist_prefix();
-        _seq = 0;
+        _current_seq = 0;
+
+        if (_data_prefix[_data_prefix.size() - 1] == '/') {
+            _data_prefix.pop_back();
+        }
 
         DIR* dir = opendir(_data_path.buf());
         check_null(dir, return false, "open dir %s failed, error : (%d)%s", _data_path.buf(),
@@ -253,8 +308,8 @@ public:
             }
 
             uint32_t suffix_idx = (uint32_t) atol(entry->d_name + _data_prefix.size());
-            if (suffix_idx > _seq) {
-                _seq = suffix_idx;
+            if (suffix_idx > _current_seq) {
+                _current_seq = suffix_idx;
                 max_file_name = entry->d_name;
             }
         }
@@ -265,29 +320,58 @@ public:
         }
         closedir(dir);
 
-        if (!_lfs.open(max_file_name, "w+")) {
-            fatal("open chunk log %s failed", max_file_name.buf());
-            return false;
+        return true;
+    }
+
+    bool gen_chunks(str& payload, List<Chunk>& chunks) {
+        uint64_t chunk_count = payload.size() / MAX_CHUNK_SIZE;
+        uint64_t last_size = payload.size() % MAX_CHUNK_SIZE;
+        chunk_count = last_size == 0 ? chunk_count : chunk_count + 1;
+
+        for (uint64_t i = 0; i < chunk_count;) {
+            uint64_t chunk_size = (i == chunk_count - 1) ? last_size : MAX_CHUNK_SIZE;
+            ChunkSlot* slot = _fetch_slot(chunk_size);
+            if (slot == NULL) {
+                info("no avaiable chunk slot, rotate new one");
+                if (!_rotate()) {
+                    fatal("rotate new chunk slot falied");
+                    return false;
+                }
+                continue;
+            }
+
+            Chunk chunk(slot->get_offset(), (uint32_t) chunk_size);
+            slot->reserve(chunk_size);
+            chunks.add_tail(chunk);
+            ++i;
         }
 
         return true;
     }
 
-    bool rotate() {
-
+private:
+    bool _rotate() {
+        char name[PATH_MAX];
+        snprintf(name, sizeof(name) - 1, "%s/%s-%zu", _data_path.buf(), _data_prefix.buf(),
+                INC(_current_seq));
+        str sname = name;
+        ChunkSlot slot(sname, MAX_FILE_SIZE);
+        if (!slot.init()) {
+            return false;
+        }
+        _slots.insert(slot);
+        return true;
     }
 
-    int64_t write(const str& s) {
-        if (MAX_FILE_SIZE - _lfs.file_size() < s.size()) {
-            if (!rotate()) {
-                fatal("rotate chunk log failed");
-                return -1;
+    ChunkSlot* _fetch_slot(uint64_t size) {
+        for (ChunkSlot& slot : _slots) {
+            if (slot.get_free_size() >= size) {
+                return &slot;
             }
         }
-
-        int64_t wsize = _lfs.write(s.buf(), s.size());
-        return wsize;
+        return NULL;
     }
+
 
 private:
     ChunkProducer() {}
@@ -295,13 +379,11 @@ private:
     static const uint32_t MAX_CHUNK_SIZE = 64 * 1024 * 1024; // 64MB
     static const uint64_t MAX_FILE_SIZE = UINT32_MAX;
 
-
     str _data_path;
     str _data_prefix;
-    uint64_t _seq;
+    volatile uint64_t _current_seq;
 
-    LocalFileAccess _lfs;
-
+    SortList<ChunkSlot> _slots;
 };
 
 #define LFS_R_INT_RETB(__type__, __val__) {      \
