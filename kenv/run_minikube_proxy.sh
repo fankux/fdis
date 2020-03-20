@@ -1,0 +1,1 @@
+http_proxy=http://192.168.228.1:1090/ https_proxy=http://192.168.228.1:1090/ minikube start --driver=docker --docker-env http_proxy=http://192.168.228.1:1090/ --docker-env https_proxy=http://192.168.228.1:1090/ --docker-env no_proxy=localhost,127.0.0.1,172.17.0.0/16,192.168.99.0/24
